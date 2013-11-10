@@ -19,7 +19,7 @@ public class InMemoryRegistryImpl implements RegistryService.Interface {
     @Override
     public void publish(
             RpcController controller, PublishOffer request, RpcCallback<VoidResponse> done) {
-        System.out.println(request.getConnectionBytes() + " published an offer: " + request);
+        System.out.println(request.getConnection() + " published an offer: " + request);
         done.run(OK);
     }
 }
