@@ -7,7 +7,7 @@ package bitmarket.protocol;
 
 option java_package = "com.bitwise.bitmarket.common.protocol";
 
-message InitSession {
+message RegistrationRequest {
 	required string connection = 1;
 }
 
@@ -24,17 +24,18 @@ message PublishOffer {
 	required int32 amount = 5;
 }
 
-enum PublicationResult {
+enum Result {
     OK = 0;
     FAILED = 1;
 }
 
-message PublishOfferResponse {
-    required PublicationResult result = 1;
+message VoidResponse {
+    required Result result = 1;
 }
 
-service PublishService {
-    rpc Publish (PublishOffer) returns (PublishOfferResponse);
+service RegistryService {
+    rpc RegisterClient (RegistrationRequest) returns (VoidResponse);
+    rpc Publish (PublishOffer) returns (VoidResponse);
 }
 
 message AcceptOffer {
