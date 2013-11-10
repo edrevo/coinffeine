@@ -24,9 +24,26 @@ message PublishOffer {
 	required int32 amount = 5;
 }
 
+enum PublicationResult {
+    OK = 0;
+    FAILED = 1;
+}
+
+message PublishOfferResponse {
+    required PublicationResult result = 1;
+}
+
+service PublishService {
+    rpc Publish (PublishOffer) returns (PublishOfferResponse);
+}
+
 message AcceptOffer {
 	required int32 offerId = 1;
 	required string from = 2;
 	required string connection = 3;
 	required int32 amount = 4;
+}
+
+service PeerService {
+    rpc Publish (PublishOffer) returns (PublishOfferResponse);
 }

@@ -21,6 +21,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.0</version>
                 <configuration>
                     <source>${jvm.version}</source>
                     <target>${jvm.version}</target>
@@ -77,6 +78,11 @@
                 <artifactId>protobuf-java</artifactId>
                 <version>2.4.1</version>
             </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>4.0.12.Final</version>
+            </dependency>
 
             <!-- Testing dependencies -->
             <dependency>
@@ -125,5 +131,6 @@
         <module>bitmarket-client</module>
         <module>bitmarket-common</module>
         <module>bitmarket-gui</module>
+        <module>bitmarket-server</module>
     </modules>
 </project>
