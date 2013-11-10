@@ -6,6 +6,7 @@
 package bitmarket.protocol;
 
 option java_package = "com.bitwise.bitmarket.common.protocol";
+option java_generic_services = true;
 
 message RegistrationRequest {
 	required string connection = 1;
@@ -46,5 +47,5 @@ message AcceptOffer {
 }
 
 service PeerService {
-    rpc Publish (PublishOffer) returns (PublishOfferResponse);
+    rpc Publish (PublishOffer) returns (VoidResponse);
 }
