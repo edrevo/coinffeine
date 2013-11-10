@@ -1,0 +1,32 @@
+// Copyright (C) 2013 Bitwise
+// All rights reserved
+
+// TODO: add messages to implement the exchange
+
+package bitmarket.protocol;
+
+option java_package = "com.bitwise.bitmarket.common.protocol";
+
+message InitSession {
+	required string connection = 1;
+}
+
+enum OfferType {
+	BUY = 0;
+	SELL = 1;
+}
+
+message PublishOffer {
+	required int32 id = 1;
+	required OfferType type = 2;
+	required string from = 3;
+	required string connection = 4;
+	required int32 amount = 5;
+}
+
+message AcceptOffer {
+	required int32 offerId = 1;
+	required string from = 2;
+	required string connection = 3;
+	required int32 amount = 4;
+}
