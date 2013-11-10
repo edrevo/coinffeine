@@ -11,4 +11,11 @@
     <artifactId>bitmarket-client</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>com.bitwise</groupId>
+            <artifactId>bitmarket-common</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 </project>
