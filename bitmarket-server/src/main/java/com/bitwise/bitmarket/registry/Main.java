@@ -2,16 +2,18 @@ package com.bitwise.bitmarket.registry;
 
 import java.io.IOException;
 
-import com.bitwise.bitmarket.common.currency.CurrencyCode;
+import com.google.protobuf.RpcCallback;
+import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import com.google.protobuf.ServiceException;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 
+import com.bitwise.bitmarket.common.currency.CurrencyCode;
 import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.*;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.RegistryService.BlockingInterface;
-import com.bitwise.bitmarket.common.protoservices.ServiceClient;
-import com.bitwise.bitmarket.common.protoservices.ServiceServer;
+import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PeerService.BlockingInterface;
+import com.bitwise.bitmarket.common.protorpc.ServiceClient;
+import com.bitwise.bitmarket.registry.protorpc.BroadcastServer;
 
 /**
  * Testing entry point
@@ -19,29 +21,35 @@ import com.bitwise.bitmarket.common.protoservices.ServiceServer;
 public class Main {
 
     public static void main(String[] args) throws IOException, ServiceException {
-        InMemoryRegistryImpl serviceImplementation = new InMemoryRegistryImpl();
-        Service service = RegistryService.newReflectiveService(serviceImplementation);
         PeerInfo serverInfo = new PeerInfo("localhost", 8080);
-        ServiceServer server = new ServiceServer(serverInfo, service);
+        BroadcastServer server = new BroadcastServer(serverInfo);
         server.start();
         System.out.println("Listening...");
         sendTestMessages();
     }
 
     private static void sendTestMessages() throws IOException, ServiceException {
+        Service serviceImplementation = PeerService.newReflectiveService(
+                new PeerService.Interface() {
+                    @Override
+                    public void publish(
+                            RpcController controller, PublishOffer request,
+                            RpcCallback<VoidResponse> done) {
+                        System.out.println("Message shouted back! " + request);
+                        done.run(VoidResponse.getDefaultInstance());
+                    }
+                });
+
         ServiceClient<BlockingInterface> client =
-                new ServiceClient<BlockingInterface>(new PeerInfo("localhost", 8080)) {
+                new ServiceClient<BlockingInterface>(new PeerInfo("localhost", 8080), serviceImplementation) {
                     @Override
                     protected BlockingInterface buildService(RpcClientChannel channel) {
-                        return RegistryService.newBlockingStub(channel);
+                        return PeerService.newBlockingStub(channel);
                     }
                 };
 
-        VoidResponse regRes = client.getService().registerClient(
-                client.getController(),
-                RegistrationRequest.newBuilder().setConnection("localhost:1234").build());
-        System.out.println("Registration response: " + regRes);
 
+        System.out.println("Sending publication...");
         VoidResponse pubRes =
                 client.getService().publish(
                         client.getController(), PublishOffer.newBuilder()

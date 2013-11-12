@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.common.protoservices;
+package com.bitwise.bitmarket.common.protorpc;
 
 public final class Constants {
 
