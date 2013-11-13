@@ -26,5 +26,13 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
         </dependency>
+        <dependency>
+           <groupId>com.googlecode.protobuf-rpc-pro</groupId>
+           <artifactId>protobuf-rpc-pro-duplex</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
     </dependencies>
 </project>

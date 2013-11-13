@@ -14,16 +14,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-        </dependency>
-
-        <dependency>
-           <groupId>com.googlecode.protobuf-rpc-pro</groupId>
-           <artifactId>protobuf-rpc-pro-duplex</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.bitwise</groupId>
             <artifactId>bitmarket-common</artifactId>
             <version>0.1-SNAPSHOT</version>
