@@ -1,12 +1,12 @@
 package com.bitwise.bitmarket.common.currency;
 
-public enum Currency {
+public enum CurrencyCode {
 
-    EUR("EUR"), USD("USD");
+    EUR("EUR"), USD("USD"), BTC("BTC");
 
     private final String currency;
 
-    private Currency(final String currency) {
+    private CurrencyCode(final String currency) {
         this.currency = currency;
     }
 
