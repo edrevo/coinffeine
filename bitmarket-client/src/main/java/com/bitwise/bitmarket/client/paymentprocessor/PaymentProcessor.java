@@ -9,43 +9,41 @@ public interface PaymentProcessor {
     /**
      * Send a payment from any of your wallets to someone.
      * 
-     * @param toAccountId
-     *            who will receive the payment
+     * @param receiverId
+     *            account id of receiver of payment
      * @param amount
-     *            to send
-     * @param wallet
-     *            in your account to use to send the payment
-     * @return transactionId of the order
-     * @throws Exception
+     *            amount to send
+     * @return a Payment object containing the information of payment (receiverId and senderId
+     *         properties are not provided)
+     * @throws PaymentProcessorException
      *             if the payment can not be made
      */
-    String sendPayment(String toAccountId, Amount amount, String fromWalletId)
+    Payment sendPayment(String receiverId, Amount amount)
             throws PaymentProcessorException;
 
     /**
      * Check if exist a payment with a some specific details (from a specific account, with a
      * specific amount, etc.) from a date.
      * 
-     * @param walletId
-     *            in which you expect to receive the payment
-     * @param Account
-     *            ID from you expect receive the payment
+     * @param receiverId
+     *            account id who expect to receive the payment
      * @param amount
-     *            of money that you will expect to receive
-     * @param Date
-     *            from which you expect the payment
-     * @return true if the payment exist and false if not exist.
+     *            amount of money that you will expect to receive
+     * @param fromDate
+     *            date from which you expect the payment
+     * @return boolean value that indicates if the payment was made
+     * @throws PaymentProcessorException
+     *             if the payment can not be made
      */
-    boolean checkPayment(String walletId, String fromAccountId, Amount amount,
-            DateTime fromDate) throws PaymentProcessorException;;
+    boolean checkPayment(String senderId, Amount amount, DateTime fromDate)
+            throws PaymentProcessorException;
 
     /**
      * Return the balance for a wallet on your account.
      * 
-     * @param walletId
-     *            of your wallet
-     * @return List of amounts in your wallet by currency
+     * @return List of Amounts, one amount per currency type in the account
+     * @throws PaymentProcessorException
+     *             if the payment can not be made
      */
-    Iterable<Amount> getBalance(String walletId)
-            throws PaymentProcessorException;
+    Iterable<Amount> getBalance() throws PaymentProcessorException;
 }
