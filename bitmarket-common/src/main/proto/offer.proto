@@ -5,7 +5,8 @@
 
 package bitmarket.protocol;
 
-option java_package = "com.bitwise.bitmarket.common.protocol";
+option java_package = "com.bitwise.bitmarket.common.protocol.protobuf";
+option java_outer_classname = "OfferProtocol";
 option java_generic_services = true;
 
 message RegistrationRequest {

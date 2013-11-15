@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.registry;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 
-import com.bitwise.bitmarket.common.protocol.Offer.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.*;
 
 public class InMemoryRegistryImpl implements RegistryService.Interface {
 
