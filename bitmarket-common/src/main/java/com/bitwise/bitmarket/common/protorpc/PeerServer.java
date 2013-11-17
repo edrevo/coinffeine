@@ -43,16 +43,14 @@ public class PeerServer {
     public PeerServer(PeerInfo serverInfo, Service service) {
         this.eventGroups = new LinkedList<>();
         this.executor = new ThreadPoolCallExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE);
-        this.serverFactory = this.makeServerPipelineFactory(serverInfo, service);
-        this.clientFactory = new DuplexTcpClientPipelineFactory(serverInfo);
 
-        // Experimental
+        this.serverFactory = this.makeServerPipelineFactory(serverInfo, service);
+        this.bootstrap = makeServerBootstrap(this.serverFactory, serverInfo.getPort());
+
+        this.clientFactory = new DuplexTcpClientPipelineFactory(serverInfo);
         this.clientFactory.setRpcServerCallExecutor(this.executor);
         this.clientFactory.setConnectResponseTimeoutMillis(Constants.CONNECTION_TIMEOUT);
         this.clientFactory.getRpcServiceRegistry().registerService(service);
-        // End experimental
-
-        this.bootstrap = makeServerBootstrap(this.serverFactory, serverInfo.getPort());
     }
 
     private DuplexTcpServerPipelineFactory makeServerPipelineFactory(
