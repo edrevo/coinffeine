@@ -6,6 +6,9 @@ public class OfferId {
 
     public OfferId(int bytes) { this.bytes = bytes; }
 
+    @Override
+    public String toString() { return Integer.toHexString(bytes); }
+
     public int getBytes() {
         return bytes;
     }
