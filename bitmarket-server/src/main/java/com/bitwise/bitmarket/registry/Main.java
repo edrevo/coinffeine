@@ -7,8 +7,8 @@ import com.google.protobuf.ServiceException;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 
-import com.bitwise.bitmarket.common.protocol.Offer.*;
-import com.bitwise.bitmarket.common.protocol.Offer.RegistryService.BlockingInterface;
+import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.RegistryService.BlockingInterface;
 import com.bitwise.bitmarket.common.protoservices.ServiceClient;
 import com.bitwise.bitmarket.common.protoservices.ServiceServer;
 
