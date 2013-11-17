@@ -33,6 +33,10 @@ public class BroadcastServer {
         this.serverInfo = serverInfo;
     }
 
+    public PeerInfo getServerInfo() {
+        return this.serverInfo;
+    }
+
     public void start() {
         if (this.service != null) {
             throw new IllegalStateException("Server already started");

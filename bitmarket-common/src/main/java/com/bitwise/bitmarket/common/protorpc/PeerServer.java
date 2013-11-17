@@ -82,7 +82,7 @@ public class PeerServer {
     /**
      * Peer with other server.
      *
-     * Don't forget to call #shutdown on the returned object.
+     * Don't forget to call close() on the returned object.
      *
      * @param peerInfo  Server to peer with
      * @return          A new session
@@ -145,7 +145,7 @@ public class PeerServer {
         }
 
         @Override
-        public void shutdown() {
+        public void close() {
             this.channel.close();
             this.eventGroup.shutdownGracefully();
         }
