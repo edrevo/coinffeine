@@ -43,6 +43,12 @@ public class BroadcastServer {
         this.server.start();
     }
 
+    public void shutdown() {
+        if (this.server != null) {
+            this.server.shutdown();
+        }
+    }
+
     private class PeerServiceImpl implements PeerService.Interface {
 
         @Nullable
