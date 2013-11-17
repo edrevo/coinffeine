@@ -18,12 +18,18 @@ enum OfferType {
 	SELL = 1;
 }
 
+message Amount {
+    required int64 value = 1;
+    required int32 scale = 2;
+    required string currency = 3;
+}
+
 message PublishOffer {
 	required int32 id = 1;
 	required OfferType type = 2;
 	required string from = 3;
 	required string connection = 4;
-	required int32 amount = 5;
+	required Amount amount = 5;
 }
 
 enum Result {
@@ -44,7 +50,7 @@ message AcceptOffer {
 	required int32 offerId = 1;
 	required string from = 2;
 	required string connection = 3;
-	required int32 amount = 4;
+	required Amount amount = 4;
 }
 
 service PeerService {

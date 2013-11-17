@@ -2,6 +2,7 @@ package com.bitwise.bitmarket.registry;
 
 import java.io.IOException;
 
+import com.bitwise.bitmarket.common.currency.CurrencyCode;
 import com.google.protobuf.Service;
 import com.google.protobuf.ServiceException;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
@@ -44,7 +45,11 @@ public class Main {
         VoidResponse pubRes =
                 client.getService().publish(
                         client.getController(), PublishOffer.newBuilder()
-                        .setAmount(10)
+                        .setAmount(Amount.newBuilder()
+                                .setValue(10)
+                                .setScale(0)
+                                .setCurrency(CurrencyCode.EUR.toString())
+                                .build())
                         .setConnection("localhost:1234")
                         .setFrom("localhost:1234")
                         .setId(42)

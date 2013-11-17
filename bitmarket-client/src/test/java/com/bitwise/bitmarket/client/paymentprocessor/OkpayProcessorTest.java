@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
