@@ -9,10 +9,6 @@ option java_package = "com.bitwise.bitmarket.common.protocol.protobuf";
 option java_outer_classname = "OfferProtocol";
 option java_generic_services = true;
 
-message RegistrationRequest {
-	required string connection = 1;
-}
-
 enum OfferType {
 	BUY = 0;
 	SELL = 1;
@@ -39,11 +35,6 @@ enum Result {
 
 message VoidResponse {
     required Result result = 1;
-}
-
-service RegistryService {
-    rpc RegisterClient (RegistrationRequest) returns (VoidResponse);
-    rpc Publish (PublishOffer) returns (VoidResponse);
 }
 
 message AcceptOffer {
