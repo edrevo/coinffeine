@@ -23,6 +23,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.bitwise</groupId>
+            <artifactId>bitmarket-common-test</artifactId>
+            <version>0.1-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
         </dependency>

@@ -212,9 +212,11 @@
             <artifactId>mockito-all</artifactId>
         </dependency>
     </dependencies>
+
     <modules>
         <module>bitmarket-client</module>
         <module>bitmarket-common</module>
+        <module>bitmarket-common-test</module>
         <module>bitmarket-gui</module>
         <module>bitmarket-server</module>
     </modules>

@@ -17,6 +17,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.bitwise.bitmarket.common.NetworkTestUtils;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.Request;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.Response;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.SimpleService;
