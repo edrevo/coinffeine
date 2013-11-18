@@ -21,6 +21,15 @@ public class Offer {
         this.amount = amount;
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s offer with ID %s from %s of %s",
+                this.offerType.toString(),
+                this.id.toString(),
+                this.fromId.toString(),
+                this.amount.toString());
+    }
+
     public OfferId getId() {
         return this.id;
     }
