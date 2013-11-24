@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.common.protorpc;
+package com.bitwise.bitmarket.common;
 
 import java.io.IOException;
 import java.net.ServerSocket;

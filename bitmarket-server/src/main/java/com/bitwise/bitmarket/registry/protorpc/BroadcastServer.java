@@ -33,6 +33,10 @@ public class BroadcastServer {
         this.serverInfo = serverInfo;
     }
 
+    public PeerInfo getServerInfo() {
+        return this.serverInfo;
+    }
+
     public void start() {
         if (this.service != null) {
             throw new IllegalStateException("Server already started");
@@ -41,6 +45,12 @@ public class BroadcastServer {
         this.server = new PeerServer(this.serverInfo, PeerService.newReflectiveService(this.service));
         this.service.setClientRegistry(this.server.getClientRegistry());
         this.server.start();
+    }
+
+    public void shutdown() {
+        if (this.server != null) {
+            this.server.shutdown();
+        }
     }
 
     private class PeerServiceImpl implements PeerService.Interface {

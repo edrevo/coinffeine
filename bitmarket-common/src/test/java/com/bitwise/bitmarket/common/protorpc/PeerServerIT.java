@@ -1,6 +1,5 @@
 package com.bitwise.bitmarket.common.protorpc;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -9,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
-import com.google.protobuf.ServiceException;
 import com.googlecode.protobuf.pro.duplex.ClientRpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
@@ -17,6 +15,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.bitwise.bitmarket.common.NetworkTestUtils;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.Request;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.Response;
 import com.bitwise.bitmarket.common.protocol.protobuf.TestProtocol.SimpleService;
@@ -77,26 +76,24 @@ public class PeerServerIT {
         broadcastPeer.broadcast("hello all");
         String receivedMessage =
                 connectedPeer.receivedOffers.poll(POLL_TIMEOUT, TimeUnit.MILLISECONDS);
-        session.shutdown();
+        session.close();
         assertEquals("hello all", receivedMessage);
     }
 
     private static class TestPeer {
 
-        final int port;
-        final PeerInfo info;
-        final PeerServer server;
-        final BlockingQueue<String> receivedOffers;
+        private final PeerServer server;
+        public final PeerInfo info;
+        public final BlockingQueue<String> receivedOffers;
 
         public TestPeer(int port) {
-            this.port = port;
             this.info = new PeerInfo("localhost", port);
             this.receivedOffers = new LinkedBlockingDeque<>();
             this.server = new PeerServer(this.info, SimpleService.newReflectiveService(new Handler()));
             this.server.start();
         }
 
-        public void synchronouslyPublishTo(PeerInfo info) throws IOException, ServiceException {
+        public void synchronouslyPublishTo(PeerInfo info) throws Exception {
             System.out.println("Creating client...");
             PeerSession session = this.server.peerWith(info);
             SimpleService.BlockingInterface otherPeer =
@@ -104,19 +101,18 @@ public class PeerServerIT {
             System.out.println("Publishing...");
             otherPeer.greet(session.getController(), HELLO_REQUEST);
             System.out.println("Published.");
-            session.shutdown();
+            session.close();
             System.out.println("Client done.");
         }
 
-        public void asynchronouslyPublishTo(PeerInfo info)
-                throws IOException, ServiceException, InterruptedException {
+        public void asynchronouslyPublishTo(PeerInfo info) throws Exception {
             System.out.println("Creating client...");
             PeerSession session = this.server.peerWith(info);
             SimpleService.Stub otherPeer = SimpleService.newStub(session.getChannel());
             System.out.println("Publishing...");
             otherPeer.greet(session.getController(), HELLO_REQUEST, NoopRpc.<Response>callback());
             System.out.println("Published.");
-            session.shutdown();
+            session.close();
             System.out.println("Client done.");
         }
 
