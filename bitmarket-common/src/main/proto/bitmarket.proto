@@ -6,7 +6,7 @@
 package bitmarket.protocol;
 
 option java_package = "com.bitwise.bitmarket.common.protocol.protobuf";
-option java_outer_classname = "OfferProtocol";
+option java_outer_classname = "BitmarketProtobuf";
 option java_generic_services = true;
 
 enum OfferType {
@@ -22,10 +22,11 @@ message Amount {
 
 message PublishOffer {
 	required int32 id = 1;
-	required OfferType type = 2;
-	required string from = 3;
-	required string connection = 4;
-	required Amount amount = 5;
+	required int32 seq = 2;
+	required OfferType type = 3;
+	required string from = 4;
+	required string connection = 5;
+	required Amount amount = 6;
 }
 
 enum Result {

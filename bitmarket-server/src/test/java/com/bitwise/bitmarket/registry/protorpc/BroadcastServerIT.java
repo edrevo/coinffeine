@@ -12,8 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.bitwise.bitmarket.common.NetworkTestUtils;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.*;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PeerService.Stub;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService.Stub;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
@@ -47,6 +47,7 @@ public class BroadcastServerIT {
     public void shouldBroadcastAllRequestsToConnectedPeers() throws Exception {
         PublishOffer request1 = PublishOffer.newBuilder()
                 .setId(1)
+                .setSeq(0)
                 .setType(OfferType.BUY)
                 .setFrom("???")
                 .setConnection(this.client1.info.toString())
