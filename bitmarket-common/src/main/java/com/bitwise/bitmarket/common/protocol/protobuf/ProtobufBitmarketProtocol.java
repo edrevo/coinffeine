@@ -9,9 +9,9 @@ import com.bitwise.bitmarket.common.protocol.BitmarketProtocol;
 import com.bitwise.bitmarket.common.protocol.BitmarketProtocolException;
 import com.bitwise.bitmarket.common.protocol.Offer;
 import com.bitwise.bitmarket.common.protocol.OfferListener;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PeerService;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PublishOffer;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.VoidResponse;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishOffer;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.VoidResponse;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
 import com.google.protobuf.RpcCallback;
@@ -114,7 +114,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         }
     }
 
-    private class PeerServiceImpl extends OfferProtocol.PeerService {
+    private class PeerServiceImpl extends BitmarketProtobuf.PeerService {
 
         @Override
         public void publish(

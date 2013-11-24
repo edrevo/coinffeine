@@ -6,15 +6,17 @@ import com.bitwise.bitmarket.common.currency.Amount;
 public class Offer {
 
     private final OfferId id;
+    private final int sequenceNumber;
     private final OfferType offerType;
     private final PeerId fromId;
     private final PeerConnection fromConnection;
     private final Amount amount;
 
     public Offer(
-            OfferId id, OfferType offerType, PeerId fromId,
+            OfferId id, int sequenceNumber, OfferType offerType, PeerId fromId,
             PeerConnection fromConnection, Amount amount) {
         this.id = id;
+        this.sequenceNumber = sequenceNumber;
         this.offerType = offerType;
         this.fromId = fromId;
         this.fromConnection = fromConnection;
@@ -32,6 +34,10 @@ public class Offer {
 
     public OfferId getId() {
         return this.id;
+    }
+
+    public int getSequenceNumber() {
+        return this.sequenceNumber;
     }
 
     public OfferType getOfferType() {

@@ -8,10 +8,10 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PeerService;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.PublishOffer;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.Result;
-import com.bitwise.bitmarket.common.protocol.protobuf.OfferProtocol.VoidResponse;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishOffer;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.Result;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.VoidResponse;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 
