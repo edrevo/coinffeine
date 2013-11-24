@@ -112,5 +112,13 @@ public class BroadcastServerIT {
             this.receivedMessages.incrementAndGet();
             done.run(VoidResponse.newBuilder().setResult(Result.OK).build());
         }
+
+        @Override
+        public void requestExchange(
+                RpcController controller,
+                ExchangeRequest request,
+                RpcCallback<ExchangeRequestResponse> done) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

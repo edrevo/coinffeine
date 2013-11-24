@@ -2,13 +2,13 @@ package com.bitwise.bitmarket.registry.protorpc;
 
 import javax.annotation.Nullable;
 
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 

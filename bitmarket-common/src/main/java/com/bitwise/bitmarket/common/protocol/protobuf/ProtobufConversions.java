@@ -5,18 +5,24 @@ import java.util.Currency;
 
 import com.bitwise.bitmarket.common.PeerConnectionParser;
 import com.bitwise.bitmarket.common.currency.Amount;
-import com.bitwise.bitmarket.common.protocol.Offer;
-import com.bitwise.bitmarket.common.protocol.OfferId;
-import com.bitwise.bitmarket.common.protocol.OfferType;
-import com.bitwise.bitmarket.common.protocol.PeerId;
+import com.bitwise.bitmarket.common.protocol.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.ExchangeRequest;
 
-public class OfferConversions {
+public class ProtobufConversions {
 
     public static Offer fromProtobuf(BitmarketProtobuf.PublishOffer proto) {
         return new Offer(
                 new OfferId(proto.getId()),
                 proto.getSeq(),
                 fromProtobuf(proto.getType()),
+                new PeerId(proto.getFrom()),
+                PeerConnectionParser.parse(proto.getConnection()),
+                fromProtobuf(proto.getAmount()));
+    }
+
+    public static com.bitwise.bitmarket.common.protocol.ExchangeRequest fromProtobuf(ExchangeRequest proto) {
+        return new com.bitwise.bitmarket.common.protocol.ExchangeRequest(
+                new OfferId(proto.getId()),
                 new PeerId(proto.getFrom()),
                 PeerConnectionParser.parse(proto.getConnection()),
                 fromProtobuf(proto.getAmount()));
@@ -52,6 +58,16 @@ public class OfferConversions {
                 .build();
     }
 
+    public static ExchangeRequest toProtobuf(
+            com.bitwise.bitmarket.common.protocol.ExchangeRequest acceptance) {
+        return BitmarketProtobuf.ExchangeRequest.newBuilder()
+                .setId(acceptance.getId().getBytes())
+                .setFrom(acceptance.getFromId().getAddress())
+                .setConnection(acceptance.getFromConnection().toString())
+                .setAmount(toProtobuf(acceptance.getAmount()))
+                .build();
+    }
+
     public static BitmarketProtobuf.OfferType toProtobuf(OfferType offerType) {
         switch (offerType) {
             case BUY_OFFER: return BitmarketProtobuf.OfferType.BUY;
@@ -71,5 +87,5 @@ public class OfferConversions {
                 .build();
     }
 
-    private OfferConversions() {}
+    private ProtobufConversions() {}
 }
