@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import com.bitwise.bitmarket.common.NetworkTestUtils;
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService.Stub;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
@@ -58,9 +57,9 @@ public class BroadcastServerIT {
                 .build();
         try (PeerSession session1 = this.client1.connectTo(this.instance.getServerInfo());
                 PeerSession session2 = this.client2.connectTo(this.instance.getServerInfo())) {
-            Stub stub1 = PeerService.newStub(session1.getChannel());
+            BroadcastService.Stub stub1 = BroadcastService.newStub(session1.getChannel());
             stub1.publish(session1.getController(), request1, NoopRpc.<VoidResponse>callback());
-            Stub stub2 = PeerService.newStub(session2.getChannel());
+            BroadcastService.Stub stub2 = BroadcastService.newStub(session2.getChannel());
             stub2.publish(session2.getController(), request2, NoopRpc.<VoidResponse>callback());
 
             // Keep connections open for the broadcast to happen

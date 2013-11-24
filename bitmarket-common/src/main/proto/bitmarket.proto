@@ -39,10 +39,14 @@ message VoidResponse {
 }
 
 message AcceptOffer {
-	required int32 offerId = 1;
+	required int32 id = 1;
 	required string from = 2;
 	required string connection = 3;
 	required Amount amount = 4;
+}
+
+service BroadcastService {
+    rpc Publish (PublishOffer) returns (VoidResponse);
 }
 
 service PeerService {

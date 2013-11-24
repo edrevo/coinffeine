@@ -2,16 +2,13 @@ package com.bitwise.bitmarket.registry.protorpc;
 
 import javax.annotation.Nullable;
 
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishOffer;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.Result;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.VoidResponse;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 
@@ -23,7 +20,7 @@ public class BroadcastServer {
 
     private final PeerInfo serverInfo;
     @Nullable
-    private PeerServiceImpl service;
+    private BroadcastServiceImpl service;
     @Nullable
     private PeerServer server;
 
@@ -41,8 +38,9 @@ public class BroadcastServer {
         if (this.service != null) {
             throw new IllegalStateException("Server already started");
         }
-        this.service = new PeerServiceImpl();
-        this.server = new PeerServer(this.serverInfo, PeerService.newReflectiveService(this.service));
+        this.service = new BroadcastServiceImpl();
+        this.server = new PeerServer(
+                this.serverInfo, BroadcastService.newReflectiveService(this.service));
         this.service.setClientRegistry(this.server.getClientRegistry());
         this.server.start();
     }
@@ -53,7 +51,7 @@ public class BroadcastServer {
         }
     }
 
-    private class PeerServiceImpl implements PeerService.Interface {
+    private class BroadcastServiceImpl implements BroadcastService.Interface {
 
         @Nullable
         private RpcClientRegistry clientRegistry = null;
