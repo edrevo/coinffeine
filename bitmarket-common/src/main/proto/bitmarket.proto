@@ -29,12 +29,11 @@ message Offer {
 	required FiatAmount btcPrice = 6;
 }
 
-enum Result {
-    OK = 0;
-    FAILED = 1;
-}
-
-message VoidResponse {
+message PublishResponse {
+    enum Result {
+        SUCCESS = 0;
+        SERVICE_UNAVAILABLE = 1;
+    }
     required Result result = 1;
 }
 
@@ -46,19 +45,18 @@ message ExchangeRequest {
 }
 
 message ExchangeRequestResponse {
-    required Result result = 1;
-    enum Error {
-        NO_ERROR = 0;
+    enum Result {
+        SUCCESS = 0;
         INVALID_AMOUNT = 1;
     }
-    required Error error = 2;
+    required Result result = 1;
 }
 
 service BroadcastService {
-    rpc Publish (Offer) returns (VoidResponse);
+    rpc Publish (Offer) returns (PublishResponse);
 }
 
 service PeerService {
-    rpc Publish (Offer) returns (VoidResponse);
+    rpc Publish (Offer) returns (PublishResponse);
     rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
 }

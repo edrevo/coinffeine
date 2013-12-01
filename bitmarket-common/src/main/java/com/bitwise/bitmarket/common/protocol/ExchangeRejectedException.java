@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.common;
+package com.bitwise.bitmarket.common.protocol;
 
 public class ExchangeRejectedException extends Exception {
 
