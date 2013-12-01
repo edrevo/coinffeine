@@ -74,7 +74,7 @@ public class ProtobufConversions {
         return BitmarketProtobuf.FiatAmount.newBuilder()
                 .setValue(amount.getAmount().unscaledValue().longValue())
                 .setScale(amount.getAmount().scale())
-                .setCurrency(amount.getCurrency().getSymbol())
+                .setCurrency(amount.getCurrency().getCurrencyCode())
                 .build();
     }
 
