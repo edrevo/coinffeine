@@ -4,14 +4,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import com.bitwise.bitmarket.common.ExchangeRejectedException;
 import com.bitwise.bitmarket.common.PeerConnection;
-import com.bitwise.bitmarket.common.protocol.BitmarketProtocol;
-import com.bitwise.bitmarket.common.protocol.BitmarketProtocolException;
-import com.bitwise.bitmarket.common.protocol.Offer;
-import com.bitwise.bitmarket.common.protocol.OfferListener;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishOffer;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.VoidResponse;
+import com.bitwise.bitmarket.common.protocol.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.ExchangeRequest;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
 import com.google.protobuf.RpcCallback;
@@ -31,6 +28,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     private final PeerService.BlockingInterface multicastRemote;
 
     private OfferListener offerListener;
+    private ExchangeRequestListener exchangeRequestListener;
 
     public ProtobufBitmarketProtocol(
             PeerConnection broadcastServer) throws BitmarketProtocolException {
@@ -45,6 +43,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         this.multicastRemoteSession = this.createRemoteSession(broadcastServer);
         this.multicastRemote = this.createRemote(this.multicastRemoteSession);
         this.offerListener = this.createDefaultOfferListener();
+        this.exchangeRequestListener = this.createDefaultOfferAcceptedListener();
 
         this.peerServer.start();
     }
@@ -60,14 +59,47 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     }
 
     @Override
+    public void setExchangeRequestListener(ExchangeRequestListener listener) {
+        this.exchangeRequestListener = listener;
+    }
+
+    @Override
     public void publish(Offer offer) throws BitmarketProtocolException {
         try {
             this.multicastRemote.publish(
                     this.multicastRemoteSession.getController(),
-                    OfferConversions.toProtobuf(offer));
+                    ProtobufConversions.toProtobuf(offer));
         } catch (ServiceException e) {
             throw new BitmarketProtocolException(
                     "cannot publish offer on remote multicast server", e);
+        }
+    }
+
+    @Override
+    public void requestExchange(
+            com.bitwise.bitmarket.common.protocol.ExchangeRequest acceptance,
+            PeerConnection recipient) throws BitmarketProtocolException, ExchangeRejectedException {
+        try {
+            PeerSession session = this.peerServer.peerWith(peerInfo(localConnection));
+            BitmarketProtobuf.PeerService.BlockingInterface rcpt =
+                    BitmarketProtobuf.PeerService.newBlockingStub(session.getChannel());
+            BitmarketProtobuf.ExchangeRequestResponse result =  rcpt.requestExchange(
+                    session.getController(),
+                    ProtobufConversions.toProtobuf(acceptance));
+            if (result.getResult().equals(BitmarketProtobuf.Result.FAILED)) {
+                switch (result.getError()) {
+                    case INVALID_AMOUNT:
+                        throw new ExchangeRejectedException(
+                                ExchangeRejectedException.Reason.INVALID_AMOUNT);
+                }
+            }
+        } catch (IOException e) {
+            throw new BitmarketProtocolException(
+                    String.format("IO error while accepting offer %s", acceptance.toString()), e);
+        } catch (ServiceException e) {
+            throw new BitmarketProtocolException(
+                    String.format("service error while accepting offer %s", acceptance.toString()),
+                    e);
         }
     }
 
@@ -101,6 +133,18 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         };
     }
 
+    private ExchangeRequestListener createDefaultOfferAcceptedListener() {
+        return new ExchangeRequestListener() {
+            @Override
+            public void onExchangeRequest(
+                    com.bitwise.bitmarket.common.protocol.ExchangeRequest acceptance) {
+                LOGGER.warn(
+                        "incoming offer acceptance discarded due to unset listener: %s",
+                        acceptance.toString());
+            }
+        };
+    }
+
     private static PeerInfo peerInfo(PeerConnection conn) {
         return new PeerInfo(conn.getHostname(), conn.getPort());
     }
@@ -114,12 +158,50 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         }
     }
 
+    private static final VoidResponse okVoidResponse = VoidResponse.newBuilder()
+            .setResult(Result.OK)
+            .build();
+
+    private static final VoidResponse failedVoidResponse = VoidResponse.newBuilder()
+            .setResult(Result.FAILED)
+            .build();
+
+    private static final ExchangeRequestResponse okAcceptResponse =
+            ExchangeRequestResponse.newBuilder()
+                    .setResult(Result.OK)
+                    .setError(ExchangeRequestResponse.Error.NO_ERROR)
+                    .build();
+
+    private static final ExchangeRequestResponse invalidAmountAcceptResponse =
+            ExchangeRequestResponse.newBuilder()
+                    .setResult(Result.FAILED)
+                    .setError(ExchangeRequestResponse.Error.INVALID_AMOUNT)
+                    .build();
+
     private class PeerServiceImpl extends BitmarketProtobuf.PeerService {
 
         @Override
         public void publish(
                 RpcController controller, PublishOffer offer, RpcCallback<VoidResponse> done) {
-            offerListener.onOffer(OfferConversions.fromProtobuf(offer));
+            try {
+                offerListener.onOffer(ProtobufConversions.fromProtobuf(offer));
+                done.run(okVoidResponse);
+            } catch (Throwable e) {
+                done.run(failedVoidResponse);
+            }
+        }
+
+        @Override
+        public void requestExchange(
+                RpcController controller,
+                ExchangeRequest request,
+                RpcCallback<ExchangeRequestResponse> done) {
+            try {
+                exchangeRequestListener.onExchangeRequest(ProtobufConversions.fromProtobuf(request));
+                done.run(okAcceptResponse);
+            } catch (ExchangeRejectedException e) {
+                done.run(invalidAmountAcceptResponse);
+            }
         }
     }
 }

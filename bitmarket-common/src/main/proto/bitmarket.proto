@@ -38,13 +38,27 @@ message VoidResponse {
     required Result result = 1;
 }
 
-message AcceptOffer {
-	required int32 offerId = 1;
+message ExchangeRequest {
+	required int32 id = 1;
 	required string from = 2;
 	required string connection = 3;
 	required Amount amount = 4;
 }
 
+message ExchangeRequestResponse {
+    required Result result = 1;
+    enum Error {
+        NO_ERROR = 0;
+        INVALID_AMOUNT = 1;
+    }
+    required Error error = 2;
+}
+
+service BroadcastService {
+    rpc Publish (PublishOffer) returns (VoidResponse);
+}
+
 service PeerService {
     rpc Publish (PublishOffer) returns (VoidResponse);
+    rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
 }
