@@ -1,8 +1,8 @@
-package com.bitwise.bitmarket.client.paymentprocessor;
+package com.bitwise.bitmarket.common.paymentprocessor;
 
 import org.apache.axis2.AxisFault;
 
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub;
 
 public class OkPayFactory {
 

@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.client.paymentprocessor;
+package com.bitwise.bitmarket.common.paymentprocessor;
 
 public class PaymentProcessorException extends RuntimeException {
 

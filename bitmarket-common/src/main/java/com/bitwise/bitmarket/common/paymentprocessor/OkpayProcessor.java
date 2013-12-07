@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.client.paymentprocessor;
+package com.bitwise.bitmarket.common.paymentprocessor;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -14,18 +14,18 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.ArrayOfBalance;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Balance;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.HistoryInfo;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.OperationStatus;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Send_Money;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Send_MoneyResponse;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.TransactionInfo;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_History;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_HistoryResponse;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_Balance;
-import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_BalanceResponse;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.ArrayOfBalance;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Balance;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.HistoryInfo;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.OperationStatus;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Send_Money;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Send_MoneyResponse;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.TransactionInfo;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_History;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_HistoryResponse;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_Balance;
+import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_BalanceResponse;
 import com.bitwise.bitmarket.common.currency.FiatAmount;
 
 class OkPayProcessor implements PaymentProcessor {
