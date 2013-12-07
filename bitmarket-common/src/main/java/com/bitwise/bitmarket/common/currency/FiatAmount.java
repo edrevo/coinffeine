@@ -3,12 +3,12 @@ package com.bitwise.bitmarket.common.currency;
 import java.math.BigDecimal;
 import java.util.Currency;
 
-public class Amount {
+public class FiatAmount {
 
     private final BigDecimal amount;
     private final Currency currency;
 
-    public Amount(BigDecimal amount, Currency currency) {
+    public FiatAmount(BigDecimal amount, Currency currency) {
         this.amount = amount;
         this.currency = currency;
     }
@@ -43,7 +43,7 @@ public class Amount {
         if (this.getClass() != obj.getClass()) {
             return false;
         }
-        Amount other = (Amount) obj;
+        FiatAmount other = (FiatAmount) obj;
         if (this.amount == null) {
             if (other.amount != null) {
                 return false;

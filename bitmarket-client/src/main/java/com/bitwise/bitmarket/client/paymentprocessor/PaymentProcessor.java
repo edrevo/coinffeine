@@ -2,7 +2,7 @@ package com.bitwise.bitmarket.client.paymentprocessor;
 
 import org.joda.time.DateTime;
 
-import com.bitwise.bitmarket.common.currency.Amount;
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 
 public interface PaymentProcessor {
 
@@ -18,7 +18,7 @@ public interface PaymentProcessor {
      * @throws PaymentProcessorException
      *             if the payment can not be made
      */
-    Payment sendPayment(String receiverId, Amount amount)
+    Payment sendPayment(String receiverId, FiatAmount amount)
             throws PaymentProcessorException;
 
     /**
@@ -35,7 +35,7 @@ public interface PaymentProcessor {
      * @throws PaymentProcessorException
      *             if the payment can not be made
      */
-    boolean checkPayment(String senderId, Amount amount, DateTime fromDate)
+    boolean checkPayment(String senderId, FiatAmount amount, DateTime fromDate)
             throws PaymentProcessorException;
 
     /**
@@ -45,5 +45,5 @@ public interface PaymentProcessor {
      * @throws PaymentProcessorException
      *             if the payment can not be made
      */
-    Iterable<Amount> getBalance() throws PaymentProcessorException;
+    Iterable<FiatAmount> getBalance() throws PaymentProcessorException;
 }

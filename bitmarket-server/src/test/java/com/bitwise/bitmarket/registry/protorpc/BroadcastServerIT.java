@@ -44,16 +44,15 @@ public class BroadcastServerIT {
 
     @Test
     public void shouldBroadcastAllRequestsToConnectedPeers() throws Exception {
-        PublishOffer request1 = PublishOffer.newBuilder()
+        Offer request1 = Offer.newBuilder()
                 .setId(1)
                 .setSeq(0)
-                .setType(OfferType.BUY)
                 .setFrom("???")
                 .setConnection(this.client1.info.toString())
-                .setAmount(Amount.newBuilder().setValue(100).setScale(2).setCurrency("EUR"))
+                .setAmount(BtcAmount.newBuilder().setValue(100).setScale(2))
+                .setBtcPrice(FiatAmount.newBuilder().setValue(100).setScale(2).setCurrency("EUR"))
                 .build();
-        PublishOffer request2 = request1.toBuilder()
-                .setType(OfferType.SELL)
+        Offer request2 = request1.toBuilder()
                 .build();
         try (PeerSession session1 = this.client1.connectTo(this.instance.getServerInfo());
                 PeerSession session2 = this.client2.connectTo(this.instance.getServerInfo())) {
@@ -108,7 +107,7 @@ public class BroadcastServerIT {
 
         @Override
         public void publish(
-                RpcController controller, PublishOffer request, RpcCallback<VoidResponse> done) {
+                RpcController controller, Offer request, RpcCallback<VoidResponse> done) {
             this.receivedMessages.incrementAndGet();
             done.run(VoidResponse.newBuilder().setResult(Result.OK).build());
         }

@@ -16,6 +16,11 @@ public class BtcAmount {
     }
 
     @Override
+    public String toString() {
+        return String.format("%s BTC", this.amount.toPlainString());
+    }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;

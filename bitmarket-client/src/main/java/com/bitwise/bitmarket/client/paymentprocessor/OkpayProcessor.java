@@ -26,7 +26,7 @@ import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementatio
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_HistoryResponse;
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_Balance;
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_BalanceResponse;
-import com.bitwise.bitmarket.common.currency.Amount;
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 
 class OkPayProcessor implements PaymentProcessor {
 
@@ -46,7 +46,7 @@ class OkPayProcessor implements PaymentProcessor {
     }
 
     @Override
-    public Payment sendPayment(String receiverId, Amount amount)
+    public Payment sendPayment(String receiverId, FiatAmount amount)
             throws PaymentProcessorException {
         Send_Money params = OkPayProcessor.buildSendPaymentParams(receiverId,
                 amount, this.userId, currentTokenBuilder(this.token));
@@ -59,7 +59,7 @@ class OkPayProcessor implements PaymentProcessor {
     }
 
     @Override
-    public boolean checkPayment(String senderId, Amount amount,
+    public boolean checkPayment(String senderId, FiatAmount amount,
             DateTime fromDate) throws PaymentProcessorException {
         Transaction_History params = buildCheckPaymentParams(this.userId,
                 fromDate, currentTokenBuilder(this.token));
@@ -77,7 +77,7 @@ class OkPayProcessor implements PaymentProcessor {
     }
 
     @Override
-    public Iterable<Amount> getBalance() throws PaymentProcessorException {
+    public Iterable<FiatAmount> getBalance() throws PaymentProcessorException {
         Wallet_Get_Balance params = OkPayProcessor.buildGetBalanceParams(
                 this.userId, currentTokenBuilder(this.token));
         try {
@@ -89,7 +89,7 @@ class OkPayProcessor implements PaymentProcessor {
         }
     }
 
-    private static final Iterable<Amount> parseGetBalanceResponse(
+    private static final Iterable<FiatAmount> parseGetBalanceResponse(
             Wallet_Get_BalanceResponse response) {
         return buildBalance(response.getWallet_Get_BalanceResult());
     }
@@ -110,10 +110,10 @@ class OkPayProcessor implements PaymentProcessor {
         return payments;
     }
 
-    private static final Iterable<Amount> buildBalance(ArrayOfBalance balances) {
-        List<Amount> amounts = new ArrayList<Amount>();
+    private static final Iterable<FiatAmount> buildBalance(ArrayOfBalance balances) {
+        List<FiatAmount> amounts = new ArrayList<FiatAmount>();
         for (Balance balance : balances.getBalance()) {
-            Amount amount = new Amount(balance.getAmount(),
+            FiatAmount amount = new FiatAmount(balance.getAmount(),
                     Currency.getInstance(balance.getCurrency()));
             amounts.add(amount);
         }
@@ -126,7 +126,7 @@ class OkPayProcessor implements PaymentProcessor {
         String receiverId = transaction.getReceiver().getWalletID();
         BigDecimal amountValue = transaction.getAmount();
         Currency currency = Currency.getInstance(transaction.getCurrency());
-        Amount amount = new Amount(amountValue, currency);
+        FiatAmount amount = new FiatAmount(amountValue, currency);
         String description = transaction.getComment();
         DateTime date = receivedDateFormatter.parseDateTime(transaction
                 .getDate());
@@ -147,7 +147,7 @@ class OkPayProcessor implements PaymentProcessor {
     }
 
     private static final Send_Money buildSendPaymentParams(String receiverId,
-            Amount amount, String userId, String currentToken) {
+            FiatAmount amount, String userId, String currentToken) {
         Send_Money params = new Send_Money();
         params.setAmount(amount.getAmount());
         params.setCurrency(amount.getCurrency().getCurrencyCode().toString());

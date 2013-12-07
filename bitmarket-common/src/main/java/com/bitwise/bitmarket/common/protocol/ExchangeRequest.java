@@ -1,17 +1,17 @@
 package com.bitwise.bitmarket.common.protocol;
 
 import com.bitwise.bitmarket.common.PeerConnection;
-import com.bitwise.bitmarket.common.currency.Amount;
+import com.bitwise.bitmarket.common.currency.BtcAmount;
 
 public class ExchangeRequest {
 
     private final OfferId id;
     private final PeerId fromId;
     private final PeerConnection fromConnection;
-    private final Amount amount;
+    private final BtcAmount amount;
 
     public ExchangeRequest(
-            OfferId id, PeerId fromId, PeerConnection fromConnection, Amount amount) {
+            OfferId id, PeerId fromId, PeerConnection fromConnection, BtcAmount amount) {
         this.id = id;
         this.fromId = fromId;
         this.fromConnection = fromConnection;
@@ -30,7 +30,7 @@ public class ExchangeRequest {
         return this.fromConnection;
     }
 
-    public Amount getAmount() {
+    public BtcAmount getAmount() {
         return this.amount;
     }
 }

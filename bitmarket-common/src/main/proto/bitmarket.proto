@@ -9,24 +9,24 @@ option java_package = "com.bitwise.bitmarket.common.protocol.protobuf";
 option java_outer_classname = "BitmarketProtobuf";
 option java_generic_services = true;
 
-enum OfferType {
-	BUY = 0;
-	SELL = 1;
+message BtcAmount {
+    required int64 value = 1;
+    required int32 scale = 2;
 }
 
-message Amount {
+message FiatAmount {
     required int64 value = 1;
     required int32 scale = 2;
     required string currency = 3;
 }
 
-message PublishOffer {
+message Offer {
 	required int32 id = 1;
 	required int32 seq = 2;
-	required OfferType type = 3;
-	required string from = 4;
-	required string connection = 5;
-	required Amount amount = 6;
+	required string from = 3;
+	required string connection = 4;
+	required BtcAmount amount = 5;
+	required FiatAmount btcPrice = 6;
 }
 
 enum Result {
@@ -42,7 +42,7 @@ message ExchangeRequest {
 	required int32 id = 1;
 	required string from = 2;
 	required string connection = 3;
-	required Amount amount = 4;
+	required BtcAmount amount = 4;
 }
 
 message ExchangeRequestResponse {
@@ -55,10 +55,10 @@ message ExchangeRequestResponse {
 }
 
 service BroadcastService {
-    rpc Publish (PublishOffer) returns (VoidResponse);
+    rpc Publish (Offer) returns (VoidResponse);
 }
 
 service PeerService {
-    rpc Publish (PublishOffer) returns (VoidResponse);
+    rpc Publish (Offer) returns (VoidResponse);
     rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
 }

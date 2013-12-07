@@ -1,35 +1,36 @@
 package com.bitwise.bitmarket.common.protocol;
 
 import com.bitwise.bitmarket.common.PeerConnection;
-import com.bitwise.bitmarket.common.currency.Amount;
+import com.bitwise.bitmarket.common.currency.BtcAmount;
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 
 public class Offer {
 
     private final OfferId id;
     private final int sequenceNumber;
-    private final OfferType offerType;
     private final PeerId fromId;
     private final PeerConnection fromConnection;
-    private final Amount amount;
+    private final BtcAmount amount;
+    private final FiatAmount bitcoinPrice;
 
     public Offer(
-            OfferId id, int sequenceNumber, OfferType offerType, PeerId fromId,
-            PeerConnection fromConnection, Amount amount) {
+            OfferId id, int sequenceNumber, PeerId fromId, PeerConnection fromConnection,
+            BtcAmount amount, FiatAmount bitcoinPrice) {
         this.id = id;
         this.sequenceNumber = sequenceNumber;
-        this.offerType = offerType;
         this.fromId = fromId;
         this.fromConnection = fromConnection;
         this.amount = amount;
+        this.bitcoinPrice = bitcoinPrice;
     }
 
     @Override
     public String toString() {
-        return String.format("%s offer with ID %s from %s of %s",
-                this.offerType.toString(),
+        return String.format("offer with ID %s from %s of %s (%s per BTC)",
                 this.id.toString(),
                 this.fromId.toString(),
-                this.amount.toString());
+                this.amount.toString(),
+                this.bitcoinPrice.toString());
     }
 
     public OfferId getId() {
@@ -40,10 +41,6 @@ public class Offer {
         return this.sequenceNumber;
     }
 
-    public OfferType getOfferType() {
-        return this.offerType;
-    }
-
     public PeerId getFromId() {
         return this.fromId;
     }
@@ -52,7 +49,11 @@ public class Offer {
         return this.fromConnection;
     }
 
-    public Amount getAmount() {
+    public BtcAmount getAmount() {
         return this.amount;
+    }
+
+    public FiatAmount getBitcoinPrice() {
+        return this.bitcoinPrice;
     }
 }

@@ -91,9 +91,9 @@ public abstract class Contract implements Transaction {
      * bitcoin network fee is paid between both counterparts.
      * 
      * @param atomicAmount
-     *            Amount for atomic deposit.
+     *            FiatAmount for atomic deposit.
      * @param independentAmount
-     *            Amount for independent deposit.
+     *            FiatAmount for independent deposit.
      * @param negotiatedFee
      *            fee negotiated with counterpart in order to pay the Bitcoin
      *            network fee.

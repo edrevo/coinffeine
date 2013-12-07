@@ -37,9 +37,9 @@ public interface BitcoinApi {
      * bitcoin network fee is paid between both counterparts.
      * 
      * @param atomicDeposit
-     *            Amount for atomic deposit.
+     *            FiatAmount for atomic deposit.
      * @param independentDeposit
-     *            Amount for independent deposit.
+     *            FiatAmount for independent deposit.
      * @param negotiatedFee
      *            Optimal fee negotiated with counterpart.
      * @param counterPart
@@ -77,7 +77,7 @@ public interface BitcoinApi {
      * Creates and broadcast a transaction sending money to a receiver.
      * 
      * @param amount
-     *            Amount of Bitcoins to Send.
+     *            FiatAmount of Bitcoins to Send.
      * @param receiver
      *            Receiver Public Key.
      * @return Id of the transaction broadcast to the Blockchain.
