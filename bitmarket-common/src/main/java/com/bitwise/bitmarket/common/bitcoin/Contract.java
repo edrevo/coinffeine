@@ -2,78 +2,79 @@ package com.bitwise.bitmarket.common.bitcoin;
 
 import java.math.BigDecimal;
 import java.security.interfaces.ECKey;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.bitwise.bitmarket.common.currency.BtcAmount;
+import com.google.bitcoin.core.NetworkParameters;
+import com.google.bitcoin.core.ProtocolException;
+import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.TransactionInput;
+import com.google.bitcoin.core.TransactionOutput;
 
-public abstract class Contract implements Transaction {
+public abstract class Contract implements BtcTransaction {
 
-    private final byte[] rawTransaction;
-    private final List<TransactionSlot> inputs;
-    private final List<TransactionSlot> outputs;
-    private final String id;
-    private final int confirmations;
+    private final Transaction transaction;
+    private final static BigDecimal ONE_BILLION = new BigDecimal(1000000000);
 
-    Contract(byte[] rawTransaction, List<TransactionSlot> inputs, List<TransactionSlot> outputs,
-            @Nullable String id, int confirmations) {
-        this.rawTransaction = rawTransaction;
-        this.inputs = inputs;
-        this.outputs = outputs;
-        this.id = id;
-        this.confirmations = confirmations;
+    Contract(NetworkParameters network, byte[] rawTransaction) {
+        try {
+            this.transaction = new Transaction(network, rawTransaction);
+        } catch (ProtocolException e) {
+            throw new BitcoinException(e);
+        }
     }
 
     @Override
     public byte[] getRawTransaction() {
-        return this.rawTransaction;
+        return this.transaction.bitcoinSerialize();
     }
 
     @Override
-    public Iterable<TransactionSlot> getInputs() {
-        return new ArrayList<TransactionSlot>(this.inputs);
+    public Iterable<TransactionInput> getInputs() {
+        return this.transaction.getInputs();
     }
 
     @Override
-    public Iterable<TransactionSlot> getOutputs() {
-        return new ArrayList<TransactionSlot>(this.outputs);
+    public Iterable<TransactionOutput> getOutputs() {
+        return this.transaction.getOutputs();
     }
 
     @Override
     @Nullable
     public String getId() {
-        return this.id;
+        return this.transaction.getHashAsString();
     }
 
     @Override
     @Nullable
     public int getConfirmations() {
-        return this.confirmations;
+        return this.transaction.getConfidence().getDepthInBlocks();
     }
 
     @Override
     public BtcAmount getTotalOutputAmount() {
-        return new BtcAmount(getSum(this.outputs));
+        BigDecimal amount = new BigDecimal(0);
+        for (TransactionOutput output : this.transaction.getOutputs()) {
+            amount.add(new BigDecimal(output.getValue()));
+        }
+        return new BtcAmount(amount.multiply(ONE_BILLION));
     }
 
     @Override
     public BtcAmount getTotalInputAmount() {
-        return new BtcAmount(getSum(this.inputs));
+        BigDecimal amount = new BigDecimal(0);
+        for (TransactionInput input : this.transaction.getInputs()) {
+            amount.add(new BigDecimal(input.getOutpoint().getConnectedOutput().getValue()));
+        }
+        return new BtcAmount(amount.multiply(ONE_BILLION));
     }
 
     @Override
     public BtcAmount getFee() {
-        return new BtcAmount(getSum(this.outputs).subtract(getSum(this.inputs)));
-    }
-
-    private static BigDecimal getSum(Iterable<TransactionSlot> slots) {
-        BigDecimal sum = new BigDecimal(0);
-        for (final TransactionSlot txslot : slots) {
-            sum = sum.add(txslot.getAmount());
-        }
-        return sum;
+        BigDecimal inputAmount = this.getTotalInputAmount().getAmount();
+        BigDecimal outputAmount = this.getTotalOutputAmount().getAmount();
+        return new BtcAmount(inputAmount.subtract(outputAmount));
     }
 
     /**
