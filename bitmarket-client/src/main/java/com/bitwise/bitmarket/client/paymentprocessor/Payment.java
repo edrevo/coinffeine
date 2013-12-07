@@ -1,19 +1,18 @@
 package com.bitwise.bitmarket.client.paymentprocessor;
 
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 import org.joda.time.DateTime;
-
-import com.bitwise.bitmarket.common.currency.Amount;
 
 public class Payment {
 
     private final String senderId;
     private final String receiverId;
-    private final Amount amount;
+    private final FiatAmount amount;
     private final DateTime date;
     private final String description;
     private final String id;
 
-    public Payment(String senderId, String receiverId, Amount amount,
+    public Payment(String senderId, String receiverId, FiatAmount amount,
             DateTime date, String description, String id) {
         this.senderId = senderId;
         this.receiverId = receiverId;
@@ -31,7 +30,7 @@ public class Payment {
         return this.receiverId;
     }
 
-    public Amount getAmount() {
+    public FiatAmount getAmount() {
         return this.amount;
     }
 

@@ -7,8 +7,6 @@ import java.net.UnknownHostException;
 import com.bitwise.bitmarket.common.ExchangeRejectedException;
 import com.bitwise.bitmarket.common.PeerConnection;
 import com.bitwise.bitmarket.common.protocol.*;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.ExchangeRequest;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
 import com.google.protobuf.RpcCallback;
@@ -25,7 +23,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     private final PeerConnection localConnection;
     private final PeerServer peerServer;
     private final PeerSession multicastRemoteSession;
-    private final PeerService.BlockingInterface multicastRemote;
+    private final BitmarketProtobuf.PeerService.BlockingInterface multicastRemote;
 
     private OfferListener offerListener;
     private ExchangeRequestListener exchangeRequestListener;
@@ -120,8 +118,8 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         }
     }
 
-    private PeerService.BlockingInterface createRemote(PeerSession session) {
-        return PeerService.newBlockingStub(session.getChannel());
+    private BitmarketProtobuf.PeerService.BlockingInterface createRemote(PeerSession session) {
+        return BitmarketProtobuf.PeerService.newBlockingStub(session.getChannel());
     }
 
     private OfferListener createDefaultOfferListener() {
@@ -158,31 +156,35 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         }
     }
 
-    private static final VoidResponse okVoidResponse = VoidResponse.newBuilder()
-            .setResult(Result.OK)
-            .build();
-
-    private static final VoidResponse failedVoidResponse = VoidResponse.newBuilder()
-            .setResult(Result.FAILED)
-            .build();
-
-    private static final ExchangeRequestResponse okAcceptResponse =
-            ExchangeRequestResponse.newBuilder()
-                    .setResult(Result.OK)
-                    .setError(ExchangeRequestResponse.Error.NO_ERROR)
+    private static final BitmarketProtobuf.VoidResponse okVoidResponse =
+            BitmarketProtobuf.VoidResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.Result.OK)
                     .build();
 
-    private static final ExchangeRequestResponse invalidAmountAcceptResponse =
-            ExchangeRequestResponse.newBuilder()
-                    .setResult(Result.FAILED)
-                    .setError(ExchangeRequestResponse.Error.INVALID_AMOUNT)
+    private static final BitmarketProtobuf.VoidResponse failedVoidResponse =
+            BitmarketProtobuf.VoidResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.Result.FAILED)
+                    .build();
+
+    private static final BitmarketProtobuf.ExchangeRequestResponse okAcceptResponse =
+            BitmarketProtobuf.ExchangeRequestResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.Result.OK)
+                    .setError(BitmarketProtobuf.ExchangeRequestResponse.Error.NO_ERROR)
+                    .build();
+
+    private static final BitmarketProtobuf.ExchangeRequestResponse invalidAmountAcceptResponse =
+            BitmarketProtobuf.ExchangeRequestResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.Result.FAILED)
+                    .setError(BitmarketProtobuf.ExchangeRequestResponse.Error.INVALID_AMOUNT)
                     .build();
 
     private class PeerServiceImpl extends BitmarketProtobuf.PeerService {
 
         @Override
         public void publish(
-                RpcController controller, PublishOffer offer, RpcCallback<VoidResponse> done) {
+                RpcController controller,
+                BitmarketProtobuf.Offer offer,
+                RpcCallback<BitmarketProtobuf.VoidResponse> done) {
             try {
                 offerListener.onOffer(ProtobufConversions.fromProtobuf(offer));
                 done.run(okVoidResponse);
@@ -194,8 +196,8 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         @Override
         public void requestExchange(
                 RpcController controller,
-                ExchangeRequest request,
-                RpcCallback<ExchangeRequestResponse> done) {
+                BitmarketProtobuf.ExchangeRequest request,
+                RpcCallback<BitmarketProtobuf.ExchangeRequestResponse> done) {
             try {
                 exchangeRequestListener.onExchangeRequest(ProtobufConversions.fromProtobuf(request));
                 done.run(okAcceptResponse);

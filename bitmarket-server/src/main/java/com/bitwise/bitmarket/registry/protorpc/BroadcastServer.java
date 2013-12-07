@@ -62,7 +62,7 @@ public class BroadcastServer {
 
         @Override
         public void publish(
-                RpcController controller, PublishOffer request, RpcCallback<VoidResponse> done) {
+                RpcController controller, Offer request, RpcCallback<VoidResponse> done) {
             done.run(OK_RESPONSE);
             if (this.clientRegistry == null) {
                 throw new NullPointerException("Missing clientRegistry");

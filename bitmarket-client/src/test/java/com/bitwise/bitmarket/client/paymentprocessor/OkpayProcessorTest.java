@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Assert;
@@ -31,7 +32,7 @@ import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementatio
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_HistoryResponse;
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_Balance;
 import com.bitwise.bitmarket.client.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_BalanceResponse;
-import com.bitwise.bitmarket.common.currency.Amount;
+
 
 @SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
@@ -53,11 +54,11 @@ public class OkpayProcessorTest {
     public void configure() {
         this.instance = new OkPayProcessor(this.okpayService,
                 "Sr24Hka6TNe79Qmf8PKx35EsR", "OK123456");
-        this.payment1 = new Payment("OK123456", "OK12345", new Amount(
+        this.payment1 = new Payment("OK123456", "OK12345", new FiatAmount(
                 new BigDecimal(5), Currency.getInstance("EUR")),
                 this.formatter.parseDateTime("2013-10-10 12:12:12"), "desc1",
                 "1234");
-        this.payment2 = new Payment("OK123456", "OK12346", new Amount(
+        this.payment2 = new Payment("OK123456", "OK12346", new FiatAmount(
                 new BigDecimal(6), Currency.getInstance("EUR")),
                 this.formatter.parseDateTime("2013-10-10 12:12:12"), "desc1",
                 "1234");
@@ -72,7 +73,7 @@ public class OkpayProcessorTest {
         Mockito.when(
                 this.okpayService.send_Money(Matchers.any(Send_Money.class)))
                 .thenReturn(response);
-        Payment payment = this.instance.sendPayment("OK12345", new Amount(
+        Payment payment = this.instance.sendPayment("OK12345", new FiatAmount(
                 new BigDecimal(5), Currency.getInstance("EUR")));
         Assert.assertEquals(this.payment1, payment);
     }
@@ -97,9 +98,9 @@ public class OkpayProcessorTest {
 
     @Test
     public void getBalanceTest() throws RemoteException {
-        Amount amount1 = new Amount(new BigDecimal(1),
+        FiatAmount amount1 = new FiatAmount(new BigDecimal(1),
                 Currency.getInstance("EUR"));
-        Amount amount2 = new Amount(new BigDecimal(2),
+        FiatAmount amount2 = new FiatAmount(new BigDecimal(2),
                 Currency.getInstance("USD"));
         ArrayOfBalance arrayOfBalance = buildArrayOfBalanceMock(amount1,
                 amount2);
@@ -110,16 +111,16 @@ public class OkpayProcessorTest {
         Mockito.when(
                 this.okpayService.wallet_Get_Balance(Matchers
                         .any(Wallet_Get_Balance.class))).thenReturn(response);
-        List<Amount> balance = (List<Amount>) this.instance.getBalance();
+        List<FiatAmount> balance = (List<FiatAmount>) this.instance.getBalance();
         Assert.assertEquals(amount1, balance.get(0));
         Assert.assertEquals(amount2, balance.get(1));
     }
 
     private static final ArrayOfBalance buildArrayOfBalanceMock(
-            Amount... amounts) {
+            FiatAmount... amounts) {
         ArrayOfBalance arrayOfBalance = Mockito.mock(ArrayOfBalance.class);
         List<Balance> balances = new ArrayList<Balance>();
-        for (Amount amount : amounts) {
+        for (FiatAmount amount : amounts) {
             Balance balance = new Balance();
             balance.setAmount(amount.getAmount());
             balance.setCurrency(amount.getCurrency().toString());
