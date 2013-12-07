@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.client.bitcoin;
+package com.bitwise.bitmarket.common.bitcoin;
 
 import javax.annotation.Nullable;
 

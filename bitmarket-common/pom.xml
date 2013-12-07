@@ -18,7 +18,24 @@
                 <groupId>de.softwareforge.mojo</groupId>
                 <artifactId>maven-protoc-plugin</artifactId>
             </plugin>
-        </plugins>
+            <plugin>  
+                <groupId>org.apache.axis2</groupId>  
+                <artifactId>axis2-wsdl2code-maven-plugin</artifactId>  
+                <version>1.6.2</version>  
+                <executions>  
+                    <execution>  
+                        <goals>  
+                            <goal>wsdl2code</goal>  
+                        </goals>  
+                        <configuration>  
+                            <wsdlFile>src/main/resources/wsdl/okpay.wsdl</wsdlFile>  
+                            <databindingName>adb</databindingName>  
+                            <packageName>com.bitwise.bitmarket.common.paymentprocessor.okpay</packageName> 
+                        </configuration>  
+                    </execution>  
+                </executions>  
+            </plugin>
+        </plugins>  
     </build>
 
     <dependencies>
@@ -28,7 +45,26 @@
             <version>0.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>  
+            <groupId>org.apache.axis2</groupId>  
+            <artifactId>axis2-kernel</artifactId>  
+        </dependency>  
+        <dependency>  
+            <groupId>org.apache.axis2</groupId>  
+            <artifactId>axis2-adb</artifactId>  
+        </dependency>  
+        <dependency>  
+            <groupId>org.apache.axis2</groupId>  
+            <artifactId>axis2-transport-http</artifactId>  
+        </dependency>  
+        <dependency>  
+            <groupId>org.apache.axis2</groupId>  
+            <artifactId>axis2-transport-local</artifactId>  
+        </dependency>  
+        <dependency>  
+            <groupId>org.apache.axis2</groupId>  
+            <artifactId>axis2-xmlbeans</artifactId>  
+        </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
