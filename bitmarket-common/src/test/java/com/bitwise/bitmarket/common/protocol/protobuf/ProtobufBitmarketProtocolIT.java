@@ -5,14 +5,8 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import com.bitwise.bitmarket.common.PeerConnection;
-import com.bitwise.bitmarket.common.currency.BtcAmount;
-import com.bitwise.bitmarket.common.currency.FiatAmount;
-import com.bitwise.bitmarket.common.protocol.*;
-import com.bitwise.bitmarket.common.protocol.ExchangeRejectedException.Reason;
-import com.bitwise.bitmarket.common.protorpc.NoopRpc;
-import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
@@ -22,6 +16,15 @@ import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.bitwise.bitmarket.common.PeerConnection;
+import com.bitwise.bitmarket.common.currency.BtcAmount;
+import com.bitwise.bitmarket.common.currency.FiatAmount;
+import com.bitwise.bitmarket.common.protocol.*;
+import com.bitwise.bitmarket.common.protocol.ExchangeRejectedException.Reason;
+import com.bitwise.bitmarket.common.protorpc.NoopRpc;
+import com.bitwise.bitmarket.common.protorpc.PeerServer;
+import com.bitwise.bitmarket.common.util.ExceptionUtils;
 
 import static org.junit.Assert.assertEquals;
 
@@ -158,12 +161,30 @@ public class ProtobufBitmarketProtocolIT {
 
         public void broadcastOffer(Offer offer)
                 throws BitmarketProtocolException, OfferRejectedException {
-            this.bitmarket.publish(offer);
+            try {
+                this.bitmarket.publish(offer).get();
+            } catch (InterruptedException e) {
+                throw new BitmarketProtocolException(e);
+            } catch (ExecutionException e) {
+                ExceptionUtils
+                        .forException(e)
+                        .throwCauseIfMatch(OfferRejectedException.class)
+                        .otherwiseWrapCauseAndThrow(BitmarketProtocolException.class);
+            }
         }
 
         public void requestExchange(ExchangeRequest req, PeerConnection recipient)
                 throws BitmarketProtocolException, ExchangeRejectedException {
-            this.bitmarket.requestExchange(req, recipient);
+            try {
+                this.bitmarket.requestExchange(req, recipient).get();
+            } catch (InterruptedException e) {
+                throw new BitmarketProtocolException(e);
+            } catch (ExecutionException e) {
+                ExceptionUtils
+                        .forException(e)
+                        .throwCauseIfMatch(ExchangeRejectedException.class)
+                        .otherwiseWrapCauseAndThrow(BitmarketProtocolException.class);
+            }
         }
     }
 

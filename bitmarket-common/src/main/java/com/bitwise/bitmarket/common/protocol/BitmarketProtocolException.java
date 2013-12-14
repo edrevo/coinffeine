@@ -9,4 +9,8 @@ public class BitmarketProtocolException extends Exception {
     public BitmarketProtocolException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public BitmarketProtocolException(Throwable cause) {
+        super(cause);
+    }
 }
