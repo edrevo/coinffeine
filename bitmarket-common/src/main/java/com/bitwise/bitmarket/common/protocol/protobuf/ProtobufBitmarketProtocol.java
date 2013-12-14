@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import com.bitwise.bitmarket.common.ExchangeRejectedException;
+import com.bitwise.bitmarket.common.protocol.ExchangeRejectedException;
 import com.bitwise.bitmarket.common.PeerConnection;
 import com.bitwise.bitmarket.common.protocol.*;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
+
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
@@ -22,8 +23,8 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
 
     private final PeerConnection localConnection;
     private final PeerServer peerServer;
-    private final PeerSession multicastRemoteSession;
-    private final BitmarketProtobuf.PeerService.BlockingInterface multicastRemote;
+    private final PeerSession broadcastRemoteSession;
+    private final BitmarketProtobuf.BroadcastService.BlockingInterface broadcastRemote;
 
     private OfferListener offerListener;
     private ExchangeRequestListener exchangeRequestListener;
@@ -38,8 +39,8 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
             PeerConnection localConnection) throws BitmarketProtocolException {
         this.localConnection = localConnection;
         this.peerServer = this.createPeerServer(localConnection);
-        this.multicastRemoteSession = this.createRemoteSession(broadcastServer);
-        this.multicastRemote = this.createRemote(this.multicastRemoteSession);
+        this.broadcastRemoteSession = this.createRemoteSession(broadcastServer);
+        this.broadcastRemote = this.createBroadcastRemote(this.broadcastRemoteSession);
         this.offerListener = this.createDefaultOfferListener();
         this.exchangeRequestListener = this.createDefaultOfferAcceptedListener();
 
@@ -62,11 +63,16 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     }
 
     @Override
-    public void publish(Offer offer) throws BitmarketProtocolException {
+    public void publish(Offer offer) throws BitmarketProtocolException, OfferRejectedException {
         try {
-            this.multicastRemote.publish(
-                    this.multicastRemoteSession.getController(),
+            BitmarketProtobuf.PublishResponse response = this.broadcastRemote.publish(
+                    this.broadcastRemoteSession.getController(),
                     ProtobufConversions.toProtobuf(offer));
+            switch (response.getResult().getNumber())
+            {
+                case BitmarketProtobuf.PublishResponse.Result.SERVICE_UNAVAILABLE_VALUE:
+                    throw new OfferRejectedException(OfferRejectedException.Reason.BROADCAST_FAILED);
+            }
         } catch (ServiceException e) {
             throw new BitmarketProtocolException(
                     "cannot publish offer on remote multicast server", e);
@@ -78,18 +84,17 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
             com.bitwise.bitmarket.common.protocol.ExchangeRequest acceptance,
             PeerConnection recipient) throws BitmarketProtocolException, ExchangeRejectedException {
         try {
-            PeerSession session = this.peerServer.peerWith(peerInfo(localConnection));
+            PeerSession session = this.peerServer.peerWith(peerInfo(recipient));
             BitmarketProtobuf.PeerService.BlockingInterface rcpt =
                     BitmarketProtobuf.PeerService.newBlockingStub(session.getChannel());
             BitmarketProtobuf.ExchangeRequestResponse result =  rcpt.requestExchange(
                     session.getController(),
                     ProtobufConversions.toProtobuf(acceptance));
-            if (result.getResult().equals(BitmarketProtobuf.Result.FAILED)) {
-                switch (result.getError()) {
-                    case INVALID_AMOUNT:
-                        throw new ExchangeRejectedException(
-                                ExchangeRejectedException.Reason.INVALID_AMOUNT);
-                }
+            switch (result.getResult().getNumber())
+            {
+                case BitmarketProtobuf.ExchangeRequestResponse.Result.INVALID_AMOUNT_VALUE:
+                    throw new ExchangeRejectedException(
+                            ExchangeRejectedException.Reason.INVALID_AMOUNT);
             }
         } catch (IOException e) {
             throw new BitmarketProtocolException(
@@ -102,23 +107,29 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     }
 
     private PeerServer createPeerServer(PeerConnection localConnection) {
-        return new PeerServer(peerInfo(localConnection), new PeerServiceImpl());
+        return new PeerServer(
+                peerInfo(localConnection),
+                BitmarketProtobuf.PeerService.newReflectiveService(new PeerServiceImpl()));
     }
 
     private PeerSession createRemoteSession(
-            PeerConnection remoteServer) throws BitmarketProtocolException {
+            PeerConnection remotePeer) throws BitmarketProtocolException {
         try {
-            return this.peerServer.peerWith(peerInfo(localConnection));
+            return this.peerServer.peerWith(peerInfo(remotePeer));
         } catch (IOException e) {
             throw new BitmarketProtocolException(
                     String.format(
-                            "cannot create session to remote server %s: %s",
-                            remoteServer.toString()),
+                            "cannot create session to remote peer %s", remotePeer.toString()),
                     e);
         }
     }
 
-    private BitmarketProtobuf.PeerService.BlockingInterface createRemote(PeerSession session) {
+    private BitmarketProtobuf.BroadcastService.BlockingInterface createBroadcastRemote(
+            PeerSession session) {
+        return BitmarketProtobuf.BroadcastService.newBlockingStub(session.getChannel());
+    }
+
+    private BitmarketProtobuf.PeerService.BlockingInterface createPeerRemote(PeerSession session) {
         return BitmarketProtobuf.PeerService.newBlockingStub(session.getChannel());
     }
 
@@ -156,40 +167,38 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
         }
     }
 
-    private static final BitmarketProtobuf.VoidResponse okVoidResponse =
-            BitmarketProtobuf.VoidResponse.newBuilder()
-                    .setResult(BitmarketProtobuf.Result.OK)
+    private static final BitmarketProtobuf.PublishResponse successPublishResponse =
+            BitmarketProtobuf.PublishResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.PublishResponse.Result.SUCCESS)
                     .build();
 
-    private static final BitmarketProtobuf.VoidResponse failedVoidResponse =
-            BitmarketProtobuf.VoidResponse.newBuilder()
-                    .setResult(BitmarketProtobuf.Result.FAILED)
+    private static final BitmarketProtobuf.PublishResponse unavailableServicePublishResponse =
+            BitmarketProtobuf.PublishResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.PublishResponse.Result.SERVICE_UNAVAILABLE)
                     .build();
 
-    private static final BitmarketProtobuf.ExchangeRequestResponse okAcceptResponse =
+    private static final BitmarketProtobuf.ExchangeRequestResponse successExchangeRequestResponse =
             BitmarketProtobuf.ExchangeRequestResponse.newBuilder()
-                    .setResult(BitmarketProtobuf.Result.OK)
-                    .setError(BitmarketProtobuf.ExchangeRequestResponse.Error.NO_ERROR)
+                    .setResult(BitmarketProtobuf.ExchangeRequestResponse.Result.SUCCESS)
                     .build();
 
-    private static final BitmarketProtobuf.ExchangeRequestResponse invalidAmountAcceptResponse =
+    private static final BitmarketProtobuf.ExchangeRequestResponse invalidAmountExchangeRequestResponse =
             BitmarketProtobuf.ExchangeRequestResponse.newBuilder()
-                    .setResult(BitmarketProtobuf.Result.FAILED)
-                    .setError(BitmarketProtobuf.ExchangeRequestResponse.Error.INVALID_AMOUNT)
+                    .setResult(BitmarketProtobuf.ExchangeRequestResponse.Result.INVALID_AMOUNT)
                     .build();
 
-    private class PeerServiceImpl extends BitmarketProtobuf.PeerService {
+    private class PeerServiceImpl implements BitmarketProtobuf.PeerService.Interface {
 
         @Override
         public void publish(
                 RpcController controller,
                 BitmarketProtobuf.Offer offer,
-                RpcCallback<BitmarketProtobuf.VoidResponse> done) {
+                RpcCallback<BitmarketProtobuf.PublishResponse> done) {
             try {
                 offerListener.onOffer(ProtobufConversions.fromProtobuf(offer));
-                done.run(okVoidResponse);
+                done.run(successPublishResponse);
             } catch (Throwable e) {
-                done.run(failedVoidResponse);
+                done.run(unavailableServicePublishResponse);
             }
         }
 
@@ -200,9 +209,9 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
                 RpcCallback<BitmarketProtobuf.ExchangeRequestResponse> done) {
             try {
                 exchangeRequestListener.onExchangeRequest(ProtobufConversions.fromProtobuf(request));
-                done.run(okAcceptResponse);
+                done.run(successExchangeRequestResponse);
             } catch (ExchangeRejectedException e) {
-                done.run(invalidAmountAcceptResponse);
+                done.run(invalidAmountExchangeRequestResponse);
             }
         }
     }

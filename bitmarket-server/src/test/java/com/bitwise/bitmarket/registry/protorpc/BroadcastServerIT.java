@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.bitwise.bitmarket.common.NetworkTestUtils;
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
@@ -44,22 +44,35 @@ public class BroadcastServerIT {
 
     @Test
     public void shouldBroadcastAllRequestsToConnectedPeers() throws Exception {
-        Offer request1 = Offer.newBuilder()
+        BitmarketProtobuf.Offer request1 = BitmarketProtobuf.Offer.newBuilder()
                 .setId(1)
                 .setSeq(0)
                 .setFrom("???")
                 .setConnection(this.client1.info.toString())
-                .setAmount(BtcAmount.newBuilder().setValue(100).setScale(2))
-                .setBtcPrice(FiatAmount.newBuilder().setValue(100).setScale(2).setCurrency("EUR"))
+                .setAmount(BitmarketProtobuf.BtcAmount.newBuilder()
+                        .setValue(100)
+                        .setScale(2))
+                .setBtcPrice(BitmarketProtobuf.FiatAmount.newBuilder()
+                        .setValue(100)
+                        .setScale(2)
+                        .setCurrency("EUR"))
                 .build();
-        Offer request2 = request1.toBuilder()
+        BitmarketProtobuf.Offer request2 = request1.toBuilder()
                 .build();
         try (PeerSession session1 = this.client1.connectTo(this.instance.getServerInfo());
                 PeerSession session2 = this.client2.connectTo(this.instance.getServerInfo())) {
-            BroadcastService.Stub stub1 = BroadcastService.newStub(session1.getChannel());
-            stub1.publish(session1.getController(), request1, NoopRpc.<VoidResponse>callback());
-            BroadcastService.Stub stub2 = BroadcastService.newStub(session2.getChannel());
-            stub2.publish(session2.getController(), request2, NoopRpc.<VoidResponse>callback());
+            BitmarketProtobuf.BroadcastService.Stub stub1 =
+                    BitmarketProtobuf.BroadcastService.newStub(session1.getChannel());
+            stub1.publish(
+                    session1.getController(),
+                    request1,
+                    NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
+            BitmarketProtobuf.BroadcastService.Stub stub2 =
+                    BitmarketProtobuf.BroadcastService.newStub(session2.getChannel());
+            stub2.publish(
+                    session2.getController(),
+                    request2,
+                    NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
 
             // Keep connections open for the broadcast to happen
             int clientSessionsDuration = 1000;
@@ -84,7 +97,8 @@ public class BroadcastServerIT {
             this.info = new PeerInfo("localhost", port);
             this.messageCounter = new MessageCounter();
             this.server = new PeerServer(
-                    this.info, PeerService.newReflectiveService(this.messageCounter));
+                    this.info,
+                    BitmarketProtobuf.PeerService.newReflectiveService(this.messageCounter));
             this.server.start();
         }
 
@@ -101,22 +115,26 @@ public class BroadcastServerIT {
         }
     }
 
-    private static class MessageCounter implements PeerService.Interface {
+    private static class MessageCounter implements BitmarketProtobuf.PeerService.Interface {
 
         public final AtomicInteger receivedMessages = new AtomicInteger();
 
         @Override
         public void publish(
-                RpcController controller, Offer request, RpcCallback<VoidResponse> done) {
+                RpcController controller,
+                BitmarketProtobuf.Offer request,
+                RpcCallback<BitmarketProtobuf.PublishResponse> done) {
             this.receivedMessages.incrementAndGet();
-            done.run(VoidResponse.newBuilder().setResult(Result.OK).build());
+            done.run(BitmarketProtobuf.PublishResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.PublishResponse.Result.SUCCESS)
+                    .build());
         }
 
         @Override
         public void requestExchange(
                 RpcController controller,
-                ExchangeRequest request,
-                RpcCallback<ExchangeRequestResponse> done) {
+                BitmarketProtobuf.ExchangeRequest request,
+                RpcCallback<BitmarketProtobuf.ExchangeRequestResponse> done) {
             throw new UnsupportedOperationException();
         }
     }

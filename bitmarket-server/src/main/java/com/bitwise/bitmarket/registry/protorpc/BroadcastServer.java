@@ -8,15 +8,16 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 
-import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.*;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 
 public class BroadcastServer {
 
-    private static final VoidResponse OK_RESPONSE = VoidResponse.newBuilder()
-            .setResult(Result.OK)
-            .build();
+    private static final BitmarketProtobuf.PublishResponse SUCCESS_RESPONSE =
+            BitmarketProtobuf.PublishResponse.newBuilder()
+                    .setResult(BitmarketProtobuf.PublishResponse.Result.SUCCESS)
+                    .build();
 
     private final PeerInfo serverInfo;
     @Nullable
@@ -40,7 +41,8 @@ public class BroadcastServer {
         }
         this.service = new BroadcastServiceImpl();
         this.server = new PeerServer(
-                this.serverInfo, BroadcastService.newReflectiveService(this.service));
+                this.serverInfo,
+                BitmarketProtobuf.BroadcastService.newReflectiveService(this.service));
         this.service.setClientRegistry(this.server.getClientRegistry());
         this.server.start();
     }
@@ -51,7 +53,7 @@ public class BroadcastServer {
         }
     }
 
-    private class BroadcastServiceImpl implements BroadcastService.Interface {
+    private class BroadcastServiceImpl implements BitmarketProtobuf.BroadcastService.Interface {
 
         @Nullable
         private RpcClientRegistry clientRegistry = null;
@@ -62,15 +64,21 @@ public class BroadcastServer {
 
         @Override
         public void publish(
-                RpcController controller, Offer request, RpcCallback<VoidResponse> done) {
-            done.run(OK_RESPONSE);
+                RpcController controller,
+                BitmarketProtobuf.Offer request,
+                RpcCallback<BitmarketProtobuf.PublishResponse> done) {
+            done.run(SUCCESS_RESPONSE);
             if (this.clientRegistry == null) {
                 throw new NullPointerException("Missing clientRegistry");
             }
             for (RpcClientChannel channel : this.clientRegistry.getAllClients()) {
-                PeerService.Stub peer = PeerService.newStub(channel);
+                BitmarketProtobuf.PeerService.Stub peer = BitmarketProtobuf.PeerService.newStub(
+                        channel);
                 System.out.println("Republish to " + peer);
-                peer.publish(channel.newRpcController(), request, NoopRpc.<VoidResponse>callback());
+                peer.publish(
+                        channel.newRpcController(),
+                        request,
+                        NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
             }
         }
     }
