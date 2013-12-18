@@ -3,14 +3,16 @@ package com.bitwise.bitmarket.common.bitcoin;
 import javax.annotation.Nullable;
 
 import com.bitwise.bitmarket.common.currency.BtcAmount;
+import com.google.bitcoin.core.TransactionInput;
+import com.google.bitcoin.core.TransactionOutput;
 
-public interface Transaction {
+public interface BtcTransaction {
 
     byte[] getRawTransaction();
 
-    public Iterable<TransactionSlot> getInputs();
+    public Iterable<TransactionInput> getInputs();
 
-    public Iterable<TransactionSlot> getOutputs();
+    public Iterable<TransactionOutput> getOutputs();
 
     @Nullable
     public String getId();

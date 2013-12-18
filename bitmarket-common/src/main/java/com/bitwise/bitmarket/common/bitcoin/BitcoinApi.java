@@ -61,7 +61,7 @@ public interface BitcoinApi {
      * @throws BitcoinException
      *             if the transaction to broadcast is not valid.
      */
-    String broadcast(Transaction transaction);
+    String broadcast(BtcTransaction transaction);
 
     /**
      * Gets the summatory of all inputs that could be spent.
