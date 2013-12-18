@@ -22,10 +22,13 @@ import com.bitwise.bitmarket.common.currency.BtcAmount;
 import com.bitwise.bitmarket.common.currency.FiatAmount;
 import com.bitwise.bitmarket.common.protocol.*;
 import com.bitwise.bitmarket.common.protocol.ExchangeRejectedException.Reason;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
+import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishResponse;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.util.ExceptionUtils;
 
+import static com.bitwise.bitmarket.common.ConcurrentAssert.assertEventually;
 import static org.junit.Assert.assertEquals;
 
 public class ProtobufBitmarketProtocolIT {
@@ -36,7 +39,7 @@ public class ProtobufBitmarketProtocolIT {
     private ExchangeRequest sampleExchangeRequest;
 
     @Before
-    public void setUp() throws BitmarketProtocolException {
+    public void setUp() throws Exception {
         this.server = new BroadcastServer();
         this.peers = new ArrayList<>(2);
         this.peers.add(0, new Peer(1234));
@@ -67,8 +70,12 @@ public class ProtobufBitmarketProtocolIT {
     @Test
     public void mustRequestAndReceiveOfferBroadcast() throws Exception {
         this.peers.get(0).broadcastOffer(this.sampleOffer);
-
-        assertEquals(7000, this.peers.get(1).getOffers().get(0).getId().getBytes());
+        assertEventually(new Runnable() {
+            @Override
+            public void run() {
+                assertEquals(7000, peers.get(1).getOffers().get(0).getId().getBytes());
+            }
+        });
     }
 
     @Test(expected = OfferRejectedException.class)
@@ -82,7 +89,12 @@ public class ProtobufBitmarketProtocolIT {
         this.peers.get(0).requestExchange(
                 this.sampleExchangeRequest,
                 this.peers.get(1).getConnection());
-        assertEquals(7000, this.peers.get(1).getExchangeRequests().get(0).getId().getBytes());
+        assertEventually(new Runnable() {
+            @Override
+            public void run() {
+                assertEquals(7000, peers.get(1).getExchangeRequests().get(0).getId().getBytes());
+            }
+        });
     }
 
     @Test(expected = ExchangeRejectedException.class)
@@ -105,7 +117,7 @@ public class ProtobufBitmarketProtocolIT {
 
         private boolean rejectExchangeRequest;
 
-        public Peer(int port) throws BitmarketProtocolException {
+        public Peer(int port) throws BitmarketProtocolException, InterruptedException {
             this.id = new PeerId(String.format("peer-tcp-%d", port));
             this.connection = new PeerConnection("localhost", port);
             this.offers = new LinkedList<>();
@@ -119,17 +131,17 @@ public class ProtobufBitmarketProtocolIT {
             this.bitmarket.setOfferListener(new OfferListener() {
                 @Override
                 public void onOffer(Offer offer) {
-                    offers.add(offer);
+                    Peer.this.offers.add(offer);
                 }
             });
             this.bitmarket.setExchangeRequestListener(new ExchangeRequestListener() {
                 @Override
                 public void onExchangeRequest(ExchangeRequest request)
                         throws ExchangeRejectedException {
-                    if (rejectExchangeRequest) {
+                    if (Peer.this.rejectExchangeRequest) {
                         throw new ExchangeRejectedException(Reason.INVALID_AMOUNT);
                     }
-                    exchangeRequests.add(request);
+                    Peer.this.exchangeRequests.add(request);
                 }
             });
         }
@@ -221,25 +233,34 @@ public class ProtobufBitmarketProtocolIT {
                     RpcController controller,
                     BitmarketProtobuf.Offer request,
                     RpcCallback<BitmarketProtobuf.PublishResponse> done) {
-                if (rejectOffers) {
-                    BitmarketProtobuf.PublishResponse.Result result =
-                            BitmarketProtobuf.PublishResponse.Result.SERVICE_UNAVAILABLE;
-                    done.run(BitmarketProtobuf.PublishResponse.newBuilder()
-                            .setResult(result)
-                            .build());
+                if (BroadcastServer.this.rejectOffers) {
+                    rejectOffer(done);
                 } else {
-                    for (RpcClientChannel channel : clientRegistry.getAllClients()) {
-                        BitmarketProtobuf.PeerService.Stub peer =
-                                BitmarketProtobuf.PeerService.newStub(channel);
-                        peer.publish(
-                                channel.newRpcController(),
-                                request,
-                                NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
-                    }
-                    done.run(BitmarketProtobuf.PublishResponse.newBuilder()
-                            .setResult(BitmarketProtobuf.PublishResponse.Result.SUCCESS)
-                            .build());
+                    broadcastOffer(request, done);
                 }
+            }
+
+            private void rejectOffer(RpcCallback<PublishResponse> done) {
+                PublishResponse.Result result = PublishResponse.Result.SERVICE_UNAVAILABLE;
+                done.run(PublishResponse.newBuilder()
+                        .setResult(result)
+                        .build());
+            }
+
+            private void broadcastOffer(
+                    BitmarketProtobuf.Offer request, RpcCallback<PublishResponse> done) {
+                for (RpcClientChannel channel :
+                        BroadcastServer.this.clientRegistry.getAllClients()) {
+                    PeerService.Stub peer =
+                            PeerService.newStub(channel);
+                    peer.publish(
+                            channel.newRpcController(), request,
+                            NoopRpc.<PublishResponse>callback());
+                }
+                done.run(
+                        PublishResponse.newBuilder()
+                                .setResult(PublishResponse.Result.SUCCESS)
+                                .build());
             }
         }
     }

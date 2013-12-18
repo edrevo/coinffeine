@@ -17,6 +17,7 @@ import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 import com.googlecode.protobuf.pro.duplex.util.RenamingThreadFactoryProxy;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -101,8 +102,8 @@ public class PeerServer {
         return eventGroup;
     }
 
-    public void start() {
-        this.bootstrap.bind();
+    public ChannelFuture start() {
+        return this.bootstrap.bind();
     }
 
     public void shutdown() {

@@ -13,7 +13,8 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws IOException, ServiceException {
+    public static void main(String[] args)
+            throws IOException, ServiceException, InterruptedException {
         CommandLine cli = CommandLine.fromArgList(args);
         PeerInfo serverInfo = new PeerInfo("localhost", cli.port);
         final BroadcastServer server = new BroadcastServer(serverInfo);
@@ -25,7 +26,7 @@ public class Main {
                 LOGGER.info("Resources were freed.");
             }
         });
-        server.start();
+        server.start().await();
         LOGGER.info("Listening on {}:{}...\n", serverInfo.getHostName(), serverInfo.getPort());
     }
 }

@@ -17,6 +17,7 @@ import com.bitwise.bitmarket.common.protorpc.NoopRpc;
 import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.protorpc.PeerSession;
 
+import static com.bitwise.bitmarket.common.ConcurrentAssert.assertEventually;
 import static org.junit.Assert.assertEquals;
 
 public class BroadcastServerIT {
@@ -30,7 +31,7 @@ public class BroadcastServerIT {
         List<Integer> ports = NetworkTestUtils.findAvailableTcpPorts(3);
         PeerInfo serverInfo = new PeerInfo("localhost", ports.get(0));
         this.instance = new BroadcastServer(serverInfo);
-        this.instance.start();
+        this.instance.start().await();
         this.client1 = new TestClient(ports.get(1));
         this.client2 = new TestClient(ports.get(2));
     }
@@ -74,12 +75,14 @@ public class BroadcastServerIT {
                     request2,
                     NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
 
-            // Keep connections open for the broadcast to happen
-            int clientSessionsDuration = 1000;
-            Thread.sleep(clientSessionsDuration);
+            assertEventually(new Runnable() {
+                @Override
+                public void run() {
+                    assertEquals(2, BroadcastServerIT.this.client1.getReceivedMessagesNumber());
+                    assertEquals(2, BroadcastServerIT.this.client2.getReceivedMessagesNumber());
+                }
+            });
         }
-        assertEquals(2, this.client1.getReceivedMessagesNumber());
-        assertEquals(2, this.client2.getReceivedMessagesNumber());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -93,13 +96,13 @@ public class BroadcastServerIT {
         private final MessageCounter messageCounter;
         public final PeerInfo info;
 
-        public TestClient(int port) {
+        public TestClient(int port) throws InterruptedException {
             this.info = new PeerInfo("localhost", port);
             this.messageCounter = new MessageCounter();
             this.server = new PeerServer(
                     this.info,
                     BitmarketProtobuf.PeerService.newReflectiveService(this.messageCounter));
-            this.server.start();
+            this.server.start().await();
         }
 
         public int getReceivedMessagesNumber() {

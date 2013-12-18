@@ -29,7 +29,7 @@ public class PeerServerIT {
 
     private static final Request HELLO_REQUEST = Request.newBuilder().setPayload("hello").build();
     private static final int PEERS_NUMBER = 3;
-    private static final long POLL_TIMEOUT = 5;
+    private static final long POLL_TIMEOUT = 500;
 
     private static List<TestPeer> peers;
 
@@ -86,11 +86,11 @@ public class PeerServerIT {
         public final PeerInfo info;
         public final BlockingQueue<String> receivedOffers;
 
-        public TestPeer(int port) {
+        public TestPeer(int port) throws InterruptedException {
             this.info = new PeerInfo("localhost", port);
             this.receivedOffers = new LinkedBlockingDeque<>();
             this.server = new PeerServer(this.info, SimpleService.newReflectiveService(new Handler()));
-            this.server.start();
+            this.server.start().await();
         }
 
         public void synchronouslyPublishTo(PeerInfo info) throws Exception {

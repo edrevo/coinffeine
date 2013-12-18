@@ -7,6 +7,7 @@ import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
 import com.googlecode.protobuf.pro.duplex.RpcClientChannel;
 import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
+import io.netty.channel.ChannelFuture;
 
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf;
 import com.bitwise.bitmarket.common.protorpc.NoopRpc;
@@ -35,7 +36,7 @@ public class BroadcastServer {
         return this.serverInfo;
     }
 
-    public void start() {
+    public ChannelFuture start() {
         if (this.service != null) {
             throw new IllegalStateException("Server already started");
         }
@@ -44,7 +45,7 @@ public class BroadcastServer {
                 this.serverInfo,
                 BitmarketProtobuf.BroadcastService.newReflectiveService(this.service));
         this.service.setClientRegistry(this.server.getClientRegistry());
-        this.server.start();
+        return this.server.start();
     }
 
     public void shutdown() {
