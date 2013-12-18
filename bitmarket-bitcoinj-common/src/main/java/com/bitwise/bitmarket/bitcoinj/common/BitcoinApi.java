@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.common.bitcoin;
+package com.bitwise.bitmarket.bitcoinj.common;
 
 import java.security.interfaces.ECKey;
 

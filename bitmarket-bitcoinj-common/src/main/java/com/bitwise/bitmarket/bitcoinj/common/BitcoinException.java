@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.common.bitcoin;
+package com.bitwise.bitmarket.bitcoinj.common;
 
 public class BitcoinException extends RuntimeException {
 
