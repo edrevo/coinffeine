@@ -14,6 +14,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import com.bitwise.bitmarket.common.currency.FiatAmount;
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub;
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.ArrayOfBalance;
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Balance;
@@ -26,7 +27,6 @@ import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementatio
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Transaction_HistoryResponse;
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_Balance;
 import com.bitwise.bitmarket.common.paymentprocessor.okpay.OkPayAPIImplementationStub.Wallet_Get_BalanceResponse;
-import com.bitwise.bitmarket.common.currency.FiatAmount;
 
 class OkPayProcessor implements PaymentProcessor {
 
@@ -149,8 +149,8 @@ class OkPayProcessor implements PaymentProcessor {
     private static final Send_Money buildSendPaymentParams(String receiverId,
             FiatAmount amount, String userId, String currentToken) {
         Send_Money params = new Send_Money();
-        params.setAmount(amount.getAmount());
-        params.setCurrency(amount.getCurrency().getCurrencyCode().toString());
+        params.setAmount(amount.amount().underlying());
+        params.setCurrency(amount.currency().getCurrencyCode().toString());
         params.setReceiver(receiverId);
         params.setWalletID(userId);
         params.setSecurityToken(currentToken);

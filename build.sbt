@@ -26,5 +26,6 @@ libraryDependencies in ThisBuild ++= Seq(
   Dependencies.logbackClassic,
   Dependencies.logbackCore,
   Dependencies.mockito,
+  Dependencies.scalatest,
   Dependencies.slf4j
 )

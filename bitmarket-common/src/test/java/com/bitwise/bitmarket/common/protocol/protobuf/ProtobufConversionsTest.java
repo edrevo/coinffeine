@@ -38,9 +38,9 @@ public class ProtobufConversionsTest {
         assertEquals(0, offer.getSequenceNumber());
         assertEquals("abcdefghijklmnopqrsruvwxyz", offer.getFromId().getAddress());
         assertEquals("bitmarket://example.com:1234/", offer.getFromConnection().toString());
-        assertEquals(new BigDecimal(2), offer.getAmount().getAmount());
-        assertEquals(new BigDecimal(100), offer.getBitcoinPrice().getAmount());
-        assertEquals("EUR", offer.getBitcoinPrice().getCurrency().getCurrencyCode());
+        assertEquals(new BigDecimal(2), offer.getAmount().amount().underlying());
+        assertEquals(new BigDecimal(100), offer.getBitcoinPrice().amount().underlying());
+        assertEquals("EUR", offer.getBitcoinPrice().currency().getCurrencyCode());
     }
 
     @Test
@@ -80,9 +80,9 @@ public class ProtobufConversionsTest {
         assertEquals(0, newOffer.getSequenceNumber());
         assertEquals("abcdefghijklmnopqrsruvwxyz", newOffer.getFromId().getAddress());
         assertEquals("bitmarket://example.com:1234/", newOffer.getFromConnection().toString());
-        assertEquals(new BigDecimal(2), newOffer.getAmount().getAmount());
-        assertEquals(new BigDecimal(100), newOffer.getBitcoinPrice().getAmount());
-        assertEquals("EUR", newOffer.getBitcoinPrice().getCurrency().getCurrencyCode());
+        assertEquals(new BigDecimal(2), newOffer.getAmount().amount().underlying());
+        assertEquals(new BigDecimal(100), newOffer.getBitcoinPrice().amount().underlying());
+        assertEquals("EUR", newOffer.getBitcoinPrice().currency().getCurrencyCode());
     }
 
     @Test
@@ -105,7 +105,7 @@ public class ProtobufConversionsTest {
         assertEquals(1234567890, request.getId().getBytes());
         assertEquals("abcdefghijklmnopqrsruvwxyz", request.getFromId().getAddress());
         assertEquals("bitmarket://example.com:1234/", request.getFromConnection().toString());
-        assertEquals(new BigDecimal(2), request.getAmount().getAmount());
+        assertEquals(new BigDecimal(2), request.getAmount().amount().underlying());
     }
 
     @Test
@@ -139,6 +139,6 @@ public class ProtobufConversionsTest {
         assertEquals(1234567890, newRequest.getId().getBytes());
         assertEquals("abcdefghijklmnopqrsruvwxyz", newRequest.getFromId().getAddress());
         assertEquals("bitmarket://example.com:1234/", newRequest.getFromConnection().toString());
-        assertEquals(new BigDecimal(2), newRequest.getAmount().getAmount());
+        assertEquals(new BigDecimal(2), newRequest.getAmount().amount().underlying());
     }
 }
