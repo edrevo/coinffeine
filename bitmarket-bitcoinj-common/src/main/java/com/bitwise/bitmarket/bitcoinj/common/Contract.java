@@ -72,8 +72,8 @@ public abstract class Contract implements BtcTransaction {
 
     @Override
     public BtcAmount getFee() {
-        BigDecimal inputAmount = this.getTotalInputAmount().getAmount();
-        BigDecimal outputAmount = this.getTotalOutputAmount().getAmount();
+        BigDecimal inputAmount = this.getTotalInputAmount().amount().underlying();
+        BigDecimal outputAmount = this.getTotalOutputAmount().amount().underlying();
         return new BtcAmount(inputAmount.subtract(outputAmount));
     }
 

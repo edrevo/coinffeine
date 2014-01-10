@@ -65,16 +65,16 @@ public class ProtobufConversions {
 
     public static BitmarketProtobuf.BtcAmount toProtobuf(BtcAmount amount) {
         return BitmarketProtobuf.BtcAmount.newBuilder()
-                .setValue(amount.getAmount().unscaledValue().longValue())
-                .setScale(amount.getAmount().scale())
+                .setValue(amount.amount().underlying().unscaledValue().longValue())
+                .setScale(amount.amount().scale())
                 .build();
     }
 
     public static BitmarketProtobuf.FiatAmount toProtobuf(FiatAmount amount) {
         return BitmarketProtobuf.FiatAmount.newBuilder()
-                .setValue(amount.getAmount().unscaledValue().longValue())
-                .setScale(amount.getAmount().scale())
-                .setCurrency(amount.getCurrency().getCurrencyCode())
+                .setValue(amount.amount().underlying().unscaledValue().longValue())
+                .setScale(amount.amount().scale())
+                .setCurrency(amount.currency().getCurrencyCode())
                 .build();
     }
 

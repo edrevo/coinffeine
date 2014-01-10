@@ -122,8 +122,8 @@ public class OkpayProcessorTest {
         List<Balance> balances = new ArrayList<Balance>();
         for (FiatAmount amount : amounts) {
             Balance balance = new Balance();
-            balance.setAmount(amount.getAmount());
-            balance.setCurrency(amount.getCurrency().toString());
+            balance.setAmount(amount.amount().underlying());
+            balance.setCurrency(amount.currency().toString());
             balances.add(balance);
         }
         Mockito.when(arrayOfBalance.getBalance()).thenReturn(
@@ -157,9 +157,9 @@ public class OkpayProcessorTest {
         Mockito.when(receiver.getWalletID())
                 .thenReturn(payment.getReceiverId());
         Mockito.when(transaction.getCurrency()).thenReturn(
-                payment.getAmount().getCurrency().toString());
+                payment.getAmount().currency().toString());
         Mockito.when(transaction.getAmount()).thenReturn(
-                payment.getAmount().getAmount());
+                payment.getAmount().amount().underlying());
         Mockito.when(transaction.getComment()).thenReturn(
                 payment.getDescription());
         Mockito.when(transaction.getDate()).thenReturn(
