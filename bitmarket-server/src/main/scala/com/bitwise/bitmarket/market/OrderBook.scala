@@ -3,6 +3,8 @@ package com.bitwise.bitmarket.market
 import java.util.Currency
 import scala.annotation.tailrec
 
+import com.bitwise.bitmarket.common.protocol._
+
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(
   currency: Currency,

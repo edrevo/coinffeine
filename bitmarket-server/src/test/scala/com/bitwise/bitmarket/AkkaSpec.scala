@@ -7,7 +7,7 @@ import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 
 /** FlatSpec configured to test Akka actors. */
-class AkkaSpec(actorSystem: ActorSystem = ActorSystem("TestSystem"))
+abstract class AkkaSpec(actorSystem: ActorSystem = ActorSystem("TestSystem"))
   extends TestKit(actorSystem) with FlatSpec with BeforeAndAfterAll with MustMatchers
   with ImplicitSender {
 

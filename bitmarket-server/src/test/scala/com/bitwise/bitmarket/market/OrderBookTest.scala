@@ -5,6 +5,7 @@ import org.scalatest.matchers.MustMatchers
 
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.protocol.{Ask, Bid}
 
 class OrderBookTest extends FlatSpec with MustMatchers {
 

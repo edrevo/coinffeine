@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.market
+package com.bitwise.bitmarket.common.protocol
 
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 

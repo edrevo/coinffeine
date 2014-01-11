@@ -9,31 +9,45 @@ import akka.actor._
 
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.market._
+import com.bitwise.bitmarket.common.currency.FiatAmount
+import com.bitwise.bitmarket.common.protocol.{Quote, Order}
 
 class BrokerActor(currency: Currency, orderExpirationInterval: Duration = 60 seconds)
   extends Actor with ActorLogging {
 
   private var book = OrderBook.empty(currency)
   private var expirationTimes = Map[String, Long]()
+  private var lastPrice: Option[FiatAmount] = None
 
   def receive: Receive = {
 
     case OrderPlacement(order) if order.price.currency != currency =>
       log.error("Dropping order not placed in %s: %s", currency, order)
+      scheduleNextExpiration()
+
+    case OrderPlacement(order) if book.orders.contains(order) =>
+      setExpirationFor(order.requester)
+      scheduleNextExpiration()
 
     case OrderPlacement(order) =>
       log.info("Order placed " + order)
       val (clearedBook, crosses) = book.placeOrder(order).clearMarket
       book = clearedBook
-      crosses.foreach(cross => sender ! NotifyCross(cross))
+      crosses.foreach { cross =>
+        sender ! NotifyCross(cross)
+        lastPrice = Some(cross.price)
+      }
       setExpirationFor(order.requester)
       scheduleNextExpiration()
 
-    case QuoteRequest => sender ! Quote(book.spread)
+    case QuoteRequest =>
+      sender ! QuoteResponse(Quote(book.spread, lastPrice))
+      scheduleNextExpiration()
 
     case OrderCancellation(requester) =>
       log.info(s"Order of $requester is cancelled")
       book = book.cancelOrder(requester)
+      scheduleNextExpiration()
 
     case ReceiveTimeout =>
       expireOrders()
@@ -65,9 +79,8 @@ class BrokerActor(currency: Currency, orderExpirationInterval: Duration = 60 sec
 
 object BrokerActor {
   case object QuoteRequest
+  case class QuoteResponse(quote: Quote)
   case class OrderPlacement(order: Order)
   case class OrderCancellation(requester: String)
-
-  case class Quote(spread: Spread)
   case class NotifyCross(cross: Cross)
 }

@@ -1,7 +1,7 @@
-package com.bitwise.bitmarket
+package com.bitwise.bitmarket.common
 
 import com.bitwise.bitmarket.common.currency.FiatAmount
 
-package object market {
+package object protocol {
   type Spread = (Option[FiatAmount], Option[FiatAmount])
 }
