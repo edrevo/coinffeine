@@ -6,6 +6,7 @@ object ProjectBuild extends Build {
 
   object Versions {
     val axis2 = "1.6.2"
+    val akka = "2.2.3"
   }
 
   object Dependencies {
@@ -15,6 +16,10 @@ object ProjectBuild extends Build {
       "org.apache.axis2" % "axis2-transport-http" % Versions.axis2,
       "org.apache.axis2" % "axis2-transport-local" % Versions.axis2,
       "org.apache.axis2" % "axis2-xmlbeans" % Versions.axis2
+    )
+    lazy val akka = Seq(
+      "com.typesafe.akka" %% "akka-actor" % Versions.akka,
+      "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.10.2"
     lazy val commonsConfig = "commons-configuration" % "commons-configuration" % "1.8"
@@ -30,7 +35,7 @@ object ProjectBuild extends Build {
     lazy val netty = "io.netty" % "netty-all" % "4.0.12.Final"
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
     lazy val protobufRpc = "com.googlecode.protobuf-rpc-pro" % "protobuf-rpc-pro-duplex" % "3.0.8"
-    lazy val scalatest = "org.scalatest" %% "scalatest" % "2.0" % "test"
+    lazy val scalatest = "org.scalatest" %% "scalatest" % "1.9.1" % "test"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.5"
   }
 

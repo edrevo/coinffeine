@@ -12,6 +12,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp filter { _.data.getName.contains("jaxen") } // Exclude duplicated xmlbeans definitions
 }
 
-libraryDependencies ++= Seq(
+libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.jcommander
 )

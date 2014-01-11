@@ -1,6 +1,7 @@
 package com.bitwise.bitmarket.market
 
-import org.scalatest._
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.MustMatchers
 
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.currency.BtcAmount
@@ -17,16 +18,6 @@ class OrderBookTest extends FlatSpec with MustMatchers {
     ex.toString must include ("Asks must be sorted")
   }
 
-  it must "require prices to be in one currency" in {
-    val ex = evaluating {
-      OrderBook(EUR.currency, bids = Seq.empty, asks = Seq(
-        Ask(BtcAmount(1), EUR(20), "seller1"),
-        Ask(BtcAmount(1), USD(10), "seller2")
-      ))
-    } must produce [IllegalArgumentException]
-    ex.toString must include ("A currency (USD) other than EUR was used")
-  }
-
   it must "require a single order per requester" in {
     val ex = evaluating {
       OrderBook(EUR.currency, bids = Seq.empty, asks = Seq(
@@ -35,6 +26,16 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       ))
     } must produce [IllegalArgumentException]
     ex.toString must include ("Requesters with multiple orders: repeated")
+  }
+
+  it must "require prices to be in one currency" in {
+    val ex = evaluating {
+      OrderBook(EUR.currency, bids = Seq.empty, asks = Seq(
+        Ask(BtcAmount(1), EUR(20), "seller1"),
+        Ask(BtcAmount(1), USD(10), "seller2")
+      ))
+    } must produce [IllegalArgumentException]
+    ex.toString must include ("A currency (USD) other than EUR was used")
   }
 
   it must "require bids to be sorted" in {
@@ -119,6 +120,16 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Ask(BtcAmount(1), EUR(115), "user1"),
       Ask(BtcAmount(3), EUR(125), "user3")
     )))
+  }
+
+  it must "cancel orders by requester" in {
+    val book = OrderBook(
+      EUR.currency,
+      Seq(Bid(BtcAmount(1), EUR(20), "buyer")),
+      Seq(Ask(BtcAmount(2), EUR(25), "seller"))
+    )
+    book.cancelOrder("buyer") must be (book.copy(bids = Seq.empty))
+    book.cancelOrder("unknown") must be (book)
   }
 
   it must "be cleared with no changes when there is no cross" in {
