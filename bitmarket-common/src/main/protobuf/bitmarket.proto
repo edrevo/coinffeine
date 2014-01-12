@@ -20,6 +20,48 @@ message FiatAmount {
     required string currency = 3;
 }
 
+enum OrderType {
+    BID = 0;
+    ASK = 1;
+}
+
+message Order {
+    required OrderType type = 1;
+    required BtcAmount amount = 2;
+    required FiatAmount price = 3;
+}
+
+message OrderResponse {
+    enum Result {
+        SUCCESS = 0;
+        CURRENCY_NOT_TRADED = 1;
+    }
+    required Result result = 1;
+}
+
+message QuoteRequest {
+    required string currency = 1;
+}
+
+message Quote {
+    optional FiatAmount highestBid = 1;
+    optional FiatAmount lowestAsk = 2;
+    optional FiatAmount lastPrice = 3;
+}
+
+message OrderMatch {
+    required Order bid = 1;
+    required Order ask = 2;
+    required string counterpart = 4;
+}
+
+service BrokerService {
+    rpc RequestQuote (QuoteRequest) returns (Quote);
+    rpc PlaceOrder (Order) returns (OrderResponse);
+}
+
+// Old services
+
 message Offer {
 	required int32 id = 1;
 	required int32 seq = 2;
@@ -56,7 +98,12 @@ service BroadcastService {
     rpc Publish (Offer) returns (PublishResponse);
 }
 
+message Void {}
+
 service PeerService {
+    rpc NotifyMatch (OrderMatch) returns (Void);
+
+    // Old service
     rpc Publish (Offer) returns (PublishResponse);
     rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
 }

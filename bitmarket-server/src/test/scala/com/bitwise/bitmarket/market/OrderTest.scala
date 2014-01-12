@@ -1,9 +1,11 @@
 package com.bitwise.bitmarket.market
 
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.MustMatchers
 
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.protocol.{Ask, Bid}
 
 class OrderTest extends FlatSpec with MustMatchers {
 

@@ -135,12 +135,13 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     }
 
     private static PeerInfo peerInfo(PeerConnection conn) {
-        return new PeerInfo(conn.getHostname(), conn.getPort());
+        return new PeerInfo(conn.hostname(), conn.port());
     }
 
     private static PeerConnection defaultLocalConnection() throws BitmarketProtocolException {
         try {
-            return new PeerConnection(InetAddress.getLocalHost().getHostAddress());
+            return new PeerConnection(
+                    InetAddress.getLocalHost().getHostAddress(), PeerConnection.DefaultPort());
         } catch (UnknownHostException e) {
             throw new BitmarketProtocolException(
                     "cannot obtain hostname for local machine", e);
@@ -168,6 +169,15 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
                     .build();
 
     private class PeerServiceImpl implements BitmarketProtobuf.PeerService.Interface {
+
+        @Override
+        public void notifyMatch(
+                RpcController controller,
+                BitmarketProtobuf.OrderMatch request,
+                RpcCallback<BitmarketProtobuf.Void> done) {
+            // FIXME: do nothing for the moment
+            done.run(BitmarketProtobuf.Void.getDefaultInstance());
+        }
 
         @Override
         public void publish(

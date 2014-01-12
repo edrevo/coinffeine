@@ -123,6 +123,15 @@ public class BroadcastServerIT {
         public final AtomicInteger receivedMessages = new AtomicInteger();
 
         @Override
+        public void notifyMatch(
+                RpcController controller,
+                BitmarketProtobuf.OrderMatch request,
+                RpcCallback<BitmarketProtobuf.Void> done) {
+            // FIXME: do nothing for the moment
+            done.run(BitmarketProtobuf.Void.getDefaultInstance());
+        }
+
+        @Override
         public void publish(
                 RpcController controller,
                 BitmarketProtobuf.Offer request,

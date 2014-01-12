@@ -73,7 +73,7 @@ public class ProtobufBitmarketProtocolIT {
         assertEventually(new Runnable() {
             @Override
             public void run() {
-                assertEquals(7000, peers.get(1).getOffers().get(0).getId().getBytes());
+                assertEquals(7000, peers.get(1).getOffers().get(0).id().bytes());
             }
         });
     }
@@ -92,7 +92,7 @@ public class ProtobufBitmarketProtocolIT {
         assertEventually(new Runnable() {
             @Override
             public void run() {
-                assertEquals(7000, peers.get(1).getExchangeRequests().get(0).getId().getBytes());
+                assertEquals(7000, peers.get(1).getExchangeRequests().get(0).id().bytes());
             }
         });
     }

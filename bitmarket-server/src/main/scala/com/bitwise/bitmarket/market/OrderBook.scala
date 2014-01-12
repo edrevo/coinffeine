@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.market
 import java.util.Currency
 import scala.annotation.tailrec
 
-import com.bitwise.bitmarket.common.currency.FiatAmount
+import com.bitwise.bitmarket.common.protocol._
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(
@@ -24,8 +24,7 @@ case class OrderBook(
   }
 
   /** Get current spread (interval between the highest bet price to the lowest bid price */
-  def spread: (Option[FiatAmount], Option[FiatAmount]) =
-    (bids.headOption.map(_.price), asks.headOption.map(_.price))
+  def spread: Spread = (bids.headOption.map(_.price), asks.headOption.map(_.price))
 
   /** Place a new order.
     *
@@ -44,6 +43,12 @@ case class OrderBook(
       asks = (asks.filter(_.requester != order.requester) ++ newAsk).sorted
     )
   }
+
+  /** Cancel requester order if any. */
+  def cancelOrder(requester: String): OrderBook = copy(
+    bids = bids.filter(_.requester != requester),
+    asks = asks.filter(_.requester != requester)
+  )
 
   /** Clear the market by crossing bid and ask orders
     *
