@@ -1,5 +1,5 @@
 resolvers in ThisBuild ++= Seq(
-  "nexus-releases" at "http://bitmarket.no-ip.biz:8086/nexus/content/repositories/releases",
+  "nexus-releases" at "http://nexus.coinffeine.com:8086/nexus/content/repositories/releases",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 )
 
