@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import com.bitwise.bitmarket.common.protorpc.Callbacks;
+import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
@@ -24,8 +26,6 @@ import com.bitwise.bitmarket.common.protocol.*;
 import com.bitwise.bitmarket.common.protocol.ExchangeRejectedException.Reason;
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PeerService;
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf.PublishResponse;
-import com.bitwise.bitmarket.common.protorpc.NoopRpc;
-import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.bitwise.bitmarket.common.util.ExceptionUtils;
 
 import static com.bitwise.bitmarket.common.ConcurrentAssert.assertEventually;
@@ -212,7 +212,7 @@ public class ProtobufBitmarketProtocolIT {
             PeerInfo pinfo = new PeerInfo("localhost", BROADCAST_SERVER_PORT);
             Service srv = BitmarketProtobuf.BroadcastService.newReflectiveService(new Handler());
             this.server = new PeerServer(pinfo, srv);
-            this.clientRegistry = this.server.getClientRegistry();
+            this.clientRegistry = this.server.clientRegistry();
 
             this.server.start();
         }
@@ -255,7 +255,7 @@ public class ProtobufBitmarketProtocolIT {
                             PeerService.newStub(channel);
                     peer.publish(
                             channel.newRpcController(), request,
-                            NoopRpc.<PublishResponse>callback());
+                            Callbacks.noop(PublishResponse.class));
                 }
                 done.run(
                         PublishResponse.newBuilder()

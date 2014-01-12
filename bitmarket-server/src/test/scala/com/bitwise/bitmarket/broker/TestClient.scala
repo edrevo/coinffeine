@@ -19,7 +19,7 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
   private var receivedMessages_ : Seq[Message] = Seq.empty
   private val server = new PeerServer(info, msg.PeerService.newReflectiveService(this))
 
-  server.start.await
+  server.start().await
 
   def receivedMessages: Seq[Message] = synchronized { receivedMessages_ }
 
@@ -31,7 +31,7 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
   }
 
   def connectToServer() {
-    sessionOption = Some(server.peerWith(serverInfo))
+    sessionOption = Some(server.peerWith(serverInfo).get)
   }
 
   def disconnect() {
@@ -41,16 +41,16 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
 
   def placeOrder(order: msg.Order): msg.OrderResponse = {
     val session = sessionOption.get
-    val stub = msg.BrokerService.newBlockingStub(session.getChannel)
-    stub.placeOrder(session.getController, order)
+    val stub = msg.BrokerService.newBlockingStub(session.channel)
+    stub.placeOrder(session.controller, order)
   }
 
   def requestQuote(currency: Currency): Future[msg.QuoteResponse] = {
     val session = sessionOption.get
-    val stub = msg.BrokerService.newStub(session.getChannel)
+    val stub = msg.BrokerService.newStub(session.channel)
     val request = msg.QuoteRequest.newBuilder.setCurrency(currency.getCurrencyCode).build()
     val promise = Promise[msg.QuoteResponse]()
-    stub.requestQuote(session.getController, request, new RpcCallback[msg.QuoteResponse] {
+    stub.requestQuote(session.controller, request, new RpcCallback[msg.QuoteResponse] {
       override def run(response: msg.QuoteResponse) { promise.success(response) }
     })
     promise.future

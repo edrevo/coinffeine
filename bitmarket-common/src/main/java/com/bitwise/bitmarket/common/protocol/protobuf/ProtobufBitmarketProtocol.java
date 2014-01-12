@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.Future;
 
+import com.bitwise.bitmarket.common.protorpc.PeerServer;
+import com.bitwise.bitmarket.common.protorpc.PeerSession;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
@@ -13,8 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.bitwise.bitmarket.common.PeerConnection;
 import com.bitwise.bitmarket.common.protocol.*;
-import com.bitwise.bitmarket.common.protorpc.PeerServer;
-import com.bitwise.bitmarket.common.protorpc.PeerSession;
 
 public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseable {
 
@@ -64,7 +64,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     public Future<Void> publish(Offer offer) {
         PublishResponseCallback callback = new PublishResponseCallback();
         this.broadcastRemote.publish(
-                this.broadcastRemoteSession.getController(),
+                this.broadcastRemoteSession.controller(),
                 ProtobufConversions.toProtobuf(offer),
                 callback);
         return callback.getFuture();
@@ -75,16 +75,16 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
             com.bitwise.bitmarket.common.protocol.ExchangeRequest acceptance,
             PeerConnection recipient) throws BitmarketProtocolException {
         try {
-            PeerSession session = this.peerServer.peerWith(peerInfo(recipient));
+            PeerSession session = this.peerServer.peerWith(peerInfo(recipient)).get();
             BitmarketProtobuf.PeerService.Interface rcpt =
-                    BitmarketProtobuf.PeerService.newStub(session.getChannel());
+                    BitmarketProtobuf.PeerService.newStub(session.channel());
             RequestExchangeCallback callback = new RequestExchangeCallback();
             rcpt.requestExchange(
-                    session.getController(),
+                    session.controller(),
                     ProtobufConversions.toProtobuf(acceptance),
                     callback);
             return callback.getFuture();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new BitmarketProtocolException(
                     String.format("IO error while accepting offer %s", acceptance.toString()), e);
         }
@@ -99,8 +99,8 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
     private PeerSession createRemoteSession(
             PeerConnection remotePeer) throws BitmarketProtocolException {
         try {
-            return this.peerServer.peerWith(peerInfo(remotePeer));
-        } catch (IOException e) {
+            return this.peerServer.peerWith(peerInfo(remotePeer)).get();
+        } catch (Exception e) {
             throw new BitmarketProtocolException(
                     String.format(
                             "cannot create session to remote peer %s", remotePeer.toString()),
@@ -110,7 +110,7 @@ public class ProtobufBitmarketProtocol implements BitmarketProtocol, AutoCloseab
 
     private BitmarketProtobuf.BroadcastService.Interface createBroadcastRemote(
             PeerSession session) {
-        return BitmarketProtobuf.BroadcastService.newStub(session.getChannel());
+        return BitmarketProtobuf.BroadcastService.newStub(session.channel());
     }
 
     private OfferListener createDefaultOfferListener() {

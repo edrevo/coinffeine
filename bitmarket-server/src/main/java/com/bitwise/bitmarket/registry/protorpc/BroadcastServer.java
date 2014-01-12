@@ -2,6 +2,8 @@ package com.bitwise.bitmarket.registry.protorpc;
 
 import javax.annotation.Nullable;
 
+import com.bitwise.bitmarket.common.protorpc.Callbacks;
+import com.bitwise.bitmarket.common.protorpc.PeerServer;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
@@ -10,8 +12,6 @@ import com.googlecode.protobuf.pro.duplex.server.RpcClientRegistry;
 import io.netty.channel.ChannelFuture;
 
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf;
-import com.bitwise.bitmarket.common.protorpc.NoopRpc;
-import com.bitwise.bitmarket.common.protorpc.PeerServer;
 
 public class BroadcastServer {
 
@@ -44,7 +44,7 @@ public class BroadcastServer {
         this.server = new PeerServer(
                 this.serverInfo,
                 BitmarketProtobuf.BroadcastService.newReflectiveService(this.service));
-        this.service.setClientRegistry(this.server.getClientRegistry());
+        this.service.setClientRegistry(this.server.clientRegistry());
         return this.server.start();
     }
 
@@ -79,7 +79,7 @@ public class BroadcastServer {
                 peer.publish(
                         channel.newRpcController(),
                         request,
-                        NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
+                        Callbacks.noop(BitmarketProtobuf.PublishResponse.class));
             }
         }
     }
