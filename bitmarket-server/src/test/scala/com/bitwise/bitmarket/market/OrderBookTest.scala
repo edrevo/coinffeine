@@ -5,7 +5,7 @@ import org.scalatest.matchers.MustMatchers
 
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.currency.BtcAmount
-import com.bitwise.bitmarket.common.protocol.{Ask, Bid}
+import com.bitwise.bitmarket.common.protocol.{OrderMatch, Ask, Bid}
 
 class OrderBookTest extends FlatSpec with MustMatchers {
 
@@ -156,7 +156,7 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Bid(BtcAmount(1), EUR(20), "other buyer")),
       Seq.empty
     )
-    val cross = Cross(BtcAmount(2), EUR(25), "buyer", "seller")
+    val cross = OrderMatch(BtcAmount(2), EUR(25), "buyer", "seller")
     book.clearMarket must be ((clearedBook, Seq(cross)))
   }
 
@@ -166,7 +166,7 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Bid(BtcAmount(1), EUR(20), "buyer")),
       Seq(Ask(BtcAmount(1), EUR(10), "seller"))
     )
-    book.clearMarket._2 must be (Seq(Cross(BtcAmount(1), EUR(15), "buyer", "seller")))
+    book.clearMarket._2 must be (Seq(OrderMatch(BtcAmount(1), EUR(15), "buyer", "seller")))
   }
 
   it must "clear orders partially" in {
@@ -176,7 +176,7 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Ask(BtcAmount(1), EUR(25), "seller"))
     )
     val clearedBook = OrderBook(EUR.currency, Seq(Bid(BtcAmount(1), EUR(25), "buyer")), Seq.empty)
-    val cross = Cross(BtcAmount(1), EUR(25), "buyer", "seller")
+    val cross = OrderMatch(BtcAmount(1), EUR(25), "buyer", "seller")
     book.clearMarket must be ((clearedBook, Seq(cross)))
   }
 
@@ -196,9 +196,9 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Ask(BtcAmount(1), EUR(25), "seller3"))
     )
     val crosses = Seq(
-      Cross(BtcAmount(2), EUR(20), "buyer", "seller1"),
-      Cross(BtcAmount(2), EUR(22.5), "buyer", "seller2"),
-      Cross(BtcAmount(1), EUR(25), "buyer", "seller3")
+      OrderMatch(BtcAmount(2), EUR(20), "buyer", "seller1"),
+      OrderMatch(BtcAmount(2), EUR(22.5), "buyer", "seller2"),
+      OrderMatch(BtcAmount(1), EUR(25), "buyer", "seller3")
     )
     book.clearMarket must be ((clearedBook, crosses))
   }
