@@ -3,8 +3,6 @@ package com.bitwise.bitmarket.common.protocol.protobuf
 import java.math.BigDecimal
 import java.util.Currency
 
-import com.googlecode.protobuf.pro.duplex.PeerInfo
-
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.{BtcAmount, FiatAmount}
 import com.bitwise.bitmarket.common.protocol._
@@ -13,7 +11,7 @@ import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 /** Conversion from/to domain classes and Protobuf messages. */
 object ProtobufConversions {
 
-  def fromProtobuf(message: msg.Offer): Offer = Offer(
+  def fromProtobuf(message: msg.OfferOrBuilder): Offer = Offer(
     id = OfferId(message.getId),
     sequenceNumber = message.getSeq,
     fromId = PeerId(message.getFrom),
@@ -22,22 +20,29 @@ object ProtobufConversions {
     bitcoinPrice = fromProtobuf(message.getBtcPrice)
   )
 
-  def fromProtobuf(message: msg.ExchangeRequest): ExchangeRequest = new ExchangeRequest(
+  def fromProtobuf(message: msg.ExchangeRequestOrBuilder): ExchangeRequest = new ExchangeRequest(
     id = OfferId(message.getId),
     fromId = PeerId(message.getFrom),
     fromConnection = PeerConnection.parse(message.getConnection),
     amount = fromProtobuf(message.getAmount)
   )
 
-  def fromProtobuf(amount: msg.BtcAmount): BtcAmount =
+  def fromProtobuf(amount: msg.BtcAmountOrBuilder): BtcAmount =
     BtcAmount(BigDecimal.valueOf(amount.getValue, amount.getScale))
 
-  def fromProtobuf(amount: msg.FiatAmount): FiatAmount = FiatAmount(
+  def fromProtobuf(amount: msg.FiatAmountOrBuilder): FiatAmount = FiatAmount(
     BigDecimal.valueOf(amount.getValue, amount.getScale),
     Currency.getInstance(amount.getCurrency)
   )
 
-  def fromProtobuf(order: msg.Order, senderInfo: PeerInfo): Order = {
+  def fromProtobuf(orderMatch: msg.OrderMatchOrBuilder): OrderMatch = OrderMatch(
+    amount = fromProtobuf(orderMatch.getAmount),
+    price = fromProtobuf(orderMatch.getPrice),
+    buyer = orderMatch.getBuyer,
+    seller = orderMatch.getSeller
+  )
+
+  def fromProtobuf(order: msg.OrderOrBuilder, sender: PeerConnection): Order = {
     val orderConstructor = order.getType match {
       case msg.OrderType.BID => Bid.apply _
       case msg.OrderType.ASK => Ask.apply _
@@ -45,11 +50,11 @@ object ProtobufConversions {
     orderConstructor(
       fromProtobuf(order.getAmount),
       fromProtobuf(order.getPrice),
-      senderInfo.toString
+      sender.toString
     )
   }
 
-  def fromProtobuf(quote: msg.Quote): Quote = {
+  def fromProtobuf(quote: msg.QuoteOrBuilder): Quote = {
     val bidOption = if (quote.hasHighestBid) Some(fromProtobuf(quote.getHighestBid)) else None
     val askOption = if (quote.hasLowestAsk) Some(fromProtobuf(quote.getLowestAsk)) else None
     val lastPriceOption = if (quote.hasLastPrice) Some(fromProtobuf(quote.getLastPrice)) else None
@@ -98,6 +103,15 @@ object ProtobufConversions {
     bidOption.foreach(bid => builder.setHighestBid(toProtobuf(bid)))
     askOption.foreach(ask => builder.setLowestAsk(toProtobuf(ask)))
     lastPriceOption.foreach(lastPrice => builder.setLastPrice(toProtobuf(lastPrice)))
+    builder.build
+  }
+
+  def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = {
+    val builder = msg.OrderMatch.newBuilder
+    builder.setAmount(toProtobuf(orderMatch.amount))
+    builder.setPrice(toProtobuf(orderMatch.price))
+    builder.setBuyer(orderMatch.buyer)
+    builder.setSeller(orderMatch.seller)
     builder.build
   }
 }

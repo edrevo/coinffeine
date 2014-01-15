@@ -1,8 +1,6 @@
 // Copyright (C) 2013 Bitwise
 // All rights reserved
 
-// TODO: add messages to implement the exchange
-
 package bitmarket.protocol;
 
 option java_package = "com.bitwise.bitmarket.common.protocol.protobuf";
@@ -49,14 +47,26 @@ message Quote {
     optional FiatAmount lastPrice = 3;
 }
 
+message QuoteResponse {
+    enum Result {
+        FOUND_QUOTE = 1;
+        CURRENCY_NOT_TRADED = 2;
+        UNKNOWN_CURRENCY = 3;
+        TIMEOUT = 4;
+    }
+    required Result result = 1;
+    optional Quote quote = 2;
+}
+
 message OrderMatch {
-    required Order bid = 1;
-    required Order ask = 2;
-    required string counterpart = 4;
+    required BtcAmount amount = 1;
+    required FiatAmount price = 2;
+    required string buyer = 3;
+    required string seller = 4;
 }
 
 service BrokerService {
-    rpc RequestQuote (QuoteRequest) returns (Quote);
+    rpc RequestQuote (QuoteRequest) returns (QuoteResponse);
     rpc PlaceOrder (Order) returns (OrderResponse);
 }
 

@@ -10,7 +10,7 @@ import akka.actor._
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.market._
 import com.bitwise.bitmarket.common.currency.FiatAmount
-import com.bitwise.bitmarket.common.protocol.{Quote, Order}
+import com.bitwise.bitmarket.common.protocol.{OrderMatch, Quote, Order}
 
 class BrokerActor(currency: Currency, orderExpirationInterval: Duration = 60 seconds)
   extends Actor with ActorLogging {
@@ -82,5 +82,5 @@ object BrokerActor {
   case class QuoteResponse(quote: Quote)
   case class OrderPlacement(order: Order)
   case class OrderCancellation(requester: String)
-  case class NotifyCross(cross: Cross)
+  case class NotifyCross(cross: OrderMatch)
 }

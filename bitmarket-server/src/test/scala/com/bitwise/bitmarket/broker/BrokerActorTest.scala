@@ -8,7 +8,7 @@ import akka.testkit._
 
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
-import com.bitwise.bitmarket.common.protocol.{Quote, Ask, Bid}
+import com.bitwise.bitmarket.common.protocol.{OrderMatch, Quote, Ask, Bid}
 import com.bitwise.bitmarket.AkkaSpec
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.market._
@@ -29,7 +29,7 @@ class BrokerActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("B
     probe.expectNoMsg(100 millis)
 
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.6), EUR(850), "client3")))
-    probe.expectMsg(NotifyCross(Cross(BtcAmount(0.6), EUR(900), "client2", "client3")))
+    probe.expectMsg(NotifyCross(OrderMatch(BtcAmount(0.6), EUR(900), "client2", "client3")))
   }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
@@ -80,6 +80,6 @@ class BrokerActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("B
     probe.send(broker, secondBid)
     probe.send(broker, firstBid)
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "ask")))
-    probe.expectMsg(NotifyCross(Cross(BtcAmount(1), EUR(900), "first-bid", "ask")))
+    probe.expectMsg(NotifyCross(OrderMatch(BtcAmount(1), EUR(900), "first-bid", "ask")))
   }
 }

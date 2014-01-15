@@ -1,16 +1,15 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
-import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.matchers.ShouldMatchers
 
 import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 
-class ProtobufConversionsTest extends FlatSpec with MustMatchers {
+class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   import ProtobufConversions._
 
   val offerMessage = msg.Offer.newBuilder
@@ -30,16 +29,16 @@ class ProtobufConversionsTest extends FlatSpec with MustMatchers {
     bitcoinPrice = EUR(100)
   )
 
-  "An offer" must "be converted from protobuf" in {
-    fromProtobuf(offerMessage) must be (offer)
+  "An offer" should "be converted from protobuf" in {
+    fromProtobuf(offerMessage) should be (offer)
   }
 
-  it must "be converted to protobuf" in {
-    toProtobuf(offer) must be (offerMessage)
+  it should "be converted to protobuf" in {
+    toProtobuf(offer) should be (offerMessage)
   }
 
-  it must "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(offer)) must be (offer)
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(offer)) should be (offer)
   }
 
   val exchangeMessage = msg.ExchangeRequest.newBuilder
@@ -55,16 +54,16 @@ class ProtobufConversionsTest extends FlatSpec with MustMatchers {
     amount = BtcAmount(2)
   )
 
-  "An exchange" must "be converted from protobuf" in {
-    fromProtobuf(exchangeMessage) must be (exchange)
+  "An exchange" should "be converted from protobuf" in {
+    fromProtobuf(exchangeMessage) should be (exchange)
   }
 
-  it must "be converted to protobuf" in {
-    toProtobuf(exchange) must be (exchangeMessage)
+  it should "be converted to protobuf" in {
+    toProtobuf(exchange) should be (exchangeMessage)
   }
 
-  it must "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(exchange)) must be (exchange)
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(exchange)) should be (exchange)
   }
 
   val bidMessage = msg.Order.newBuilder
@@ -73,23 +72,23 @@ class ProtobufConversionsTest extends FlatSpec with MustMatchers {
     .setPrice(msg.FiatAmount.newBuilder.setValue(300).setScale(0).setCurrency("EUR"))
     .build
   val askMessage = bidMessage.toBuilder.setType(msg.OrderType.ASK).build
-  val senderInfo = new PeerInfo("host", 8080)
+  val senderInfo = PeerConnection("host", 8080)
   val bid = Bid(BtcAmount(2), EUR(300), senderInfo.toString)
   val ask = Ask(BtcAmount(2), EUR(300), senderInfo.toString)
 
-  "An order" must "be converted from protobuf" in {
-    fromProtobuf(bidMessage, senderInfo) must be (bid)
-    fromProtobuf(askMessage, senderInfo) must be (ask)
+  "An order" should "be converted from protobuf" in {
+    fromProtobuf(bidMessage, senderInfo) should be (bid)
+    fromProtobuf(askMessage, senderInfo) should be (ask)
   }
 
-  it must "be converted to protobuf" in {
-    toProtobuf(bid) must be (bidMessage)
-    toProtobuf(ask) must be (askMessage)
+  it should "be converted to protobuf" in {
+    toProtobuf(bid) should be (bidMessage)
+    toProtobuf(ask) should be (askMessage)
   }
 
-  it must "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(bid), senderInfo) must be (bid)
-    fromProtobuf(toProtobuf(ask), senderInfo) must be (ask)
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(bid), senderInfo) should be (bid)
+    fromProtobuf(toProtobuf(ask), senderInfo) should be (ask)
   }
 
   val quoteMessage = msg.Quote.newBuilder
@@ -101,17 +100,42 @@ class ProtobufConversionsTest extends FlatSpec with MustMatchers {
   val quote = Quote(EUR(20) -> EUR(30), EUR(22))
   val emptyQuote = Quote(None -> None, None)
 
-  "A quote" must "be converted from protobuf" in {
-    fromProtobuf(quoteMessage) must be (quote)
-    fromProtobuf(emptyQuoteMessage) must be (emptyQuote)
+  "A quote" should "be converted from protobuf" in {
+    fromProtobuf(quoteMessage) should be (quote)
+    fromProtobuf(emptyQuoteMessage) should be (emptyQuote)
   }
 
-  it must "be converted to protobuf" in {
-    toProtobuf(quote) must be (quoteMessage)
+  it should "be converted to protobuf" in {
+    toProtobuf(quote) should be (quoteMessage)
   }
 
-  it must "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(quote)) must be (quote)
-    fromProtobuf(toProtobuf(emptyQuote)) must be (emptyQuote)
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(quote)) should be (quote)
+    fromProtobuf(toProtobuf(emptyQuote)) should be (emptyQuote)
+  }
+
+  val orderMatchMessage = msg.OrderMatch.newBuilder
+    .setAmount(toProtobuf(BtcAmount(0.1)))
+    .setPrice(toProtobuf(EUR(10000)))
+    .setBuyer("bitmarket://buyer:8080")
+    .setSeller("bitmarket://seller:1234")
+    .build
+  val orderMatch = OrderMatch(
+    amount = BtcAmount(0.1),
+    price = EUR(10000),
+    buyer = "bitmarket://buyer:8080",
+    seller = "bitmarket://seller:1234"
+  )
+
+  "An order match" should "be converted from protobuf" in {
+    fromProtobuf(orderMatchMessage) should be (orderMatch)
+  }
+
+  it should "be converted to protobuf" in {
+    toProtobuf(orderMatch) should be (orderMatchMessage)
+  }
+
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(orderMatch)) should be (orderMatch)
   }
 }

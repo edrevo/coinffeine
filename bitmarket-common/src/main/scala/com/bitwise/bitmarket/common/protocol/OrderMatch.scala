@@ -1,5 +1,11 @@
 package com.bitwise.bitmarket.common.protocol
 
-import com.googlecode.protobuf.pro.duplex.PeerInfo
+import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 
-case class OrderMatch(bid: Bid, ask: Ask, counterPart: PeerInfo)
+/** Represents a coincidence of desires of both a buyer and a seller */
+case class OrderMatch(
+    amount: BtcAmount,
+    price: FiatAmount,
+    buyer: String,
+    seller: String
+)
