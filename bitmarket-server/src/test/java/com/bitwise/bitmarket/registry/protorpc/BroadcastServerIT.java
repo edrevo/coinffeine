@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.bitwise.bitmarket.common.protorpc.Callbacks;
+import com.bitwise.bitmarket.common.protorpc.PeerServer;
+import com.bitwise.bitmarket.common.protorpc.PeerSession;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.googlecode.protobuf.pro.duplex.PeerInfo;
@@ -13,9 +16,6 @@ import org.junit.Test;
 
 import com.bitwise.bitmarket.common.NetworkTestUtils;
 import com.bitwise.bitmarket.common.protocol.protobuf.BitmarketProtobuf;
-import com.bitwise.bitmarket.common.protorpc.NoopRpc;
-import com.bitwise.bitmarket.common.protorpc.PeerServer;
-import com.bitwise.bitmarket.common.protorpc.PeerSession;
 
 import static com.bitwise.bitmarket.common.ConcurrentAssert.assertEventually;
 import static org.junit.Assert.assertEquals;
@@ -63,17 +63,17 @@ public class BroadcastServerIT {
         try (PeerSession session1 = this.client1.connectTo(this.instance.getServerInfo());
                 PeerSession session2 = this.client2.connectTo(this.instance.getServerInfo())) {
             BitmarketProtobuf.BroadcastService.Stub stub1 =
-                    BitmarketProtobuf.BroadcastService.newStub(session1.getChannel());
+                    BitmarketProtobuf.BroadcastService.newStub(session1.channel());
             stub1.publish(
-                    session1.getController(),
+                    session1.controller(),
                     request1,
-                    NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
+                    Callbacks.noop(BitmarketProtobuf.PublishResponse.class));
             BitmarketProtobuf.BroadcastService.Stub stub2 =
-                    BitmarketProtobuf.BroadcastService.newStub(session2.getChannel());
+                    BitmarketProtobuf.BroadcastService.newStub(session2.channel());
             stub2.publish(
-                    session2.getController(),
+                    session2.controller(),
                     request2,
-                    NoopRpc.<BitmarketProtobuf.PublishResponse>callback());
+                    Callbacks.noop(BitmarketProtobuf.PublishResponse.class));
 
             assertEventually(new Runnable() {
                 @Override
@@ -114,7 +114,7 @@ public class BroadcastServerIT {
         }
 
         public PeerSession connectTo(PeerInfo serverInfo) throws IOException {
-            return this.server.peerWith(serverInfo);
+            return this.server.peerWith(serverInfo).get();
         }
     }
 
