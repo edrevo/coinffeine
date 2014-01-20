@@ -94,7 +94,11 @@ class ProtobufServerActor(
   }
 
   override def preStart() {
-    server.start()
+    val starting = server.start()
+    starting.await()
+    if (!starting.isSuccess) {
+      throw starting.cause();
+    }
   }
 
   override def postStop() { server.shutdown() }
