@@ -38,9 +38,7 @@ class ProtobufServerActorTest
 
   "A protobuf server actor" should "translate and forward order placements" in {
     val bid = Bid(BtcAmount(0.7), EUR(650), clients(0).connection.toString)
-    eventually {
-      clients(0).connectToServer()
-    }
+    clients(0).connectToServer()
     clients(0).placeOrder(toProtobuf(bid)).getResult should be (msg.OrderResponse.Result.SUCCESS)
     eurBroker.expectMsg(OrderPlacement(bid))
   }
