@@ -6,18 +6,18 @@ import scala.language.postfixOps
 import akka.actor._
 import akka.testkit._
 
+import com.bitwise.bitmarket.AkkaSpec
+import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol.{OrderMatch, Quote, Ask, Bid}
-import com.bitwise.bitmarket.AkkaSpec
-import com.bitwise.bitmarket.broker.BrokerActor._
-import com.bitwise.bitmarket.market._
 
-class BrokerActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
+class DefaultBrokerActorTest
+  extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
 
   class WithEurBroker(name: String) {
     val probe = TestProbe()
-    val broker = system.actorOf(Props(new BrokerActor(
+    val broker = system.actorOf(Props(new DefaultBrokerActor(
       currency = EUR.currency,
       orderExpirationInterval = 1 second
     )), name)

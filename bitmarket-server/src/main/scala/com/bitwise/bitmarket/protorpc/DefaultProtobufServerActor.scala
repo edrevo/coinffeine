@@ -1,10 +1,10 @@
-package com.bitwise.bitmarket.broker
+package com.bitwise.bitmarket.protorpc
 
 import java.util.Currency
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Try
+import scala.util.{Try, Failure, Success}
 
 import akka.actor._
 import akka.pattern._
@@ -19,17 +19,13 @@ import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions._
 import com.bitwise.bitmarket.common.protorpc.PeerServer
-import com.bitwise.bitmarket.broker.BrokerActor.OrderPlacement
-import scala.util.Failure
-import scala.util.Success
-import com.bitwise.bitmarket.broker.BrokerActor.QuoteResponse
 
-class ProtobufServerActor(
+private class DefaultProtobufServerActor(
     serverInfo: PeerInfo,
     brokers: Map[Currency, ActorRef],
     brokerTimeout: FiniteDuration = 10 seconds) extends Actor with ActorLogging {
 
-  import ProtobufServerActor._
+  import DefaultProtobufServerActor._
   import context.dispatcher
 
   private val selfRef = context.self
@@ -97,11 +93,14 @@ class ProtobufServerActor(
     val starting = server.start()
     starting.await()
     if (!starting.isSuccess) {
-      throw starting.cause();
+      server.shutdown()
+      throw starting.cause()
     }
   }
 
-  override def postStop() { server.shutdown() }
+  override def postStop() {
+    server.shutdown()
+  }
 
   def receive: Receive = {
 
@@ -117,15 +116,20 @@ class ProtobufServerActor(
   }
 }
 
-private[this] object ProtobufServerActor {
+object DefaultProtobufServerActor {
 
-  case class RequestQuoteCallback(currency: Currency, spreadPromise: Promise[Quote])
-  case class PlaceOrderCallback(order: Order)
+  trait Component extends ProtobufServerActor.Component {
+    override def protobufServerActorProps(port: Int, brokers: Map[Currency, ActorRef]) =
+      Props(new DefaultProtobufServerActor(new PeerInfo("localhost", port), brokers))
+  }
 
-  val SuccessfulResult = proto.OrderResponse.newBuilder
+  private case class RequestQuoteCallback(currency: Currency, spreadPromise: Promise[Quote])
+  private case class PlaceOrderCallback(order: Order)
+
+  private val SuccessfulResult = proto.OrderResponse.newBuilder
     .setResult(proto.OrderResponse.Result.SUCCESS)
     .build
-  val CurrencyNotTradedResult = proto.OrderResponse.newBuilder
+  private val CurrencyNotTradedResult = proto.OrderResponse.newBuilder
     .setResult(proto.OrderResponse.Result.CURRENCY_NOT_TRADED)
     .build
 }
