@@ -13,7 +13,7 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   import ProtobufConversions._
 
   val offerMessage = msg.Offer.newBuilder
-    .setId(1234567890)
+    .setId("1234567890")
     .setSeq(0)
     .setFrom("abcdefghijklmnopqrsruvwxyz")
     .setConnection("bitmarket://example.com:1234/")
@@ -21,7 +21,7 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
     .setBtcPrice(msg.FiatAmount.newBuilder.setValue(100).setScale(0).setCurrency("EUR"))
     .build
   val offer = Offer(
-    id = new OfferId(1234567890),
+    id = "1234567890",
     sequenceNumber = 0,
     fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
     fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
@@ -42,13 +42,13 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   }
 
   val exchangeMessage = msg.ExchangeRequest.newBuilder
-    .setId(1234567890)
+    .setId("1234567890")
     .setFrom("abcdefghijklmnopqrsruvwxyz")
     .setConnection("bitmarket://example.com:1234/")
     .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
     .build
   val exchange = ExchangeRequest(
-    id = OfferId(1234567890),
+    id = "1234567890",
     fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
     fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
     amount = BtcAmount(2)

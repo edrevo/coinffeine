@@ -66,6 +66,35 @@ message OrderMatch {
     required string seller = 5;
 }
 
+message CrossNotification {
+    required string id = 1;
+    required OrderMatch cross = 2;
+}
+
+message ExchangeAborted {
+    required string id = 1;
+    required string reason = 2;
+}
+
+message RejectExchange {
+    required string id = 1;
+    required string reason = 2;
+}
+
+message CommitmentNotification {
+    required string exchangeId = 1;
+    required string buyerTxId = 2;
+    required string sellerTxId = 3;
+}
+
+message RefundTxSignatureRequest {
+    required bytes refundTx = 1;
+}
+
+message RefundTxSignatureResponse {
+    required bytes transactionSignature = 1;
+}
+
 service BrokerService {
     rpc RequestQuote (QuoteRequest) returns (QuoteResponse);
     rpc PlaceOrder (Order) returns (OrderResponse);
@@ -74,7 +103,7 @@ service BrokerService {
 // Old services
 
 message Offer {
-	required int32 id = 1;
+	required string id = 1;
 	required int32 seq = 2;
 	required string from = 3;
 	required string connection = 4;
@@ -91,7 +120,7 @@ message PublishResponse {
 }
 
 message ExchangeRequest {
-	required int32 id = 1;
+	required string id = 1;
 	required string from = 2;
 	required string connection = 3;
 	required BtcAmount amount = 4;

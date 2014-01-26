@@ -12,7 +12,7 @@ import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 object ProtobufConversions {
 
   def fromProtobuf(message: msg.OfferOrBuilder): Offer = Offer(
-    id = OfferId(message.getId),
+    id = message.getId.toString,
     sequenceNumber = message.getSeq,
     fromId = PeerId(message.getFrom),
     fromConnection = PeerConnection.parse(message.getConnection),
@@ -21,7 +21,7 @@ object ProtobufConversions {
   )
 
   def fromProtobuf(message: msg.ExchangeRequestOrBuilder): ExchangeRequest = new ExchangeRequest(
-    id = OfferId(message.getId),
+    id = message.getId.toString,
     fromId = PeerId(message.getFrom),
     fromConnection = PeerConnection.parse(message.getConnection),
     amount = fromProtobuf(message.getAmount)
@@ -63,7 +63,7 @@ object ProtobufConversions {
   }
 
   def toProtobuf(offer: Offer): msg.Offer = msg.Offer.newBuilder
-    .setId(offer.id.bytes)
+    .setId(offer.id)
     .setSeq(offer.sequenceNumber)
     .setFrom(offer.fromId.address)
     .setConnection(offer.fromConnection.toString)
@@ -72,7 +72,7 @@ object ProtobufConversions {
     .build
 
   def toProtobuf(acceptance: ExchangeRequest): msg.ExchangeRequest = msg.ExchangeRequest.newBuilder
-    .setId(acceptance.id.bytes)
+    .setId(acceptance.id)
     .setFrom(acceptance.fromId.address)
     .setConnection(acceptance.fromConnection.toString)
     .setAmount(toProtobuf(acceptance.amount))

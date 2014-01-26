@@ -4,7 +4,7 @@ import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.BtcAmount
 
 case class ExchangeRequest(
-    id: OfferId,
+    id: String,
     fromId: PeerId,
     fromConnection: PeerConnection,
     amount: BtcAmount

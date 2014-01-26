@@ -46,14 +46,14 @@ public class ProtobufBitmarketProtocolIT {
         this.peers.add(0, new Peer(1235));
 
         this.sampleOffer = new Offer(
-                new OfferId(7000),
+                "7000",
                 0,
                 this.peers.get(0).getId(),
                 this.peers.get(0).getConnection(),
                 new BtcAmount(new BigDecimal(2)),
                 new FiatAmount(new BigDecimal(2), Currency.getInstance("EUR")));
         this.sampleExchangeRequest = new ExchangeRequest(
-                new OfferId(7000),
+                "7000",
                 this.peers.get(0).getId(),
                 this.peers.get(0).getConnection(),
                 new BtcAmount(new BigDecimal(2)));
@@ -73,7 +73,7 @@ public class ProtobufBitmarketProtocolIT {
         assertEventually(new Runnable() {
             @Override
             public void run() {
-                assertEquals(7000, peers.get(1).getOffers().get(0).id().bytes());
+                assertEquals("7000", peers.get(1).getOffers().get(0).id());
             }
         });
     }
@@ -92,7 +92,7 @@ public class ProtobufBitmarketProtocolIT {
         assertEventually(new Runnable() {
             @Override
             public void run() {
-                assertEquals(7000, peers.get(1).getExchangeRequests().get(0).id().bytes());
+                assertEquals("7000", peers.get(1).getExchangeRequests().get(0).id());
             }
         });
     }
