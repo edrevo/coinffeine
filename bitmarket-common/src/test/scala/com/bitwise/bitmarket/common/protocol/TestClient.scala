@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.broker
+package com.bitwise.bitmarket.common.protocol
 
 import java.util.Currency
 import scala.concurrent._

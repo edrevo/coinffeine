@@ -73,6 +73,6 @@ object ProjectBuild extends Build {
   )
 
   lazy val server = (Project(id = "server", base = file("bitmarket-server"))
-    dependsOn(common, commonTest % "test->compile")
+    dependsOn(common % "compile->compile;test->test", commonTest % "test->compile")
   )
 }
