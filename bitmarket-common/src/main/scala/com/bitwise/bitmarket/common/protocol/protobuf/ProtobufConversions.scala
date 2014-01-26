@@ -36,6 +36,7 @@ object ProtobufConversions {
   )
 
   def fromProtobuf(orderMatch: msg.OrderMatchOrBuilder): OrderMatch = OrderMatch(
+    id = orderMatch.getId,
     amount = fromProtobuf(orderMatch.getAmount),
     price = fromProtobuf(orderMatch.getPrice),
     buyer = orderMatch.getBuyer,
@@ -108,6 +109,7 @@ object ProtobufConversions {
 
   def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = {
     val builder = msg.OrderMatch.newBuilder
+    builder.setId(orderMatch.id)
     builder.setAmount(toProtobuf(orderMatch.amount))
     builder.setPrice(toProtobuf(orderMatch.price))
     builder.setBuyer(orderMatch.buyer)

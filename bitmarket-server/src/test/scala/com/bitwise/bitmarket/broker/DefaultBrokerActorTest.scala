@@ -29,7 +29,11 @@ class DefaultBrokerActorTest
     probe.expectNoMsg(100 millis)
 
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.6), EUR(850), "client3")))
-    probe.expectMsg(NotifyCross(OrderMatch(BtcAmount(0.6), EUR(900), "client2", "client3")))
+    val orderMatch = probe.expectMsgClass(classOf[NotifyCross]).cross
+    orderMatch.amount should be (BtcAmount(0.6))
+    orderMatch.price should be (EUR(900))
+    orderMatch.buyer should be ("client2")
+    orderMatch.seller should be ("client3")
   }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
@@ -80,6 +84,17 @@ class DefaultBrokerActorTest
     probe.send(broker, secondBid)
     probe.send(broker, firstBid)
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "ask")))
-    probe.expectMsg(NotifyCross(OrderMatch(BtcAmount(1), EUR(900), "first-bid", "ask")))
+    val orderMatch = probe.expectMsgClass(classOf[NotifyCross]).cross
+    orderMatch.buyer should equal ("first-bid")
+  }
+
+  it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
+    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), "buyer")))
+    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "seller")))
+    val id1 = probe.expectMsgClass(classOf[NotifyCross]).cross.id
+    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), "buyer")))
+    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "seller")))
+    val id2 = probe.expectMsgClass(classOf[NotifyCross]).cross.id
+    id1 should not (equal (id2))
   }
 }

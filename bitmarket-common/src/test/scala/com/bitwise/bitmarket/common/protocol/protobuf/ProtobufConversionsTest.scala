@@ -115,12 +115,14 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   }
 
   val orderMatchMessage = msg.OrderMatch.newBuilder
+    .setId("1234")
     .setAmount(toProtobuf(BtcAmount(0.1)))
     .setPrice(toProtobuf(EUR(10000)))
     .setBuyer("bitmarket://buyer:8080")
     .setSeller("bitmarket://seller:1234")
     .build
   val orderMatch = OrderMatch(
+    id = "1234",
     amount = BtcAmount(0.1),
     price = EUR(10000),
     buyer = "bitmarket://buyer:8080",

@@ -9,6 +9,8 @@ import com.bitwise.bitmarket.common.protocol.{OrderMatch, Ask, Bid}
 
 class OrderBookTest extends FlatSpec with MustMatchers {
 
+  val sequentialIds = Stream.from(1).map(_.toString)
+
   "An order book" must "require asks to be sorted" in {
     val ex = evaluating {
       OrderBook(EUR.currency, bids = Seq.empty, asks = Seq(
@@ -139,7 +141,7 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Bid(BtcAmount(1), EUR(20), "buyer")),
       Seq(Ask(BtcAmount(2), EUR(25), "seller"))
     )
-    book.clearMarket must be ((book, Seq.empty))
+    book.clearMarket(sequentialIds) must be ((book, Seq.empty))
   }
 
   it must "be cleared with a cross when two orders match perfectly" in {
@@ -156,8 +158,8 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Bid(BtcAmount(1), EUR(20), "other buyer")),
       Seq.empty
     )
-    val cross = OrderMatch(BtcAmount(2), EUR(25), "buyer", "seller")
-    book.clearMarket must be ((clearedBook, Seq(cross)))
+    val cross = OrderMatch("1", BtcAmount(2), EUR(25), "buyer", "seller")
+    book.clearMarket(sequentialIds) must be ((clearedBook, Seq(cross)))
   }
 
   it must "use the midpoint price" in {
@@ -166,7 +168,8 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Bid(BtcAmount(1), EUR(20), "buyer")),
       Seq(Ask(BtcAmount(1), EUR(10), "seller"))
     )
-    book.clearMarket._2 must be (Seq(OrderMatch(BtcAmount(1), EUR(15), "buyer", "seller")))
+    val cross = OrderMatch("1", BtcAmount(1), EUR(15), "buyer", "seller")
+    book.clearMarket(sequentialIds)._2 must be (Seq(cross))
   }
 
   it must "clear orders partially" in {
@@ -176,8 +179,8 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Ask(BtcAmount(1), EUR(25), "seller"))
     )
     val clearedBook = OrderBook(EUR.currency, Seq(Bid(BtcAmount(1), EUR(25), "buyer")), Seq.empty)
-    val cross = OrderMatch(BtcAmount(1), EUR(25), "buyer", "seller")
-    book.clearMarket must be ((clearedBook, Seq(cross)))
+    val cross = OrderMatch("1", BtcAmount(1), EUR(25), "buyer", "seller")
+    book.clearMarket(sequentialIds) must be ((clearedBook, Seq(cross)))
   }
 
   it must "clear multiple orders against if necessary" in {
@@ -196,10 +199,10 @@ class OrderBookTest extends FlatSpec with MustMatchers {
       Seq(Ask(BtcAmount(1), EUR(25), "seller3"))
     )
     val crosses = Seq(
-      OrderMatch(BtcAmount(2), EUR(20), "buyer", "seller1"),
-      OrderMatch(BtcAmount(2), EUR(22.5), "buyer", "seller2"),
-      OrderMatch(BtcAmount(1), EUR(25), "buyer", "seller3")
+      OrderMatch("1", BtcAmount(2), EUR(20), "buyer", "seller1"),
+      OrderMatch("2", BtcAmount(2), EUR(22.5), "buyer", "seller2"),
+      OrderMatch("3", BtcAmount(1), EUR(25), "buyer", "seller3")
     )
-    book.clearMarket must be ((clearedBook, crosses))
+    book.clearMarket(sequentialIds) must be ((clearedBook, crosses))
   }
 }

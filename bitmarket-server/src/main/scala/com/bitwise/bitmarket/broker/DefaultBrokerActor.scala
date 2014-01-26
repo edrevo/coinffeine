@@ -4,6 +4,7 @@ import java.util.Currency
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.math.max
+import scala.util.Random
 
 import akka.actor._
 
@@ -31,7 +32,7 @@ private[broker] class DefaultBrokerActor(
 
     case OrderPlacement(order) =>
       log.info("Order placed " + order)
-      val (clearedBook, crosses) = book.placeOrder(order).clearMarket
+      val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
       book = clearedBook
       crosses.foreach { cross => sender ! NotifyCross(cross) }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
@@ -72,6 +73,8 @@ private[broker] class DefaultBrokerActor(
     book = expired.foldLeft(book)(_.cancelOrder(_))
     expirationTimes --= expired
   }
+
+  private def idGenerator = Stream.continually(Random.nextLong().toString)
 }
 
 object DefaultBrokerActor {
