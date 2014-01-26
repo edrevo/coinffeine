@@ -54,15 +54,20 @@ case class OrderBook(
     *
     * @return Cleared market and a sequence of crosses
     */
-  def clearMarket: (OrderBook, Seq[OrderMatch]) = clearMarket(bids, asks, Seq.empty)
+  def clearMarket(idStream: Stream[String]): (OrderBook, Seq[OrderMatch]) =
+    clearMarket(idStream, bids, asks, Seq.empty)
 
   @tailrec
   private def clearMarket(
-      bids: Seq[Bid], asks: Seq[Ask], crosses: Seq[OrderMatch]): (OrderBook, Seq[OrderMatch]) = {
+      idStream: Stream[String],
+      bids: Seq[Bid],
+      asks: Seq[Ask],
+      crosses: Seq[OrderMatch]): (OrderBook, Seq[OrderMatch]) = {
     (bids.headOption, asks.headOption) match {
       case (Some(bid), Some(ask)) if bid.price.amount >= ask.price.amount =>
-        val (cross, remainingBid, remainingAsk) = crossOrders(bid, ask)
+        val (cross, remainingBid, remainingAsk) = crossOrders(idStream.head, bid, ask)
         clearMarket(
+          idStream.tail,
           remainingBid.toList ++ bids.tail,
           remainingAsk.toList ++ asks.tail,
           crosses :+ cross
@@ -71,13 +76,14 @@ case class OrderBook(
     }
   }
 
-  private def crossOrders(bid: Bid, ask: Ask): (OrderMatch, Option[Bid], Option[Ask]) = {
+  private def crossOrders(id: String, bid: Bid, ask: Ask): (OrderMatch, Option[Bid], Option[Ask]) = {
     val crossedAmount = bid.amount min ask.amount
     val remainingBid =
       if (bid.amount > crossedAmount) Some(bid.copy(amount = bid.amount - crossedAmount)) else None
     val remainingAsk =
       if (ask.amount > crossedAmount) Some(ask.copy(amount = ask.amount - crossedAmount)) else None
     val cross = OrderMatch(
+      id = id,
       amount = crossedAmount,
       price = (bid.price + ask.price) / 2,
       buyer = bid.requester,

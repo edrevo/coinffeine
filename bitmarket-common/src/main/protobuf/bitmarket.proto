@@ -59,10 +59,11 @@ message QuoteResponse {
 }
 
 message OrderMatch {
-    required BtcAmount amount = 1;
-    required FiatAmount price = 2;
-    required string buyer = 3;
-    required string seller = 4;
+    required string id = 1;
+    required BtcAmount amount = 2;
+    required FiatAmount price = 3;
+    required string buyer = 4;
+    required string seller = 5;
 }
 
 service BrokerService {
