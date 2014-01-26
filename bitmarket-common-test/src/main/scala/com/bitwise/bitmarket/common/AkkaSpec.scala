@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket
+package com.bitwise.bitmarket.common
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit}

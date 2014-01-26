@@ -9,7 +9,6 @@ import akka.testkit.TestProbe
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
-import com.bitwise.bitmarket.AkkaSpec
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.broker.TestClient
 import com.bitwise.bitmarket.common.currency.BtcAmount
@@ -17,6 +16,7 @@ import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.toProtobuf
+import com.bitwise.bitmarket.common.AkkaSpec
 
 class DefaultProtobufServerActorTest
   extends AkkaSpec("ProtobufServerSystem") with Eventually with IntegrationPatience {

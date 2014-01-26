@@ -5,8 +5,8 @@ import java.net.BindException
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import com.bitwise.bitmarket.{MockActor, AkkaSpec}
-import com.bitwise.bitmarket.MockActor._
+import com.bitwise.bitmarket.common.{AkkaSpec, MockActor}
+import MockActor._
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 
 class ServerActorTest extends AkkaSpec {
