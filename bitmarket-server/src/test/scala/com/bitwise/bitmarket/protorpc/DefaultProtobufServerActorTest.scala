@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.broker
+package com.bitwise.bitmarket.protorpc
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -11,20 +11,21 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
 import com.bitwise.bitmarket.AkkaSpec
 import com.bitwise.bitmarket.broker.BrokerActor._
+import com.bitwise.bitmarket.broker.TestClient
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.toProtobuf
 
-class ProtobufServerActorTest
+class DefaultProtobufServerActorTest
   extends AkkaSpec("ProtobufServerSystem") with Eventually with IntegrationPatience {
 
   val testTimeout = 3 seconds
   val basePort = 8000
   val eurBroker = TestProbe()
   val serverInfo = new PeerInfo("localhost", basePort)
-  val server = system.actorOf(Props(new ProtobufServerActor(
+  val server = system.actorOf(Props(new DefaultProtobufServerActor(
     serverInfo,
     brokers = Map(EUR.currency -> eurBroker.ref),
     brokerTimeout = 1 second
