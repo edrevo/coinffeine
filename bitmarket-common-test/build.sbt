@@ -1,5 +1,6 @@
 name := "Bitmarket Common Test"
 
-libraryDependencies ++= Dependencies.axis2 ++ Seq(
-  Dependencies.protobufRpc
+libraryDependencies in ThisBuild ++= Dependencies.axis2 ++ Dependencies.akka ++ Seq(
+  Dependencies.protobufRpc,
+  Dependencies.scalatest
 )

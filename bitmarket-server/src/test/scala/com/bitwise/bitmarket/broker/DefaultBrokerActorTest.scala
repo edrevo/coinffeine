@@ -6,11 +6,11 @@ import scala.language.postfixOps
 import akka.actor._
 import akka.testkit._
 
-import com.bitwise.bitmarket.AkkaSpec
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol.{OrderMatch, Quote, Ask, Bid}
+import com.bitwise.bitmarket.common.AkkaSpec
 
 class DefaultBrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {

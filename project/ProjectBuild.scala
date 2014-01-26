@@ -35,7 +35,7 @@ object ProjectBuild extends Build {
     lazy val netty = "io.netty" % "netty-all" % "4.0.12.Final"
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
     lazy val protobufRpc = "com.googlecode.protobuf-rpc-pro" % "protobuf-rpc-pro-duplex" % "3.0.8"
-    lazy val scalatest = "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+    lazy val scalatest = "org.scalatest" %% "scalatest" % "1.9.1"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.5"
   }
 
