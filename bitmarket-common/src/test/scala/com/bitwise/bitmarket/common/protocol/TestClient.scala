@@ -56,6 +56,16 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
     promise.future
   }
 
+  def notifyMatchToRemote(request: msg.OrderMatch): Future[msg.Void] = {
+    val session = sessionOption.get
+    val stub = msg.PeerService.newStub(session.channel)
+    val promise = Promise[msg.Void]()
+    stub.notifyMatch(session.controller, request, new RpcCallback[msg.Void] {
+      def run(parameter: msg.Void) { promise.success(msg.Void.newBuilder().build())}
+    })
+    promise.future
+  }
+
   override def notifyMatch(c: RpcController, request: msg.OrderMatch, done: RpcCallback[msg.Void]) {
     synchronized {
       receivedMessages_ = receivedMessages_ :+ request
