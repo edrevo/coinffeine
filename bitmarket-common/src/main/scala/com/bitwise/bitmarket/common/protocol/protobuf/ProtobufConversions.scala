@@ -4,13 +4,14 @@ import java.io._
 import java.math.BigDecimal
 import java.util.Currency
 
+import com.google.protobuf.ByteString
+import com.google.bitcoin.core.{Transaction, Sha256Hash}
+import com.google.bitcoin.crypto.TransactionSignature
+
 import com.bitwise.bitmarket.common.{protocol, PeerConnection}
 import com.bitwise.bitmarket.common.currency.{BtcAmount, FiatAmount}
-import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
-import com.google.protobuf.ByteString
 import com.bitwise.bitmarket.common.protocol._
-import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.core.{Transaction, Sha256Hash}
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 
 /** Conversion from/to domain classes and Protobuf messages. */
 object ProtobufConversions {
@@ -96,7 +97,7 @@ object ProtobufConversions {
   def fromProtobuf(refundTxSignatureResponse: msg.RefundTxSignatureResponseOrBuilder):
     protocol.RefundTxSignatureResponse = RefundTxSignatureResponse(
     exchangeId = refundTxSignatureResponse.getExchangeId,
-    refundTxSignature = TransactionSignature.decodeFromBitcoin(
+    refundSignature = TransactionSignature.decodeFromBitcoin(
       refundTxSignatureResponse.getTransactionSignature.toByteArray, false)
   )
 
@@ -201,7 +202,7 @@ object ProtobufConversions {
   def toProtobuf(refundTxSignatureResponse: RefundTxSignatureResponse): msg.RefundTxSignatureResponse = {
     val builder = msg.RefundTxSignatureResponse.newBuilder()
     builder.setExchangeId(refundTxSignatureResponse.exchangeId)
-    builder.setTransactionSignature(ByteString.copyFrom(refundTxSignatureResponse.refundTxSignature.encodeToBitcoin()))
+    builder.setTransactionSignature(ByteString.copyFrom(refundTxSignatureResponse.refundSignature.encodeToBitcoin()))
     builder.build()
   }
 

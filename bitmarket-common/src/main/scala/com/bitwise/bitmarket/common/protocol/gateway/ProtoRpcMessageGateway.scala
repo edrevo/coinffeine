@@ -9,13 +9,13 @@ import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.{fromProtobuf, toProtobuf}
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
 import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession, PeerServer}
 
 private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
 
-  import MessageGateway._
   import ProtoRpcMessageGateway._
 
   /** Metadata on message subscription requested by an actor. */
