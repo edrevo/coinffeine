@@ -1,4 +1,4 @@
-package com.bitwise.bitmarket.broker
+package com.bitwise.bitmarket.common.protocol
 
 import java.util.Currency
 import scala.concurrent._
@@ -52,6 +52,16 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
     val promise = Promise[msg.QuoteResponse]()
     stub.requestQuote(session.controller, request, new RpcCallback[msg.QuoteResponse] {
       override def run(response: msg.QuoteResponse) { promise.success(response) }
+    })
+    promise.future
+  }
+
+  def notifyMatchToRemote(request: msg.OrderMatch): Future[msg.Void] = {
+    val session = sessionOption.get
+    val stub = msg.PeerService.newStub(session.channel)
+    val promise = Promise[msg.Void]()
+    stub.notifyMatch(session.controller, request, new RpcCallback[msg.Void] {
+      def run(parameter: msg.Void) { promise.success(msg.Void.newBuilder().build())}
     })
     promise.future
   }
