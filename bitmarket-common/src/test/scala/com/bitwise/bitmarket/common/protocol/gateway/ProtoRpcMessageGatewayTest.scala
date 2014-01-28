@@ -1,18 +1,18 @@
-package com.bitwise.bitmarket.common.protocol
+package com.bitwise.bitmarket.common.protocol.gateway
 
 import java.util.Currency
 import scala.util.Random
 
-import akka.actor.{Terminated, ActorRef, Props}
+import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
-import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
+import com.bitwise.bitmarket.common.protocol.{TestClient, OrderMatch}
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions
-import com.bitwise.bitmarket.common.protorpc.Callbacks
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 
 class ProtoRpcMessageGatewayTest
     extends AkkaSpec("MessageGatewaySystem") with Eventually with IntegrationPatience {
@@ -64,14 +64,16 @@ class ProtoRpcMessageGatewayTest
     }
   }
 
+  val subscribeToOrderMatches = MessageGateway.Subscribe {
+    case ReceiveMessage(msg: OrderMatch, _) => true
+    case _ => false
+  }
+
   it must "deliver messages to subscribers when filter match" in new FreshGateway {
     val msg = makeOrderMatch
-    gateway ! MessageGateway.Subscribe {
-      case msg: OrderMatch => true
-      case _ => false
-    }
+    gateway ! subscribeToOrderMatches
     remotePeer.notifyMatchToRemote(ProtobufConversions.toProtobuf(msg))
-    expectMsg(msg)
+    expectMsg(ReceiveMessage(msg, remotePeer.connection))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in new FreshGateway {
@@ -84,12 +86,9 @@ class ProtoRpcMessageGatewayTest
   it must "deliver messages to several subscribers when filter match" in new FreshGateway {
     val msg = makeOrderMatch
     val subs = for (i <- 1 to 5) yield TestProbe()
-    subs.foreach(_.send(gateway, MessageGateway.Subscribe {
-      case msg: OrderMatch => true
-      case _ => false
-    }))
+    subs.foreach(_.send(gateway, subscribeToOrderMatches))
     remotePeer.notifyMatchToRemote(ProtobufConversions.toProtobuf(msg))
-    subs.foreach(_.expectMsg(msg))
+    subs.foreach(_.expectMsg(ReceiveMessage(msg, remotePeer.connection)))
   }
 
   trait MessageUtils {
