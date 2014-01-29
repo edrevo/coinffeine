@@ -1,23 +1,25 @@
-package com.bitwise.bitmarket.common.protocol
+package com.bitwise.bitmarket.common.protocol.gateway
 
 import java.io.IOException
 
-import akka.actor.{Terminated, ActorRef, Actor}
+import akka.actor.{Props, Terminated, ActorRef, Actor}
 import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
+import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
 import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.common.protocol.protobuf.{
-  ProtobufConversions, BitmarketProtobuf => proto}
+import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.{fromProtobuf, toProtobuf}
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
 import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession, PeerServer}
 
-class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
+private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
 
   import MessageGateway._
   import ProtoRpcMessageGateway._
 
   /** Metadata on message subscription requested by an actor. */
-  private case class MessageSubscription(filter: Any => Boolean)
+  private case class MessageSubscription(filter: ReceiveMessage => Boolean)
 
   private class PeerServiceImpl extends proto.PeerService.Interface {
 
@@ -25,7 +27,7 @@ class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
         controller: RpcController,
         request: proto.OrderMatch,
         done: RpcCallback[proto.Void]) {
-      dispatchToSubscriptions(ProtobufConversions.fromProtobuf(request))
+      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
       done.run(VoidResponse)
     }
 
@@ -33,7 +35,7 @@ class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
         controller: RpcController,
         request: proto.Offer,
         done: RpcCallback[proto.PublishResponse]) {
-      dispatchToSubscriptions(ProtobufConversions.fromProtobuf(request))
+      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
       done.run(SuccessPublishResponse)
     }
 
@@ -41,8 +43,13 @@ class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
         controller: RpcController,
         request: proto.ExchangeRequest,
         done: RpcCallback[proto.ExchangeRequestResponse]) {
-      dispatchToSubscriptions(ProtobufConversions.fromProtobuf(request))
+      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
       done.run(SuccessExchangeResponse)
+    }
+
+    private def clientPeerConnection(controller: RpcController) = {
+      val info = controller.asInstanceOf[ServerRpcController].getRpcClient.getServerInfo
+      PeerConnection(info.getHostName, info.getPort)
     }
   }
 
@@ -84,17 +91,17 @@ class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
         case msg: OrderMatch =>
           srv.notifyMatch(
             sess.controller,
-            ProtobufConversions.toProtobuf(msg),
+            toProtobuf(msg),
             Callbacks.noop[proto.Void])
         case msg: Offer =>
           srv.publish(
             sess.controller,
-            ProtobufConversions.toProtobuf(msg),
+            toProtobuf(msg),
             Callbacks.noop[proto.PublishResponse])
         case msg: ExchangeRequest =>
           srv.requestExchange(
             sess.controller,
-            ProtobufConversions.toProtobuf(msg),
+            toProtobuf(msg),
             Callbacks.noop[proto.ExchangeRequestResponse])
         case _ =>
           throw ForwardException(
@@ -106,9 +113,10 @@ class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
     }
   }
 
-  private def dispatchToSubscriptions(msg: Any) {
-    for ((actor, MessageSubscription(filter)) <- subscriptions if filter(msg)) {
-      actor ! msg
+  private def dispatchToSubscriptions(msg: Any, sender: PeerConnection) {
+    val notification = ReceiveMessage(msg, sender)
+    for ((actor, MessageSubscription(filter)) <- subscriptions if filter(notification)) {
+      actor ! notification
     }
   }
 
@@ -130,4 +138,9 @@ object ProtoRpcMessageGateway {
   private[protocol] val SuccessExchangeResponse = proto.ExchangeRequestResponse.newBuilder()
     .setResult(proto.ExchangeRequestResponse.Result.SUCCESS)
     .build()
+
+  trait Component extends MessageGateway.Component {
+    override def messageGatewayProps(serverInfo: PeerInfo): Props =
+      Props(new ProtoRpcMessageGateway(serverInfo))
+  }
 }
