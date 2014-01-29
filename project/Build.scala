@@ -21,7 +21,7 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-actor" % Versions.akka,
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
-    lazy val bitcoinj = "com.google" % "bitcoinj" % "0.10.2"
+    lazy val bitcoinj = "com.google" % "bitcoinj" % "0.10.3"
     lazy val commonsConfig = "commons-configuration" % "commons-configuration" % "1.8"
     lazy val guava = "com.google.guava" % "guava" % "11.0.1"
     lazy val hamcrest = "org.hamcrest" % "hamcrest-all" % "1.3" % "test"
@@ -40,11 +40,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "bitmarket", base = file("."))
-    aggregate(bitcoinjCommon, client, common, commonTest, gui, server)
-  )
-
-  lazy val bitcoinjCommon = (Project(id = "bitcoinj-common", base = file("bitmarket-bitcoinj-common"))
-    dependsOn(common)
+    aggregate(client, common, commonTest, gui, server)
   )
 
   lazy val client = (Project(id = "client", base = file("bitmarket-client"))
