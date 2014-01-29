@@ -94,7 +94,7 @@ class ProtoRpcMessageGatewayTest
   trait MessageUtils {
 
     def makeOrderMatch: OrderMatch = new OrderMatch(
-      id = s"orderId-${Random.nextLong().toHexString}",
+      orderMatchId = s"orderId-${Random.nextLong().toHexString}",
       amount = new BtcAmount(BigDecimal(Random.nextDouble())),
       price = new FiatAmount(BigDecimal(Random.nextDouble()), Currency.getInstance("EUR")),
       buyer = s"buyer-${Random.nextLong().toHexString}",

@@ -1,6 +1,6 @@
 package com.bitwise.bitmarket.common.protocol
 
-case class ExchangeAborted (
+case class RejectExchange (
   exchangeId: String,
   reason: String
 )

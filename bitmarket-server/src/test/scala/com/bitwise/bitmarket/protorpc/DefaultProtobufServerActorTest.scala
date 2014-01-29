@@ -69,7 +69,7 @@ class DefaultProtobufServerActorTest
 
   it should "notify both parts with order matches on book crosses" in {
     val orderMatch = OrderMatch(
-      id = "1",
+      orderMatchId = "1",
       amount = BtcAmount(1),
       price = EUR(870),
       buyer = clients(0).connection.toString,
