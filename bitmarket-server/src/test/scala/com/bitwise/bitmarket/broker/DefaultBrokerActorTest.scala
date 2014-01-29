@@ -91,10 +91,10 @@ class DefaultBrokerActorTest
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), "buyer")))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "seller")))
-    val id1 = probe.expectMsgClass(classOf[NotifyCross]).cross.id
+    val id1 = probe.expectMsgClass(classOf[NotifyCross]).cross.orderMatchId
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), "buyer")))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), "seller")))
-    val id2 = probe.expectMsgClass(classOf[NotifyCross]).cross.id
+    val id2 = probe.expectMsgClass(classOf[NotifyCross]).cross.orderMatchId
     id1 should not (equal (id2))
   }
 }

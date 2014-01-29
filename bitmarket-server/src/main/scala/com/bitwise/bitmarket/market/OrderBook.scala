@@ -83,7 +83,7 @@ case class OrderBook(
     val remainingAsk =
       if (ask.amount > crossedAmount) Some(ask.copy(amount = ask.amount - crossedAmount)) else None
     val cross = OrderMatch(
-      id = id,
+      orderMatchId = id,
       amount = crossedAmount,
       price = (bid.price + ask.price) / 2,
       buyer = bid.requester,

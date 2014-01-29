@@ -1,18 +1,22 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
+import java.io._
 import java.math.BigDecimal
 import java.util.Currency
 
-import com.bitwise.bitmarket.common.PeerConnection
+import com.bitwise.bitmarket.common.{protocol, PeerConnection}
 import com.bitwise.bitmarket.common.currency.{BtcAmount, FiatAmount}
-import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
+import com.google.protobuf.ByteString
+import com.bitwise.bitmarket.common.protocol._
+import com.google.bitcoin.crypto.TransactionSignature
+import com.google.bitcoin.core.{Transaction, Sha256Hash}
 
 /** Conversion from/to domain classes and Protobuf messages. */
 object ProtobufConversions {
 
   def fromProtobuf(message: msg.OfferOrBuilder): Offer = Offer(
-    id = OfferId(message.getId),
+    id = message.getId.toString,
     sequenceNumber = message.getSeq,
     fromId = PeerId(message.getFrom),
     fromConnection = PeerConnection.parse(message.getConnection),
@@ -20,8 +24,8 @@ object ProtobufConversions {
     bitcoinPrice = fromProtobuf(message.getBtcPrice)
   )
 
-  def fromProtobuf(message: msg.ExchangeRequestOrBuilder): ExchangeRequest = new ExchangeRequest(
-    id = OfferId(message.getId),
+  def fromProtobuf(message: msg.ExchangeRequestOrBuilder): ExchangeRequest = ExchangeRequest(
+    exchangeId = message.getId.toString,
     fromId = PeerId(message.getFrom),
     fromConnection = PeerConnection.parse(message.getConnection),
     amount = fromProtobuf(message.getAmount)
@@ -36,7 +40,7 @@ object ProtobufConversions {
   )
 
   def fromProtobuf(orderMatch: msg.OrderMatchOrBuilder): OrderMatch = OrderMatch(
-    id = orderMatch.getId,
+    orderMatchId = orderMatch.getOrderMatchId,
     amount = fromProtobuf(orderMatch.getAmount),
     price = fromProtobuf(orderMatch.getPrice),
     buyer = orderMatch.getBuyer,
@@ -55,6 +59,47 @@ object ProtobufConversions {
     )
   }
 
+  def fromProtobuf(crossNotification: msg.CrossNotificationOrBuilder): CrossNotification = CrossNotification(
+    exchangeId = crossNotification.getExchangeId,
+    cross = fromProtobuf(crossNotification.getCross)
+  )
+
+  def fromProtobuf(exchangeAborted: msg.ExchangeAbortedOrBuilder): ExchangeAborted = ExchangeAborted(
+    exchangeId = exchangeAborted.getExchangeId,
+    reason = exchangeAborted.getReason
+  )
+
+  def fromProtobuf(rejectExchange: msg.RejectExchangeOrBuilder): RejectExchange = RejectExchange(
+    exchangeId = rejectExchange.getExchangeId,
+    reason = rejectExchange.getReason
+  )
+
+  def fromProtobuf(commitmentNotification: msg.CommitmentNotificationOrBuilder):
+      CommitmentNotification = CommitmentNotification(
+      exchangeId = commitmentNotification.getExchangeId,
+      buyerTxId = new Sha256Hash(commitmentNotification.getBuyerTxId.toByteArray),
+      sellerTxId = new Sha256Hash(commitmentNotification.getSellerTxId.toByteArray)
+  )
+
+  def fromProtobuf(refundTxSignatureRequest: msg.RefundTxSignatureRequestOrBuilder):
+    protocol.RefundTxSignatureRequest = RefundTxSignatureRequest(
+      refundTx = fromByteArray(refundTxSignatureRequest.getRefundTx.toByteArray).asInstanceOf[Transaction] ,
+      exchangeId = refundTxSignatureRequest.getExchangeId
+  )
+
+  def fromProtobuf(enterExchange: msg.EnterExchangeOrBuilder):
+  protocol.EnterExchange = EnterExchange(
+    commitmentTransaction = fromByteArray(enterExchange.getCommitmentTransaction.toByteArray).asInstanceOf[Transaction],
+    exchangeId = enterExchange.getExchangeId
+  )
+
+  def fromProtobuf(refundTxSignatureResponse: msg.RefundTxSignatureResponseOrBuilder):
+    protocol.RefundTxSignatureResponse = RefundTxSignatureResponse(
+    exchangeId = refundTxSignatureResponse.getExchangeId,
+    refundTxSignature = TransactionSignature.decodeFromBitcoin(
+      refundTxSignatureResponse.getTransactionSignature.toByteArray, false)
+  )
+
   def fromProtobuf(quote: msg.QuoteOrBuilder): Quote = {
     val bidOption = if (quote.hasHighestBid) Some(fromProtobuf(quote.getHighestBid)) else None
     val askOption = if (quote.hasLowestAsk) Some(fromProtobuf(quote.getLowestAsk)) else None
@@ -63,7 +108,7 @@ object ProtobufConversions {
   }
 
   def toProtobuf(offer: Offer): msg.Offer = msg.Offer.newBuilder
-    .setId(offer.id.bytes)
+    .setId(offer.id)
     .setSeq(offer.sequenceNumber)
     .setFrom(offer.fromId.address)
     .setConnection(offer.fromConnection.toString)
@@ -72,7 +117,7 @@ object ProtobufConversions {
     .build
 
   def toProtobuf(acceptance: ExchangeRequest): msg.ExchangeRequest = msg.ExchangeRequest.newBuilder
-    .setId(acceptance.id.bytes)
+    .setId(acceptance.exchangeId)
     .setFrom(acceptance.fromId.address)
     .setConnection(acceptance.fromConnection.toString)
     .setAmount(toProtobuf(acceptance.amount))
@@ -109,11 +154,74 @@ object ProtobufConversions {
 
   def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = {
     val builder = msg.OrderMatch.newBuilder
-    builder.setId(orderMatch.id)
+    builder.setOrderMatchId(orderMatch.orderMatchId)
     builder.setAmount(toProtobuf(orderMatch.amount))
     builder.setPrice(toProtobuf(orderMatch.price))
     builder.setBuyer(orderMatch.buyer)
     builder.setSeller(orderMatch.seller)
     builder.build
+  }
+
+  def toProtobuf(crossNotification: CrossNotification): msg.CrossNotification = {
+    val builder = msg.CrossNotification.newBuilder()
+    builder.setExchangeId(crossNotification.exchangeId)
+    builder.setCross(toProtobuf(crossNotification.cross))
+    builder.build
+  }
+
+  def toProtobuf(exchangeAborted: ExchangeAborted): msg.ExchangeAborted = {
+    val builder = msg.ExchangeAborted.newBuilder()
+    builder.setExchangeId(exchangeAborted.exchangeId)
+    builder.setReason(exchangeAborted.reason)
+    builder.build
+  }
+
+  def toProtobuf(rejectExchange: protocol.RejectExchange): msg.RejectExchange = {
+    val builder = msg.RejectExchange.newBuilder()
+    builder.setExchangeId(rejectExchange.exchangeId)
+    builder.setReason(rejectExchange.reason)
+    builder.build
+  }
+
+  def toProtobuf(commitmentNotification: CommitmentNotification): msg.CommitmentNotification = {
+    val builder = msg.CommitmentNotification.newBuilder()
+    builder.setExchangeId(commitmentNotification.exchangeId)
+    builder.setBuyerTxId(ByteString.copyFrom(commitmentNotification.buyerTxId.getBytes))
+    builder.setSellerTxId(ByteString.copyFrom(commitmentNotification.sellerTxId.getBytes))
+    builder.build
+  }
+
+  def toProtobuf(refundTxSignatureRequest: RefundTxSignatureRequest): msg.RefundTxSignatureRequest = {
+    val builder = msg.RefundTxSignatureRequest.newBuilder()
+    builder.setExchangeId(refundTxSignatureRequest.exchangeId)
+    builder.setRefundTx(ByteString.copyFrom(toByteArray(refundTxSignatureRequest.refundTx)))
+    builder.build
+  }
+
+  def toProtobuf(refundTxSignatureResponse: RefundTxSignatureResponse): msg.RefundTxSignatureResponse = {
+    val builder = msg.RefundTxSignatureResponse.newBuilder()
+    builder.setExchangeId(refundTxSignatureResponse.exchangeId)
+    builder.setTransactionSignature(ByteString.copyFrom(refundTxSignatureResponse.refundTxSignature.encodeToBitcoin()))
+    builder.build()
+  }
+
+  def toProtobuf(enterExchange: EnterExchange): msg.EnterExchangeOrBuilder = {
+    val builder = msg.EnterExchange.newBuilder()
+    builder.setExchangeId(enterExchange.exchangeId)
+    builder.setCommitmentTransaction(ByteString.copyFrom(toByteArray(enterExchange.commitmentTransaction)))
+    builder.build
+  }
+
+  private def toByteArray(obj: AnyRef): Array[Byte] = {
+    val byteArrayOutputStream = new ByteArrayOutputStream
+    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
+    objectOutputStream.writeObject(obj)
+    byteArrayOutputStream.toByteArray
+  }
+
+  private def fromByteArray[T](bytes: Array[Byte]) = {
+    val inputStream: ByteArrayInputStream = new ByteArrayInputStream(bytes)
+    val objectInputStream: ObjectInputStream = new ObjectInputStream(inputStream)
+    objectInputStream.readObject().asInstanceOf[T]
   }
 }

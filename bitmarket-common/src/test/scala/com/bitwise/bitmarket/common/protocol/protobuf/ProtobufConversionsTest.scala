@@ -6,14 +6,18 @@ import org.scalatest.matchers.ShouldMatchers
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
-import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
+import com.google.bitcoin.core.{NetworkParameters, Sha256Hash, Transaction}
+import org.scalatest.mock.MockitoSugar
+import com.google.bitcoin.crypto.TransactionSignature
+import java.math.BigInteger
+import com.bitwise.bitmarket.common.protocol._
 
-class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
+class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoSugar {
   import ProtobufConversions._
 
   val offerMessage = msg.Offer.newBuilder
-    .setId(1234567890)
+    .setId("1234567890")
     .setSeq(0)
     .setFrom("abcdefghijklmnopqrsruvwxyz")
     .setConnection("bitmarket://example.com:1234/")
@@ -21,7 +25,7 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
     .setBtcPrice(msg.FiatAmount.newBuilder.setValue(100).setScale(0).setCurrency("EUR"))
     .build
   val offer = Offer(
-    id = new OfferId(1234567890),
+    id = "1234567890",
     sequenceNumber = 0,
     fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
     fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
@@ -42,13 +46,13 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   }
 
   val exchangeMessage = msg.ExchangeRequest.newBuilder
-    .setId(1234567890)
+    .setId("1234567890")
     .setFrom("abcdefghijklmnopqrsruvwxyz")
     .setConnection("bitmarket://example.com:1234/")
     .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
     .build
   val exchange = ExchangeRequest(
-    id = OfferId(1234567890),
+    exchangeId = "1234567890",
     fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
     fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
     amount = BtcAmount(2)
@@ -115,14 +119,14 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
   }
 
   val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setId("1234")
+    .setOrderMatchId("1234")
     .setAmount(toProtobuf(BtcAmount(0.1)))
     .setPrice(toProtobuf(EUR(10000)))
     .setBuyer("bitmarket://buyer:8080")
     .setSeller("bitmarket://seller:1234")
     .build
   val orderMatch = OrderMatch(
-    id = "1234",
+    orderMatchId = "1234",
     amount = BtcAmount(0.1),
     price = EUR(10000),
     buyer = "bitmarket://buyer:8080",
@@ -139,5 +143,61 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers {
 
   it should "be converted to protobuf and back again" in {
     fromProtobuf(toProtobuf(orderMatch)) should be (orderMatch)
+  }
+
+  "An Cross Notification" should "be converted to protobuf and back again" in {
+    val crossNotification = CrossNotification(
+      exchangeId = "1234",
+      cross = orderMatch
+    )
+    fromProtobuf(toProtobuf(crossNotification)) should be (crossNotification)
+  }
+
+  "An Exchange Aborted" should "be converted to protobuf and back again" in {
+    val exchangeAborted = ExchangeAborted("1234", "a reason")
+    fromProtobuf(toProtobuf(exchangeAborted)) should be (exchangeAborted)
+  }
+
+  "An Reject Exchange" should "be converted to protobuf and back again" in {
+    val rejectExchange = RejectExchange(
+      exchangeId = "1234",
+      reason = "a reason")
+    fromProtobuf(toProtobuf(rejectExchange)) should be (rejectExchange)
+  }
+
+  "An Commitment Notification" should "be converted to protobuf and back again" in {
+    val commitmentNotification = CommitmentNotification(
+      exchangeId = "exchangeId",
+      buyerTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71"),
+      sellerTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+    )
+    fromProtobuf(toProtobuf(commitmentNotification)) should be (commitmentNotification)
+  }
+
+  "An Refund Transaction Signature Request" should "be converted to protobuf and back again" in {
+    val refundTxSignatureRequest = RefundTxSignatureRequest(
+      exchangeId = "exchangeId",
+      refundTx = new Transaction(new NetworkParameters {})
+    )
+    fromProtobuf(toProtobuf(refundTxSignatureRequest)) should be (refundTxSignatureRequest)
+  }
+
+  "An Refund Transaction Signature" should "be converted to protobuf and back again" in {
+    val refundTxSignatureResponse = RefundTxSignatureResponse(
+      exchangeId = "exchangeId",
+      refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+    )
+    fromProtobuf(toProtobuf(refundTxSignatureResponse)).refundTxSignature.encodeToBitcoin() should be (
+      refundTxSignatureResponse.refundTxSignature.encodeToBitcoin())
+    fromProtobuf(toProtobuf(refundTxSignatureResponse)).exchangeId should be (
+      refundTxSignatureResponse.exchangeId)
+  }
+
+  "An Enter Exchange" should "be converted to protobuf and back again" in {
+    val enterExchange = EnterExchange(
+    exchangeId = "exchangeId",
+    commitmentTransaction = new Transaction(new NetworkParameters {})
+    )
+    fromProtobuf(toProtobuf(enterExchange)) should be (enterExchange)
   }
 }
