@@ -2,7 +2,7 @@ import sbt._
 import sbtaxis.Plugin.{SbtAxisKeys, sbtAxisSettings}
 import sbtprotobuf.{ProtobufPlugin => PB}
 
-object ProjectBuild extends Build {
+object Build extends sbt.Build {
 
   object Versions {
     val axis2 = "1.6.2"
@@ -48,7 +48,7 @@ object ProjectBuild extends Build {
   )
 
   lazy val client = (Project(id = "client", base = file("bitmarket-client"))
-    dependsOn(common)
+    dependsOn(common, commonTest % "test->compile")
   )
 
   lazy val common = (Project(

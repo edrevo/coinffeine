@@ -185,10 +185,10 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
   "An Refund Transaction Signature" should "be converted to protobuf and back again" in {
     val refundTxSignatureResponse = RefundTxSignatureResponse(
       exchangeId = "exchangeId",
-      refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+      refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
     )
-    fromProtobuf(toProtobuf(refundTxSignatureResponse)).refundTxSignature.encodeToBitcoin() should be (
-      refundTxSignatureResponse.refundTxSignature.encodeToBitcoin())
+    fromProtobuf(toProtobuf(refundTxSignatureResponse)).refundSignature.encodeToBitcoin() should be (
+      refundTxSignatureResponse.refundSignature.encodeToBitcoin())
     fromProtobuf(toProtobuf(refundTxSignatureResponse)).exchangeId should be (
       refundTxSignatureResponse.exchangeId)
   }
