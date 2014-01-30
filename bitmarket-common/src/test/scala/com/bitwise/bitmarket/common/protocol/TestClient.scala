@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.common.protocol
 import java.util.Currency
 import scala.concurrent._
 
-import com.google.protobuf.{Message, RpcCallback, RpcController}
+import com.google.protobuf.{Message => ProtoMessage, RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
@@ -16,12 +16,12 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
   var sessionOption: Option[PeerSession] = None
 
   @volatile
-  private var receivedMessages_ : Seq[Message] = Seq.empty
+  private var receivedMessages_ : Seq[ProtoMessage] = Seq.empty
   private val server = new PeerServer(info, msg.PeerService.newReflectiveService(this))
 
   server.start().await
 
-  def receivedMessages: Seq[Message] = synchronized { receivedMessages_ }
+  def receivedMessages: Seq[ProtoMessage] = synchronized { receivedMessages_ }
 
   def receivedMessagesNumber: Int = receivedMessages.size
 

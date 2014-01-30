@@ -73,8 +73,8 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
   }
 
   override def receive = {
-    case ForwardMessage(msg, dest) =>
-      forward(sender, dest, msg)
+    case m @ ForwardMessage(msg, dest) =>
+      forward(sender, dest, msg, m.send)
     case Subscribe(filter) =>
       subscriptions += sender -> MessageSubscription(filter)
     case Unsubscribe =>
@@ -83,30 +83,11 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
       subscriptions -= actor
   }
 
-  private def forward(from: ActorRef, to: PeerConnection, msg: Any) {
+  private def forward[T](
+      from: ActorRef, to: PeerConnection, msg: T, send: MessageSend[T]) {
     try {
       val sess = session(to)
-      val srv = proto.PeerService.newStub(sess.channel)
-      msg match {
-        case msg: OrderMatch =>
-          srv.notifyMatch(
-            sess.controller,
-            toProtobuf(msg),
-            Callbacks.noop[proto.Void])
-        case msg: Offer =>
-          srv.publish(
-            sess.controller,
-            toProtobuf(msg),
-            Callbacks.noop[proto.PublishResponse])
-        case msg: ExchangeRequest =>
-          srv.requestExchange(
-            sess.controller,
-            toProtobuf(msg),
-            Callbacks.noop[proto.ExchangeRequestResponse])
-        case _ =>
-          throw ForwardException(
-            s"cannot forward unknown message $msg: no forward mechanism defined")
-      }
+      send.sendAsProto(msg, sess)
     } catch {
       case e: IOException =>
         throw ForwardException(s"cannot forward message $msg to $to: ${e.getMessage}", e)

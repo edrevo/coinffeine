@@ -124,11 +124,15 @@ private[handshake] class DefaultHandshakeActor(
     listeners.foreach(_ ! HandshakeResult(result))
   }
 
-  private def forwardToCounterpart(message: Any) { forwardMessage(message, handshake.counterpart) }
+  private def forwardToCounterpart[T : MessageSend](message: T) {
+    forwardMessage(message, handshake.counterpart)
+  }
 
-  private def forwardToBroker(message: Any) { forwardMessage(message, handshake.broker) }
+  private def forwardToBroker[T : MessageSend](message: T) {
+    forwardMessage(message, handshake.broker)
+  }
 
-  private def forwardMessage(message: Any, address: PeerConnection) {
+  private def forwardMessage[T : MessageSend](message: T, address: PeerConnection) {
     messageGateway ! ForwardMessage(message, address)
   }
 }

@@ -4,11 +4,15 @@ import akka.actor.Props
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.bitwise.bitmarket.common.PeerConnection
+import com.bitwise.bitmarket.common.protocol.MessageSend
 
 object MessageGateway {
 
   /** A message sent in order to forward another message to a given destination. */
-  case class ForwardMessage(msg: Any, dest: PeerConnection)
+  case class ForwardMessage[T : MessageSend](msg: T, dest: PeerConnection) {
+
+    val send = implicitly[MessageSend[T]]
+  }
 
   /** A message sent in order to subscribe for incoming messages.
     *
