@@ -47,11 +47,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     given(counterpartCommitmentTransaction.getHash).willReturn(counterpartCommitmentTransactionHash)
   }
 
-  def protocolConstants: ProtocolConstants = ProtocolConstants(
-    commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 500 millis,
-    refundSignatureAbortTimeout = 10 seconds
-  )
+  def protocolConstants: ProtocolConstants
 
   val handshake = new MockExchangeHandshake
   val listener = TestProbe()

@@ -10,12 +10,12 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
 import com.bitwise.bitmarket.broker.BrokerActor._
+import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.toProtobuf
-import com.bitwise.bitmarket.common.AkkaSpec
 
 class DefaultProtobufServerActorTest
   extends AkkaSpec("ProtobufServerSystem") with Eventually with IntegrationPatience {
@@ -37,14 +37,14 @@ class DefaultProtobufServerActorTest
   }
 
   "A protobuf server actor" should "translate and forward order placements" in {
-    val bid = Bid(BtcAmount(0.7), EUR(650), clients(0).connection.toString)
+    val bid = Bid(BtcAmount(0.7), EUR(650), clients(0).connection)
     clients(0).connectToServer()
     clients(0).placeOrder(toProtobuf(bid)).getResult should be (msg.OrderResponse.Result.SUCCESS)
     eurBroker.expectMsg(OrderPlacement(bid))
   }
 
   it should "reject order placements for non traded currencies" in {
-    val bid = Bid(BtcAmount(0.7), USD(650), "bitmarket://localhost:8001/")
+    val bid = Bid(BtcAmount(0.7), USD(650), PeerConnection.parse("bitmarket://localhost:8001/"))
     clients(1).connectToServer()
     clients(1).placeOrder(toProtobuf(bid)).getResult should
       be (msg.OrderResponse.Result.CURRENCY_NOT_TRADED)
@@ -72,8 +72,8 @@ class DefaultProtobufServerActorTest
       orderMatchId = "1",
       amount = BtcAmount(1),
       price = EUR(870),
-      buyer = clients(0).connection.toString,
-      seller = clients(1).connection.toString
+      buyer = clients(0).connection,
+      seller = clients(1).connection
     )
     eurBroker.send(server, NotifyCross(orderMatch))
     eventually {

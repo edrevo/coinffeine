@@ -5,13 +5,15 @@ import scala.language.postfixOps
 
 import com.bitwise.bitmarket.common.protocol.RejectExchange
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ForwardMessage
+import com.bitwise.bitmarket.client.ProtocolConstants
 
 class RefundUnsignedDefaultHandshakeActorTest
   extends DefaultHandshakeActorTest("signature-timeout") {
 
   import HandshakeActor._
 
-  override def protocolConstants = super.protocolConstants.copy(
+  override def protocolConstants = ProtocolConstants(
+    commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 10 seconds,
     refundSignatureAbortTimeout = 100 millis
   )

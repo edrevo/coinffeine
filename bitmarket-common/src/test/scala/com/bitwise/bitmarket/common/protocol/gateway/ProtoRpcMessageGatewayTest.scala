@@ -97,9 +97,11 @@ class ProtoRpcMessageGatewayTest
       orderMatchId = s"orderId-${Random.nextLong().toHexString}",
       amount = new BtcAmount(BigDecimal(Random.nextDouble())),
       price = new FiatAmount(BigDecimal(Random.nextDouble()), Currency.getInstance("EUR")),
-      buyer = s"buyer-${Random.nextLong().toHexString}",
-      seller = s"seller-${Random.nextLong().toHexString}"
+      buyer = PeerConnection("buyer", randomPort()),
+      seller = PeerConnection("seller", randomPort())
     )
+
+    private def randomPort() = Random.nextInt(50000) + 10000
   }
 
   trait FreshGateway extends MessageUtils {

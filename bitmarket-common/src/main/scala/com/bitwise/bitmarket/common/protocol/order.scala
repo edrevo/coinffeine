@@ -7,14 +7,14 @@ import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 sealed trait Order {
   val amount: BtcAmount
   val price: FiatAmount
-  val requester: String
+  val requester: PeerConnection
 }
 
 /** Requester is willing to buy `amount` BTC at price `price` */
 case class Bid(
     override val amount: BtcAmount,
     override val price: FiatAmount,
-    override val requester: String) extends Order
+    override val requester: PeerConnection) extends Order
 
 object Bid {
   implicit val Order = Ordering.by[Bid, BigDecimal](bid => -bid.price.amount)
@@ -24,7 +24,7 @@ object Bid {
 case class Ask(
     override val amount: BtcAmount,
     override val price: FiatAmount,
-    override val requester: String) extends Order
+    override val requester: PeerConnection) extends Order
 
 object Ask {
   implicit val Order = Ordering.by[Ask, BigDecimal](ask => ask.price.amount)

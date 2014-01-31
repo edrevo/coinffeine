@@ -9,6 +9,7 @@ import scala.util.Random
 import akka.actor._
 
 import com.bitwise.bitmarket.broker.BrokerActor._
+import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
 import com.bitwise.bitmarket.common.protocol.Quote
 import com.bitwise.bitmarket.market._
@@ -18,7 +19,7 @@ private[broker] class DefaultBrokerActor(
     orderExpirationInterval: Duration) extends Actor with ActorLogging {
 
   private var book = OrderBook.empty(currency)
-  private var expirationTimes = Map[String, FiniteDuration]()
+  private var expirationTimes = Map[PeerConnection, FiniteDuration]()
   private var lastPrice: Option[FiatAmount] = None
 
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
@@ -49,7 +50,7 @@ private[broker] class DefaultBrokerActor(
     case ReceiveTimeout => expireOrders()
   }
 
-  private def setExpirationFor(requester: String) {
+  private def setExpirationFor(requester: PeerConnection) {
     if (orderExpirationInterval.isFinite) {
       val expiration =
         (System.currentTimeMillis() millis) + orderExpirationInterval.asInstanceOf[FiniteDuration]
