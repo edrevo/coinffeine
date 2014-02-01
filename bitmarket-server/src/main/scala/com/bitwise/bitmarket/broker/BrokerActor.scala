@@ -17,7 +17,6 @@ object BrokerActor {
 
   case class QuoteResponse(quote: Quote)
   case class OrderPlacement(order: Order)
-  case class NotifyCross(cross: OrderMatch)
 
   trait Component {
     def brokerActorProps(currency: Currency, orderExpirationInterval: Duration = 60 seconds): Props

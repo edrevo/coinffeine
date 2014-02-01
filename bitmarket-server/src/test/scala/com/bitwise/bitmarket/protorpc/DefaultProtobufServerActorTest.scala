@@ -75,7 +75,7 @@ class DefaultProtobufServerActorTest
       buyer = clients(0).connection,
       seller = clients(1).connection
     )
-    eurBroker.send(server, NotifyCross(orderMatch))
+    eurBroker.send(server, orderMatch)
     eventually {
       clients(0).receivedMessages contains toProtobuf(orderMatch)
       clients(1).receivedMessages contains toProtobuf(orderMatch)

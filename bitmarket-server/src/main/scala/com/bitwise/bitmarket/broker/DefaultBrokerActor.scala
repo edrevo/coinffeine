@@ -36,7 +36,7 @@ private[broker] class DefaultBrokerActor(
       log.info("Order placed " + order)
       val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
       book = clearedBook
-      crosses.foreach { cross => sender ! NotifyCross(cross) }
+      crosses.foreach { orderMatch => sender ! orderMatch }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
       if (book.orders.exists(_.requester == order.requester)) {
         setExpirationFor(order.requester)

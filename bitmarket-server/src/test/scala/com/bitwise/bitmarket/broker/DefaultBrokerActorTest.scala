@@ -31,7 +31,7 @@ class DefaultBrokerActorTest
     probe.expectNoMsg(100 millis)
 
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.6), EUR(850), PeerConnection("client3"))))
-    val orderMatch = probe.expectMsgClass(classOf[NotifyCross]).cross
+    val orderMatch = probe.expectMsgClass(classOf[OrderMatch])
     orderMatch.amount should be (BtcAmount(0.6))
     orderMatch.price should be (EUR(900))
     orderMatch.buyer should be (PeerConnection("client2"))
@@ -53,7 +53,7 @@ class DefaultBrokerActorTest
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(800), PeerConnection("client2"))))
     probe.send(broker, quoteRequest)
-    probe.expectMsgClass(classOf[NotifyCross])
+    probe.expectMsgClass(classOf[OrderMatch])
     probe.expectMsg(QuoteResponse(Quote(lastPrice = Some(EUR(850)))))
   }
 
@@ -86,17 +86,17 @@ class DefaultBrokerActorTest
     probe.send(broker, secondBid)
     probe.send(broker, firstBid)
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("ask"))))
-    val orderMatch = probe.expectMsgClass(classOf[NotifyCross]).cross
+    val orderMatch = probe.expectMsgClass(classOf[OrderMatch])
     orderMatch.buyer should equal (PeerConnection("first-bid"))
   }
 
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("buyer"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("seller"))))
-    val id1 = probe.expectMsgClass(classOf[NotifyCross]).cross.orderMatchId
+    val id1 = probe.expectMsgClass(classOf[OrderMatch]).orderMatchId
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("buyer"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("seller"))))
-    val id2 = probe.expectMsgClass(classOf[NotifyCross]).cross.orderMatchId
+    val id2 = probe.expectMsgClass(classOf[OrderMatch]).orderMatchId
     id1 should not (equal (id2))
   }
 }
