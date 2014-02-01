@@ -11,7 +11,7 @@ import akka.actor._
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
-import com.bitwise.bitmarket.common.protocol.{OrderCancellation, QuoteRequest, Quote}
+import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.bitwise.bitmarket.market._
 
@@ -26,13 +26,13 @@ private[broker] class DefaultBrokerActor(
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
 
   private def processMessage: Receive = {
-    case OrderPlacement(order) if order.price.currency != currency =>
+    case order: Order if order.price.currency != currency =>
       log.error("Dropping order not placed in %s: %s", currency, order)
 
-    case OrderPlacement(order) if book.orders.contains(order) =>
+    case order: Order if book.orders.contains(order) =>
       setExpirationFor(order.requester)
 
-    case OrderPlacement(order) =>
+    case order: Order =>
       log.info("Order placed " + order)
       val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
       book = clearedBook

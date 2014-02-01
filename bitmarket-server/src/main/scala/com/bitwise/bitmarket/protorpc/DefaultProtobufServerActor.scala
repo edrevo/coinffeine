@@ -110,9 +110,7 @@ private class DefaultProtobufServerActor(
       (broker ? QuoteRequest(currency)).mapTo[QuoteResponse].map(_.quote) onComplete quotePromise.complete
 
     case PlaceOrderCallback(order) =>
-      brokers.get(order.price.currency).foreach { broker =>
-        broker ! OrderPlacement(order)
-      }
+      brokers.get(order.price.currency).foreach { broker => broker ! order }
   }
 }
 

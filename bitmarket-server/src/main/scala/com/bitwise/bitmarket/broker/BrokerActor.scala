@@ -16,7 +16,6 @@ import com.bitwise.bitmarket.common.protocol.{OrderMatch, Order, Quote}
 object BrokerActor {
 
   case class QuoteResponse(quote: Quote)
-  case class OrderPlacement(order: Order)
 
   trait Component {
     def brokerActorProps(currency: Currency, orderExpirationInterval: Duration = 60 seconds): Props

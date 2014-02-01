@@ -26,11 +26,11 @@ class DefaultBrokerActorTest
   }
 
   "A broker" must "keep orders and notify when they cross" in new WithEurBroker("notify-crosses") {
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client1")))
+    probe.send(broker, Bid(BtcAmount(0.8), EUR(950), PeerConnection("client2")))
     probe.expectNoMsg(100 millis)
 
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(0.6), EUR(850), PeerConnection("client3"))))
+    probe.send(broker, Ask(BtcAmount(0.6), EUR(850), PeerConnection("client3")))
     val orderMatch = probe.expectMsgClass(classOf[OrderMatch])
     orderMatch.amount should be (BtcAmount(0.6))
     orderMatch.price should be (EUR(900))
@@ -41,17 +41,17 @@ class DefaultBrokerActorTest
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote()))
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client1")))
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> None)))
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
+    probe.send(broker, Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2")))
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> Some(EUR(950)))))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(800), PeerConnection("client2"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client1")))
+    probe.send(broker, Ask(BtcAmount(1), EUR(800), PeerConnection("client2")))
     probe.send(broker, quoteRequest)
     probe.expectMsgClass(classOf[OrderMatch])
     probe.expectMsg(QuoteResponse(Quote(lastPrice = Some(EUR(850)))))
@@ -59,43 +59,43 @@ class DefaultBrokerActorTest
 
   it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
     EventFilter.error(pattern = ".*", occurrences = 1) intercept {
-      probe.send(broker, OrderPlacement(Bid(BtcAmount(1), USD(900), PeerConnection("client"))))
+      probe.send(broker, Bid(BtcAmount(1), USD(900), PeerConnection("client")))
       probe.expectNoMsg()
     }
   }
 
   it must "cancel orders" in new WithEurBroker("cancel-orders") {
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client1")))
+    probe.send(broker, Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2")))
     probe.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(None -> Some(EUR(950)))))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client")))
     probe.expectNoMsg(2 seconds)
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote()))
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {
-    val firstBid = OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("first-bid")))
-    val secondBid = OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("second-bid")))
+    val firstBid = Bid(BtcAmount(1), EUR(900), PeerConnection("first-bid"))
+    val secondBid = Bid(BtcAmount(1), EUR(900), PeerConnection("second-bid"))
     probe.send(broker, firstBid)
     probe.send(broker, secondBid)
     probe.send(broker, firstBid)
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("ask"))))
+    probe.send(broker, Ask(BtcAmount(1), EUR(900), PeerConnection("ask")))
     val orderMatch = probe.expectMsgClass(classOf[OrderMatch])
     orderMatch.buyer should equal (PeerConnection("first-bid"))
   }
 
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("buyer"))))
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("seller"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("buyer")))
+    probe.send(broker, Ask(BtcAmount(1), EUR(900), PeerConnection("seller")))
     val id1 = probe.expectMsgClass(classOf[OrderMatch]).orderMatchId
-    probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("buyer"))))
-    probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(900), PeerConnection("seller"))))
+    probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("buyer")))
+    probe.send(broker, Ask(BtcAmount(1), EUR(900), PeerConnection("seller")))
     val id2 = probe.expectMsgClass(classOf[OrderMatch]).orderMatchId
     id1 should not (equal (id2))
   }
