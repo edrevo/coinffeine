@@ -86,9 +86,13 @@ class ProtoRpcMessageGatewayTest
 
   trait MessageUtils {
 
+    private def getRandomSatoshi() =
+      Math.round(Random.nextDouble() * BtcAmount.OneBtcInSatoshi.doubleValue()) /
+        BtcAmount.OneBtcInSatoshi.doubleValue()
+
     def makeOrderMatch: OrderMatch = new OrderMatch(
       orderMatchId = s"orderId-${Random.nextLong().toHexString}",
-      amount = new BtcAmount(BigDecimal(Random.nextDouble())),
+      amount = new BtcAmount(BigDecimal(getRandomSatoshi())),
       price = new FiatAmount(BigDecimal(Random.nextDouble()), Currency.getInstance("EUR")),
       buyer = PeerConnection("buyer", randomPort()),
       seller = PeerConnection("seller", randomPort())

@@ -6,16 +6,16 @@ import scala.util.{Failure, Success}
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
+import com.google.bitcoin.core.{ECKey, Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
 
-import com.bitwise.bitmarket.client.ProtocolConstants
+import com.bitwise.bitmarket.client.{Exchange, ProtocolConstants}
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.protocol._
-import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ReceiveMessage, ForwardMessage}
+import com.bitwise.bitmarket.common.currency.BtcAmount
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -24,9 +24,16 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   import HandshakeActor._
 
   class MockExchangeHandshake extends ExchangeHandshake {
-    override val id = "id"
-    override val counterpart = PeerConnection("counterpart")
-    override val broker = PeerConnection("broker")
+    override val exchange = Exchange(
+      "id",
+      PeerConnection("counterpart"),
+      PeerConnection("broker"),
+      network = null,
+      userKey = new ECKey(),
+      counterpartKey = null,
+      exchangeAmount = BtcAmount(10),
+      steps = 10,
+      lockTime = 10)
     override val commitmentTransaction = mock[Transaction]
     val commitmentTransactionHash = mock[Sha256Hash]
     override val refundTransaction = mock[Transaction]
@@ -64,19 +71,19 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def shouldSignCounterpartRefund() {
     val request = RefundTxSignatureRequest("id", handshake.counterpartRefund)
-    gateway.send(actor, ReceiveMessage(request, handshake.counterpart))
+    gateway.send(actor, ReceiveMessage(request, handshake.exchange.counterpart))
     shouldForwardToCounterpart(RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
   }
 
   def shouldForwardToCounterpart[T : MessageSend](message: T) {
-    gateway.expectMsg(ForwardMessage(message, handshake.counterpart))
+    gateway.expectMsg(ForwardMessage(message, handshake.exchange.counterpart))
   }
 
   def shouldForwardToBroker[T : MessageSend](message: T) {
-    gateway.expectMsg(ForwardMessage(message, handshake.broker))
+    gateway.expectMsg(ForwardMessage(message, handshake.exchange.broker))
   }
 
-  def fromCounterpart(message: Any) = ReceiveMessage(message, handshake.counterpart)
+  def fromCounterpart(message: Any) = ReceiveMessage(message, handshake.exchange.counterpart)
 
-  def fromBroker(message: Any) = ReceiveMessage(message, handshake.broker)
+  def fromBroker(message: Any) = ReceiveMessage(message, handshake.exchange.broker)
 }
