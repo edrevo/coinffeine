@@ -37,6 +37,10 @@ message OrderResponse {
     required Result result = 1;
 }
 
+message OrderCancellation {
+    required string currency = 1;
+}
+
 message QuoteRequest {
     required string currency = 1;
 }
@@ -109,15 +113,6 @@ service BrokerService {
 
 // Old services
 
-message Offer {
-	required string id = 1;
-	required int32 seq = 2;
-	required string from = 3;
-	required string connection = 4;
-	required BtcAmount amount = 5;
-	required FiatAmount btcPrice = 6;
-}
-
 message PublishResponse {
     enum Result {
         SUCCESS = 0;
@@ -141,16 +136,11 @@ message ExchangeRequestResponse {
     required Result result = 1;
 }
 
-service BroadcastService {
-    rpc Publish (Offer) returns (PublishResponse);
-}
-
 message Void {}
 
 service PeerService {
     rpc NotifyMatch (OrderMatch) returns (Void);
 
     // Old service
-    rpc Publish (Offer) returns (PublishResponse);
     rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
 }

@@ -1,74 +1,22 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
+import java.math.BigInteger
+
+import com.google.bitcoin.core.{NetworkParameters, Sha256Hash, Transaction}
+import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.mock.MockitoSugar
 
 import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
-import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
-import com.google.bitcoin.core.{NetworkParameters, Sha256Hash, Transaction}
-import org.scalatest.mock.MockitoSugar
-import com.google.bitcoin.crypto.TransactionSignature
-import java.math.BigInteger
 import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 
 class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoSugar {
   import ProtobufConversions._
-
-  val offerMessage = msg.Offer.newBuilder
-    .setId("1234567890")
-    .setSeq(0)
-    .setFrom("abcdefghijklmnopqrsruvwxyz")
-    .setConnection("bitmarket://example.com:1234/")
-    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-    .setBtcPrice(msg.FiatAmount.newBuilder.setValue(100).setScale(0).setCurrency("EUR"))
-    .build
-  val offer = Offer(
-    id = "1234567890",
-    sequenceNumber = 0,
-    fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
-    fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
-    amount = BtcAmount(2),
-    bitcoinPrice = EUR(100)
-  )
-
-  "An offer" should "be converted from protobuf" in {
-    fromProtobuf(offerMessage) should be (offer)
-  }
-
-  it should "be converted to protobuf" in {
-    toProtobuf(offer) should be (offerMessage)
-  }
-
-  it should "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(offer)) should be (offer)
-  }
-
-  val exchangeMessage = msg.ExchangeRequest.newBuilder
-    .setId("1234567890")
-    .setFrom("abcdefghijklmnopqrsruvwxyz")
-    .setConnection("bitmarket://example.com:1234/")
-    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-    .build
-  val exchange = ExchangeRequest(
-    exchangeId = "1234567890",
-    fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
-    fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
-    amount = BtcAmount(2)
-  )
-
-  "An exchange" should "be converted from protobuf" in {
-    fromProtobuf(exchangeMessage) should be (exchange)
-  }
-
-  it should "be converted to protobuf" in {
-    toProtobuf(exchange) should be (exchangeMessage)
-  }
-
-  it should "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(exchange)) should be (exchange)
-  }
 
   val bidMessage = msg.Order.newBuilder
     .setType(msg.OrderType.BID)
@@ -113,9 +61,9 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
   }
 
   val quoteMessage = msg.Quote.newBuilder
-    .setHighestBid(toProtobuf(EUR(20)))
-    .setLowestAsk(toProtobuf(EUR(30)))
-    .setLastPrice(toProtobuf(EUR(22)))
+    .setHighestBid(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(20)))
+    .setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(30)))
+    .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(22)))
     .build
   val emptyQuoteMessage = msg.Quote.newBuilder.build
   val quote = Quote(EUR(20) -> EUR(30), EUR(22))
@@ -137,8 +85,8 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
 
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setOrderMatchId("1234")
-    .setAmount(toProtobuf(BtcAmount(0.1)))
-    .setPrice(toProtobuf(EUR(10000)))
+    .setAmount(ProtoMapping.toProtobuf[BtcAmount, msg.BtcAmount](BtcAmount(0.1)))
+    .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(10000)))
     .setBuyer("bitmarket://buyer:8080/")
     .setSeller("bitmarket://seller:1234/")
     .build

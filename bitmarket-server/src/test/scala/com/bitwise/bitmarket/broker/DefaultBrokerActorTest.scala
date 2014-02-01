@@ -11,6 +11,7 @@ import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 
 class DefaultBrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -66,7 +67,7 @@ class DefaultBrokerActorTest
   it must "cancel orders" in new WithEurBroker("cancel-orders") {
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
-    probe.send(broker, OrderCancellation(PeerConnection("client1")))
+    probe.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
     probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(None -> Some(EUR(950)))))
   }

@@ -17,7 +17,6 @@ object BrokerActor {
 
   case class QuoteResponse(quote: Quote)
   case class OrderPlacement(order: Order)
-  case class OrderCancellation(requester: PeerConnection)
   case class NotifyCross(cross: OrderMatch)
 
   trait Component {

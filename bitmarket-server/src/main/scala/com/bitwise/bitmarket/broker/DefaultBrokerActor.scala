@@ -11,7 +11,8 @@ import akka.actor._
 import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
-import com.bitwise.bitmarket.common.protocol.{QuoteRequest, Quote}
+import com.bitwise.bitmarket.common.protocol.{OrderCancellation, QuoteRequest, Quote}
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.bitwise.bitmarket.market._
 
 private[broker] class DefaultBrokerActor(
@@ -43,7 +44,7 @@ private[broker] class DefaultBrokerActor(
 
     case QuoteRequest(_) => sender ! QuoteResponse(Quote(book.spread, lastPrice))
 
-    case OrderCancellation(requester) =>
+    case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")
       book = book.cancelOrder(requester)
 
