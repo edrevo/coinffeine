@@ -44,8 +44,8 @@ object ProtobufConversions {
     orderMatchId = orderMatch.getOrderMatchId,
     amount = fromProtobuf(orderMatch.getAmount),
     price = fromProtobuf(orderMatch.getPrice),
-    buyer = orderMatch.getBuyer,
-    seller = orderMatch.getSeller
+    buyer = PeerConnection.parse(orderMatch.getBuyer),
+    seller = PeerConnection.parse(orderMatch.getSeller)
   )
 
   def fromProtobuf(order: msg.OrderOrBuilder, sender: PeerConnection): Order = {
@@ -56,7 +56,7 @@ object ProtobufConversions {
     orderConstructor(
       fromProtobuf(order.getAmount),
       fromProtobuf(order.getPrice),
-      sender.toString
+      sender
     )
   }
 
@@ -158,8 +158,8 @@ object ProtobufConversions {
     builder.setOrderMatchId(orderMatch.orderMatchId)
     builder.setAmount(toProtobuf(orderMatch.amount))
     builder.setPrice(toProtobuf(orderMatch.price))
-    builder.setBuyer(orderMatch.buyer)
-    builder.setSeller(orderMatch.seller)
+    builder.setBuyer(orderMatch.buyer.toString)
+    builder.setSeller(orderMatch.seller.toString)
     builder.build
   }
 

@@ -4,6 +4,7 @@ import java.util.Currency
 import scala.annotation.tailrec
 
 import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.PeerConnection
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(
@@ -45,7 +46,7 @@ case class OrderBook(
   }
 
   /** Cancel requester order if any. */
-  def cancelOrder(requester: String): OrderBook = copy(
+  def cancelOrder(requester: PeerConnection): OrderBook = copy(
     bids = bids.filter(_.requester != requester),
     asks = asks.filter(_.requester != requester)
   )

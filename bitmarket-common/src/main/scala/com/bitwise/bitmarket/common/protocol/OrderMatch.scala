@@ -1,5 +1,6 @@
 package com.bitwise.bitmarket.common.protocol
 
+import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession}
 import com.bitwise.bitmarket.common.protocol.protobuf.{
@@ -10,8 +11,8 @@ case class OrderMatch(
     orderMatchId: String,
     amount: BtcAmount,
     price: FiatAmount,
-    buyer: String,
-    seller: String
+    buyer: PeerConnection,
+    seller: PeerConnection
 )
 
 object OrderMatch {

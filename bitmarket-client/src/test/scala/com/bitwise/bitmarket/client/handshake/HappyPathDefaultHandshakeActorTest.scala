@@ -12,10 +12,17 @@ import com.bitwise.bitmarket.client.handshake.HandshakeActor.HandshakeResult
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.bitwise.bitmarket.common.PeerConnection
+import com.bitwise.bitmarket.client.ProtocolConstants
 
 class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
 
-   "Handshake happy path" should "start with a subscription to the relevant messages" in {
+  override def protocolConstants = ProtocolConstants(
+    commitmentConfirmations = 1,
+    resubmitRefundSignatureTimeout = 1 second,
+    refundSignatureAbortTimeout = 1 minute
+  )
+
+  "Handshake happy path" should "start with a subscription to the relevant messages" in {
      val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
      val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
      val irrelevantSignatureRequest =
@@ -79,4 +86,4 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
    it should "finally terminate himself" in {
      listener.expectTerminated(actor)
    }
- }
+}

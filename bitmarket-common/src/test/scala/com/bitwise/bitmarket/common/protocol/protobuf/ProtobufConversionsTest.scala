@@ -77,8 +77,8 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
     .build
   val askMessage = bidMessage.toBuilder.setType(msg.OrderType.ASK).build
   val senderInfo = PeerConnection("host", 8080)
-  val bid = Bid(BtcAmount(2), EUR(300), senderInfo.toString)
-  val ask = Ask(BtcAmount(2), EUR(300), senderInfo.toString)
+  val bid = Bid(BtcAmount(2), EUR(300), senderInfo)
+  val ask = Ask(BtcAmount(2), EUR(300), senderInfo)
 
   "An order" should "be converted from protobuf" in {
     fromProtobuf(bidMessage, senderInfo) should be (bid)
@@ -122,15 +122,15 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
     .setOrderMatchId("1234")
     .setAmount(toProtobuf(BtcAmount(0.1)))
     .setPrice(toProtobuf(EUR(10000)))
-    .setBuyer("bitmarket://buyer:8080")
-    .setSeller("bitmarket://seller:1234")
+    .setBuyer("bitmarket://buyer:8080/")
+    .setSeller("bitmarket://seller:1234/")
     .build
   val orderMatch = OrderMatch(
     orderMatchId = "1234",
     amount = BtcAmount(0.1),
     price = EUR(10000),
-    buyer = "bitmarket://buyer:8080",
-    seller = "bitmarket://seller:1234"
+    buyer = PeerConnection("buyer", 8080),
+    seller = PeerConnection("seller", 1234)
   )
 
   "An order match" should "be converted from protobuf" in {
