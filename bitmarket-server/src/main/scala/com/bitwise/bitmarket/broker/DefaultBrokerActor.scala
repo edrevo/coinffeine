@@ -26,23 +26,23 @@ private[broker] class DefaultBrokerActor(
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
 
   private def processMessage: Receive = {
-    case order: Order if order.price.currency != currency =>
+    case ReceiveMessage(order: Order, _) if order.price.currency != currency =>
       log.error("Dropping order not placed in %s: %s", currency, order)
 
-    case order: Order if book.orders.contains(order) =>
-      setExpirationFor(order.requester)
+    case ReceiveMessage(order: Order, requester) if book.orders.contains(order) =>
+      setExpirationFor(requester)
 
-    case order: Order =>
+    case ReceiveMessage(order: Order, requester) =>
       log.info("Order placed " + order)
       val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
       book = clearedBook
       crosses.foreach { orderMatch => sender ! orderMatch }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
-      if (book.orders.exists(_.requester == order.requester)) {
-        setExpirationFor(order.requester)
+      if (book.orders.exists(_.requester == requester)) {
+        setExpirationFor(requester)
       }
 
-    case QuoteRequest(_) => sender ! Quote(book.spread, lastPrice)
+    case ReceiveMessage(QuoteRequest(_), _) => sender ! Quote(book.spread, lastPrice)
 
     case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")
