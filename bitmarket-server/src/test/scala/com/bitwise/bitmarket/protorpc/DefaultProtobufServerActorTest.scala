@@ -9,7 +9,6 @@ import akka.testkit.TestProbe
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
-import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
@@ -56,7 +55,7 @@ class DefaultProtobufServerActorTest
     clients(2).connectToServer()
     val quote = clients(2).requestQuote(EUR.currency)
     eurBroker.expectMsg(QuoteRequest(EUR.currency))
-    eurBroker.reply(QuoteResponse(currentQuote))
+    eurBroker.reply(currentQuote)
     Await.result(quote, testTimeout).getQuote should be (toProtobuf(currentQuote))
   }
 

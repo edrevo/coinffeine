@@ -13,7 +13,6 @@ import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.{ClientRpcController, PeerInfo}
 import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
-import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
@@ -107,7 +106,7 @@ private class DefaultProtobufServerActor(
     case RequestQuoteCallback(currency, quotePromise) =>
       implicit val quoteTimeout = Timeout(brokerTimeout)
       val broker = brokers(currency)
-      (broker ? QuoteRequest(currency)).mapTo[QuoteResponse].map(_.quote) onComplete quotePromise.complete
+      (broker ? QuoteRequest(currency)).mapTo[Quote] onComplete quotePromise.complete
 
     case PlaceOrderCallback(order) =>
       brokers.get(order.price.currency).foreach { broker => broker ! order }

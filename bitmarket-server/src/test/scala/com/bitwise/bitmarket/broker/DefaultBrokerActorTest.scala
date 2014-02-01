@@ -6,7 +6,6 @@ import scala.language.postfixOps
 import akka.actor._
 import akka.testkit._
 
-import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
@@ -40,13 +39,13 @@ class DefaultBrokerActorTest
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
     probe.send(broker, quoteRequest)
-    probe.expectMsg(QuoteResponse(Quote()))
+    probe.expectMsg(Quote())
     probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client1")))
     probe.send(broker, quoteRequest)
-    probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> None)))
+    probe.expectMsg(Quote(Some(EUR(900)) -> None))
     probe.send(broker, Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2")))
     probe.send(broker, quoteRequest)
-    probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> Some(EUR(950)))))
+    probe.expectMsg(Quote(Some(EUR(900)) -> Some(EUR(950))))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
@@ -54,7 +53,7 @@ class DefaultBrokerActorTest
     probe.send(broker, Ask(BtcAmount(1), EUR(800), PeerConnection("client2")))
     probe.send(broker, quoteRequest)
     probe.expectMsgClass(classOf[OrderMatch])
-    probe.expectMsg(QuoteResponse(Quote(lastPrice = Some(EUR(850)))))
+    probe.expectMsg(Quote(lastPrice = Some(EUR(850))))
   }
 
   it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
@@ -69,14 +68,14 @@ class DefaultBrokerActorTest
     probe.send(broker, Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2")))
     probe.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
     probe.send(broker, quoteRequest)
-    probe.expectMsg(QuoteResponse(Quote(None -> Some(EUR(950)))))
+    probe.expectMsg(Quote(None -> Some(EUR(950))))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
     probe.send(broker, Bid(BtcAmount(1), EUR(900), PeerConnection("client")))
     probe.expectNoMsg(2 seconds)
     probe.send(broker, quoteRequest)
-    probe.expectMsg(QuoteResponse(Quote()))
+    probe.expectMsg(Quote())
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {

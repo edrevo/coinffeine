@@ -8,7 +8,6 @@ import scala.util.Random
 
 import akka.actor._
 
-import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
 import com.bitwise.bitmarket.common.protocol._
@@ -42,7 +41,7 @@ private[broker] class DefaultBrokerActor(
         setExpirationFor(order.requester)
       }
 
-    case QuoteRequest(_) => sender ! QuoteResponse(Quote(book.spread, lastPrice))
+    case QuoteRequest(_) => sender ! Quote(book.spread, lastPrice)
 
     case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")
