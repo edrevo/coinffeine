@@ -10,7 +10,7 @@ import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
-import com.bitwise.bitmarket.common.protocol.{Quote, Ask, Bid}
+import com.bitwise.bitmarket.common.protocol._
 
 class DefaultBrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -21,6 +21,7 @@ class DefaultBrokerActorTest
       currency = EUR.currency,
       orderExpirationInterval = 1 second
     )), name)
+    val quoteRequest = QuoteRequest(EUR.currency)
   }
 
   "A broker" must "keep orders and notify when they cross" in new WithEurBroker("notify-crosses") {
@@ -37,20 +38,20 @@ class DefaultBrokerActorTest
   }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote()))
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> None)))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(Some(EUR(900)) -> Some(EUR(950)))))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(1), EUR(800), PeerConnection("client2"))))
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsgClass(classOf[NotifyCross])
     probe.expectMsg(QuoteResponse(Quote(lastPrice = Some(EUR(850)))))
   }
@@ -66,14 +67,14 @@ class DefaultBrokerActorTest
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client1"))))
     probe.send(broker, OrderPlacement(Ask(BtcAmount(0.8), EUR(950), PeerConnection("client2"))))
     probe.send(broker, OrderCancellation(PeerConnection("client1")))
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote(None -> Some(EUR(950)))))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
     probe.send(broker, OrderPlacement(Bid(BtcAmount(1), EUR(900), PeerConnection("client"))))
     probe.expectNoMsg(2 seconds)
-    probe.send(broker, QuoteRequest)
+    probe.send(broker, quoteRequest)
     probe.expectMsg(QuoteResponse(Quote()))
   }
 

@@ -95,6 +95,23 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
     fromProtobuf(toProtobuf(ask), senderInfo) should be (ask)
   }
 
+  val quoteRequestMessage = msg.QuoteRequest.newBuilder
+    .setCurrency("EUR")
+    .build
+  val quoteRequest = QuoteRequest(EUR.currency)
+
+  "A quote request" should "be converted from protobuf" in {
+    fromProtobuf(quoteRequestMessage) should be (quoteRequest)
+  }
+
+  it should "be converted to protobuf" in {
+    toProtobuf(quoteRequest) should be (quoteRequestMessage)
+  }
+
+  it should "be converted to protobuf and back again" in {
+    fromProtobuf(toProtobuf(quoteRequest)) should be (quoteRequest)
+  }
+
   val quoteMessage = msg.Quote.newBuilder
     .setHighestBid(toProtobuf(EUR(20)))
     .setLowestAsk(toProtobuf(EUR(30)))

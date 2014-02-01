@@ -15,7 +15,6 @@ import com.bitwise.bitmarket.common.protocol.{OrderMatch, Order, Quote}
   */
 object BrokerActor {
 
-  case object QuoteRequest
   case class QuoteResponse(quote: Quote)
   case class OrderPlacement(order: Order)
   case class OrderCancellation(requester: PeerConnection)

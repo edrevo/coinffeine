@@ -101,6 +101,9 @@ object ProtobufConversions {
       refundTxSignatureResponse.getTransactionSignature.toByteArray, false)
   )
 
+  def fromProtobuf(quoteRequest: msg.QuoteRequestOrBuilder): QuoteRequest =
+    QuoteRequest(Currency.getInstance(quoteRequest.getCurrency))
+
   def fromProtobuf(quote: msg.QuoteOrBuilder): Quote = {
     val bidOption = if (quote.hasHighestBid) Some(fromProtobuf(quote.getHighestBid)) else None
     val askOption = if (quote.hasLowestAsk) Some(fromProtobuf(quote.getLowestAsk)) else None
@@ -143,6 +146,12 @@ object ProtobufConversions {
     .setAmount(toProtobuf(order.amount))
     .setPrice(toProtobuf(order.price))
     .build
+
+  def toProtobuf(quoteRequest: QuoteRequest): msg.QuoteRequest = {
+    val builder = msg.QuoteRequest.newBuilder
+    builder.setCurrency(quoteRequest.currency.getSymbol)
+    builder.build
+  }
 
   def toProtobuf(quote: Quote): msg.Quote = {
     val builder = msg.Quote.newBuilder

@@ -55,7 +55,7 @@ class DefaultProtobufServerActorTest
     val currentQuote = Quote(EUR(10) -> EUR(20), EUR(15))
     clients(2).connectToServer()
     val quote = clients(2).requestQuote(EUR.currency)
-    eurBroker.expectMsg(QuoteRequest)
+    eurBroker.expectMsg(QuoteRequest(EUR.currency))
     eurBroker.reply(QuoteResponse(currentQuote))
     Await.result(quote, testTimeout).getQuote should be (toProtobuf(currentQuote))
   }
@@ -63,7 +63,7 @@ class DefaultProtobufServerActorTest
   it should "translate quote requests and timeout if broker stop responding"  in {
     clients(3).connectToServer()
     val quote = clients(3).requestQuote(EUR.currency)
-    eurBroker.expectMsg(QuoteRequest)
+    eurBroker.expectMsg(QuoteRequest(EUR.currency))
     Await.result(quote, testTimeout).getResult should be (msg.QuoteResponse.Result.TIMEOUT)
   }
 

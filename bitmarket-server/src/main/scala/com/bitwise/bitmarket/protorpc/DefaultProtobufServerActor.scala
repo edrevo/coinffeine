@@ -107,7 +107,7 @@ private class DefaultProtobufServerActor(
     case RequestQuoteCallback(currency, quotePromise) =>
       implicit val quoteTimeout = Timeout(brokerTimeout)
       val broker = brokers(currency)
-      (broker ? QuoteRequest).mapTo[QuoteResponse].map(_.quote) onComplete quotePromise.complete
+      (broker ? QuoteRequest(currency)).mapTo[QuoteResponse].map(_.quote) onComplete quotePromise.complete
 
     case PlaceOrderCallback(order) =>
       brokers.get(order.price.currency).foreach { broker =>
