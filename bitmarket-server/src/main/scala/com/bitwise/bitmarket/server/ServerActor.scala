@@ -1,29 +1,23 @@
 package com.bitwise.bitmarket.server
 
 import java.net.BindException
-import java.util.Currency
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 import akka.actor._
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 
+import com.bitwise.bitmarket.CommandLine
 import com.bitwise.bitmarket.broker.BrokerActor
 import com.bitwise.bitmarket.common.currency.CurrencyCode._
-import com.bitwise.bitmarket.protorpc.ProtobufServerActor
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway
 import com.bitwise.bitmarket.system.SupervisorComponent
-import com.bitwise.bitmarket.CommandLine
+import com.googlecode.protobuf.pro.duplex.PeerInfo
 
-class ServerActor(
-    brokerProps: Map[Currency, Props],
-    protobufServerProps: Map[Currency, ActorRef] => Props
-  ) extends Actor {
+class ServerActor(gatewayProps: Props, brokerProps: ActorRef => Seq[Props]) extends Actor {
 
-  val brokers: Map[Currency, ActorRef] = for {
-    (currency, props) <- brokerProps
-  } yield currency -> context.actorOf(props)
-
-  val protobufServer = context.actorOf(protobufServerProps(brokers))
+  private val gateway = context.actorOf(gatewayProps)
+  private val brokers = brokerProps(gateway).map(props => context.actorOf(props))
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 10 seconds) {
@@ -32,11 +26,11 @@ class ServerActor(
     }
 
   override def preStart() {
-    context.watch(protobufServer)
+    context.watch(gateway)
   }
 
   def receive: Actor.Receive = {
-    case Terminated(`protobufServer`) => self ! PoisonPill
+    case Terminated(`gateway`) => self ! PoisonPill
   }
 }
 
@@ -45,14 +39,16 @@ object ServerActor {
   val TradedCurrencies = Set(EUR, USD).map(_.currency)
 
   trait Component extends SupervisorComponent {
-    this: BrokerActor.Component with ProtobufServerActor.Component =>
+    this: BrokerActor.Component with MessageGateway.Component =>
 
     override def supervisorProps(args: Array[String]) = {
       val cli = CommandLine.fromArgList(args)
-      val brokerProps = TradedCurrencies.map(currency =>
-        currency -> brokerActorProps(currency, ???) // TODO: inject a MessageGateway
-      ).toMap
-      Props(new ServerActor(brokerProps, brokers => protobufServerActorProps(cli.port, brokers)))
+      val serverInfo = new PeerInfo("localhost", cli.port)
+      Props(new ServerActor(messageGatewayProps(serverInfo), brokerProps))
     }
+
+    private def brokerProps(gateway: ActorRef): Seq[Props] = for {
+      currency <- TradedCurrencies.toSeq
+    } yield brokerActorProps(currency, gateway)
   }
 }

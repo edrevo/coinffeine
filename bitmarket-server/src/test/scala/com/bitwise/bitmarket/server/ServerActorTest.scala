@@ -6,19 +6,18 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import com.bitwise.bitmarket.common.{AkkaSpec, MockActor}
-import MockActor._
-import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
+import com.bitwise.bitmarket.common.MockActor._
 
 class ServerActorTest extends AkkaSpec {
 
+  val gatewayProbe = TestProbe()
+  val gatewayProps = MockActor.props(gatewayProbe)
   val brokerProbe = TestProbe()
-  val brokerProps = Map(EUR.currency -> MockActor.props(brokerProbe))
-  val protobufServerProbe = TestProbe()
-  val protobufServerProps = MockActor.props(protobufServerProbe)
+  val brokerProps = Seq(MockActor.props(brokerProbe))
 
-  val server = system.actorOf(Props(new ServerActor(brokerProps, _ => protobufServerProps)))
+  val server = system.actorOf(Props(new ServerActor(gatewayProps, _ => brokerProps)))
   val MockStarted(brokerRef) = brokerProbe.expectMsgClass(classOf[MockStarted])
-  val MockStarted(protobufServerRef) = protobufServerProbe.expectMsgClass(classOf[MockStarted])
+  val MockStarted(gatewayRef) = gatewayProbe.expectMsgClass(classOf[MockStarted])
 
   "The server actor" must "restart brokers" in {
     brokerRef ! MockThrow(new Error("Something went wrong"))
@@ -27,8 +26,8 @@ class ServerActorTest extends AkkaSpec {
   }
 
   it must "stop if protobuf server crashes" in {
-    protobufServerRef ! MockThrow(new BindException("Something went wrong"))
-    protobufServerProbe.expectMsgClass(classOf[MockStopped])
-    protobufServerProbe.expectNoMsg()
+    gatewayRef ! MockThrow(new BindException("Something went wrong"))
+    gatewayProbe.expectMsgClass(classOf[MockStopped])
+    gatewayProbe.expectNoMsg()
   }
 }
