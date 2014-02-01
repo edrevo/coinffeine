@@ -4,15 +4,15 @@ import java.util.Currency
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.Props
-
-import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.common.protocol.{OrderMatch, Order, Quote}
+import akka.actor.{ActorRef, Props}
 
 /** A broker actor maintains the order book of BTC trading on a given fiat currency. */
 object BrokerActor {
 
   trait Component {
-    def brokerActorProps(currency: Currency, orderExpirationInterval: Duration = 60 seconds): Props
+    def brokerActorProps(
+      currency: Currency,
+      gateway: ActorRef,
+      orderExpirationInterval: Duration = 60 seconds): Props
   }
 }

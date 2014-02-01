@@ -16,6 +16,7 @@ import com.bitwise.bitmarket.market._
 
 private[broker] class DefaultBrokerActor(
     currency: Currency,
+    gateway: ActorRef,
     orderExpirationInterval: Duration) extends Actor with ActorLogging {
 
   private var book = OrderBook.empty(currency)
@@ -80,7 +81,8 @@ private[broker] class DefaultBrokerActor(
 
 object DefaultBrokerActor {
   trait Component extends BrokerActor.Component {
-    override def brokerActorProps(currency: Currency, orderExpirationInterval: Duration) =
-      Props(new DefaultBrokerActor(currency, orderExpirationInterval))
+    override def brokerActorProps(
+        currency: Currency, gateway: ActorRef, orderExpirationInterval: Duration) =
+      Props(new DefaultBrokerActor(currency, gateway, orderExpirationInterval))
   }
 }

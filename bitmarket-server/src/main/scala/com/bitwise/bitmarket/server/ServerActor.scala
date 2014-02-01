@@ -50,7 +50,7 @@ object ServerActor {
     override def supervisorProps(args: Array[String]) = {
       val cli = CommandLine.fromArgList(args)
       val brokerProps = TradedCurrencies.map(currency =>
-        currency -> brokerActorProps(currency)
+        currency -> brokerActorProps(currency, ???) // TODO: inject a MessageGateway
       ).toMap
       Props(new ServerActor(brokerProps, brokers => protobufServerActorProps(cli.port, brokers)))
     }
