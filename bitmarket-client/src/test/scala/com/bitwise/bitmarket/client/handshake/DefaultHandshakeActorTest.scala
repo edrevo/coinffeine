@@ -72,11 +72,11 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     shouldForwardToCounterpart(RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
   }
 
-  def shouldForwardToCounterpart(message: Any) {
+  def shouldForwardToCounterpart[T : MessageSend](message: T) {
     gateway.expectMsg(ForwardMessage(message, handshake.counterpart))
   }
 
-  def shouldForwardToBroker(message: Any) {
+  def shouldForwardToBroker[T : MessageSend](message: T) {
     gateway.expectMsg(ForwardMessage(message, handshake.broker))
   }
 

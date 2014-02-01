@@ -37,13 +37,6 @@ class ProtoRpcMessageGatewayTest
     }
   }
 
-  it must "throw while forwarding an unknown message" in new FreshGateway {
-    val msg = "This is an unknown message"
-    intercept[MessageGateway.ForwardException] {
-      testGateway.receive(MessageGateway.ForwardMessage(msg, remotePeerConnection))
-    }
-  }
-
   it must "throw while forwarding when recipient was never connected" in new FreshGateway {
     val msg = makeOrderMatch
     remotePeer.shutdown()
