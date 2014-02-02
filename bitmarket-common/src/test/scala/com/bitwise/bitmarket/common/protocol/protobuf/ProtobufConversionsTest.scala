@@ -58,34 +58,14 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
     fromProtobuf(toProtobuf(emptyQuote)) should be (emptyQuote)
   }
 
-  val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setOrderMatchId("1234")
-    .setAmount(ProtoMapping.toProtobuf[BtcAmount, msg.BtcAmount](BtcAmount(0.1)))
-    .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(10000)))
-    .setBuyer("bitmarket://buyer:8080/")
-    .setSeller("bitmarket://seller:1234/")
-    .build
-  val orderMatch = OrderMatch(
-    orderMatchId = "1234",
-    amount = BtcAmount(0.1),
-    price = EUR(10000),
-    buyer = PeerConnection("buyer", 8080),
-    seller = PeerConnection("seller", 1234)
-  )
-
-  "An order match" should "be converted from protobuf" in {
-    fromProtobuf(orderMatchMessage) should be (orderMatch)
-  }
-
-  it should "be converted to protobuf" in {
-    toProtobuf(orderMatch) should be (orderMatchMessage)
-  }
-
-  it should "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(orderMatch)) should be (orderMatch)
-  }
-
   "An Cross Notification" should "be converted to protobuf and back again" in {
+    val orderMatch = OrderMatch(
+      orderMatchId = "1234",
+      amount = BtcAmount(0.1),
+      price = EUR(10000),
+      buyer = PeerConnection("buyer", 8080),
+      seller = PeerConnection("seller", 1234)
+    )
     val crossNotification = CrossNotification(
       exchangeId = "1234",
       cross = orderMatch

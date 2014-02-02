@@ -1,12 +1,12 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
+import java.math.BigDecimal
 import java.util.Currency
 
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
-import java.math.BigDecimal
 
 /** Implicit conversion mappings for the protocol messages */
 object DefaultProtoMappings {
@@ -83,5 +83,24 @@ object DefaultProtoMappings {
         .setConnection(acceptance.fromConnection.toString)
         .setAmount(ProtoMapping.toProtobuf(acceptance.amount))
         .build
+  }
+
+  implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
+
+    override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
+      orderMatchId = orderMatch.getOrderMatchId,
+      amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
+      price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
+      buyer = PeerConnection.parse(orderMatch.getBuyer),
+      seller = PeerConnection.parse(orderMatch.getSeller)
+    )
+
+    override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
+      .setOrderMatchId(orderMatch.orderMatchId)
+      .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
+      .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
+      .setBuyer(orderMatch.buyer.toString)
+      .setSeller(orderMatch.seller.toString)
+      .build
   }
 }

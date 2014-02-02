@@ -5,7 +5,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
 import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
@@ -71,4 +71,20 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
     .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
     .build
   "Exchange request" must behave like thereIsAMappingBetween(exchange, exchangeMessage)
+
+  val orderMatch = OrderMatch(
+    orderMatchId = "1234",
+    amount = BtcAmount(0.1),
+    price = EUR(10000),
+    buyer = PeerConnection("buyer", 8080),
+    seller = PeerConnection("seller", 1234)
+  )
+  val orderMatchMessage = msg.OrderMatch.newBuilder
+    .setOrderMatchId("1234")
+    .setAmount(ProtoMapping.toProtobuf[BtcAmount, msg.BtcAmount](BtcAmount(0.1)))
+    .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(10000)))
+    .setBuyer("bitmarket://buyer:8080/")
+    .setSeller("bitmarket://seller:1234/")
+    .build
+  "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 }

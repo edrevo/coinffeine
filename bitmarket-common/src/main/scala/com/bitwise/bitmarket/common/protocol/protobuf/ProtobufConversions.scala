@@ -1,7 +1,6 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
 import java.io._
-import java.math.BigDecimal
 import java.util.Currency
 
 import com.google.protobuf.ByteString
@@ -9,7 +8,6 @@ import com.google.bitcoin.core.{Transaction, Sha256Hash}
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.bitwise.bitmarket.common.{protocol, PeerConnection}
-import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
@@ -17,21 +15,9 @@ import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 /** Conversion from/to domain classes and Protobuf messages. */
 object ProtobufConversions {
 
-
-  def fromProtobuf(amount: msg.BtcAmountOrBuilder): BtcAmount =
-    BtcAmount(BigDecimal.valueOf(amount.getValue, amount.getScale))
-
-  def fromProtobuf(orderMatch: msg.OrderMatchOrBuilder): OrderMatch = OrderMatch(
-    orderMatchId = orderMatch.getOrderMatchId,
-    amount = fromProtobuf(orderMatch.getAmount),
-    price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
-    buyer = PeerConnection.parse(orderMatch.getBuyer),
-    seller = PeerConnection.parse(orderMatch.getSeller)
-  )
-
   def fromProtobuf(crossNotification: msg.CrossNotificationOrBuilder): CrossNotification = CrossNotification(
     exchangeId = crossNotification.getExchangeId,
-    cross = fromProtobuf(crossNotification.getCross)
+    cross = ProtoMapping.fromProtobuf(crossNotification.getCross)
   )
 
   def fromProtobuf(exchangeAborted: msg.ExchangeAbortedOrBuilder): ExchangeAborted = ExchangeAborted(
@@ -102,20 +88,10 @@ object ProtobufConversions {
     builder.build
   }
 
-  def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = {
-    val builder = msg.OrderMatch.newBuilder
-    builder.setOrderMatchId(orderMatch.orderMatchId)
-    builder.setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
-    builder.setPrice(ProtoMapping.toProtobuf(orderMatch.price))
-    builder.setBuyer(orderMatch.buyer.toString)
-    builder.setSeller(orderMatch.seller.toString)
-    builder.build
-  }
-
   def toProtobuf(crossNotification: CrossNotification): msg.CrossNotification = {
     val builder = msg.CrossNotification.newBuilder()
     builder.setExchangeId(crossNotification.exchangeId)
-    builder.setCross(toProtobuf(crossNotification.cross))
+    builder.setCross(ProtoMapping.toProtobuf(crossNotification.cross))
     builder.build
   }
 

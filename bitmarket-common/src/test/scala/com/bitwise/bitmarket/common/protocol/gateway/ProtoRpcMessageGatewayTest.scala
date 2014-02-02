@@ -11,8 +11,9 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.protocol.{TestClient, OrderMatch}
-import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
+import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.toProtobuf
 
 class ProtoRpcMessageGatewayTest
     extends AkkaSpec("MessageGatewaySystem") with Eventually with IntegrationPatience {
@@ -22,7 +23,7 @@ class ProtoRpcMessageGatewayTest
     gateway ! MessageGateway.ForwardMessage(msg, remotePeerConnection)
     eventually {
       remotePeer.receivedMessagesNumber should be (1)
-      remotePeer.receivedMessages contains ProtobufConversions.toProtobuf(msg)
+      remotePeer.receivedMessages contains toProtobuf(msg)
     }
   }
 
@@ -32,8 +33,8 @@ class ProtoRpcMessageGatewayTest
     gateway ! MessageGateway.ForwardMessage(msg2, remotePeerConnection)
     eventually {
       remotePeer.receivedMessagesNumber should be (2)
-      remotePeer.receivedMessages contains ProtobufConversions.toProtobuf(msg1)
-      remotePeer.receivedMessages contains ProtobufConversions.toProtobuf(msg2)
+      remotePeer.receivedMessages contains toProtobuf(msg1)
+      remotePeer.receivedMessages contains toProtobuf(msg2)
     }
   }
 
@@ -53,7 +54,7 @@ class ProtoRpcMessageGatewayTest
     testGateway.receive(MessageGateway.ForwardMessage(msg2, remotePeerConnection))
     eventually {
       remotePeer.receivedMessagesNumber should be (1)
-      remotePeer.receivedMessages contains ProtobufConversions.toProtobuf(msg1)
+      remotePeer.receivedMessages contains toProtobuf(msg1)
     }
   }
 
@@ -65,14 +66,14 @@ class ProtoRpcMessageGatewayTest
   it must "deliver messages to subscribers when filter match" in new FreshGateway {
     val msg = makeOrderMatch
     gateway ! subscribeToOrderMatches
-    remotePeer.notifyMatchToRemote(ProtobufConversions.toProtobuf(msg))
+    remotePeer.notifyMatchToRemote(toProtobuf(msg))
     expectMsg(ReceiveMessage(msg, remotePeer.connection))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in new FreshGateway {
     val msg = makeOrderMatch
     gateway ! MessageGateway.Subscribe(msg => false)
-    remotePeer.notifyMatchToRemote(ProtobufConversions.toProtobuf(msg))
+    remotePeer.notifyMatchToRemote(toProtobuf(msg))
     expectNoMsg()
   }
 
@@ -80,7 +81,7 @@ class ProtoRpcMessageGatewayTest
     val msg = makeOrderMatch
     val subs = for (i <- 1 to 5) yield TestProbe()
     subs.foreach(_.send(gateway, subscribeToOrderMatches))
-    remotePeer.notifyMatchToRemote(ProtobufConversions.toProtobuf(msg))
+    remotePeer.notifyMatchToRemote(toProtobuf(msg))
     subs.foreach(_.expectMsg(ReceiveMessage(msg, remotePeer.connection)))
   }
 

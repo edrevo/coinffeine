@@ -3,8 +3,8 @@ package com.bitwise.bitmarket.common.protocol
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession}
-import com.bitwise.bitmarket.common.protocol.protobuf.{
-  ProtobufConversions, BitmarketProtobuf => proto}
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto, ProtoMapping}
+import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 
 /** Represents a coincidence of desires of both a buyer and a seller */
 case class OrderMatch(
@@ -23,7 +23,7 @@ object OrderMatch {
       val stub = proto.PeerService.newStub(session.channel)
       stub.notifyMatch(
         session.controller,
-        ProtobufConversions.toProtobuf(msg),
+        ProtoMapping.toProtobuf(msg),
         Callbacks.noop[proto.Void])
     }
   }
