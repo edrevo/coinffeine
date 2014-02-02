@@ -4,12 +4,12 @@ import com.google.protobuf.Message
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
+import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.EUR
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
-import com.bitwise.bitmarket.common.PeerConnection
 
 class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 
@@ -41,6 +41,18 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
     .setValue(3)
     .build
   )
+
+  val bidMessage = msg.Order.newBuilder
+    .setType(msg.OrderType.BID)
+    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
+    .setPrice(msg.FiatAmount.newBuilder.setValue(300).setScale(0).setCurrency("EUR"))
+    .build
+  val askMessage = bidMessage.toBuilder.setType(msg.OrderType.ASK).build
+  val bid = Order(Bid, BtcAmount(2), EUR(300))
+  val ask = Order(Ask, BtcAmount(2), EUR(300))
+
+  "A bid order" should behave like thereIsAMappingBetween(bid, bidMessage)
+  "An ask order" should behave like thereIsAMappingBetween(ask, askMessage)
 
   val cancellation = OrderCancellation(EUR.currency)
   val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build

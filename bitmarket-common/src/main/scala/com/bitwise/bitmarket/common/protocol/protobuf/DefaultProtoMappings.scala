@@ -35,6 +35,29 @@ object DefaultProtoMappings {
       .build
   }
 
+  implicit val orderMapping = new ProtoMapping[Order, msg.Order] {
+
+    override def fromProtobuf(order: msg.Order): Order = {
+      Order(
+        orderType = order.getType match {
+          case msg.OrderType.BID => Bid
+          case msg.OrderType.ASK => Ask
+        },
+        amount = ProtoMapping.fromProtobuf(order.getAmount),
+        price = ProtoMapping.fromProtobuf(order.getPrice)
+      )
+    }
+
+    override def toProtobuf(order: Order): msg.Order = msg.Order.newBuilder
+      .setType(order.orderType match {
+        case Bid => msg.OrderType.BID
+        case Ask => msg.OrderType.ASK
+      })
+      .setAmount(ProtoMapping.toProtobuf(order.amount))
+      .setPrice(ProtoMapping.toProtobuf(order.price))
+      .build
+  }
+
   implicit val orderCancellationMapping = new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
     override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
       currency = Currency.getInstance(message.getCurrency)

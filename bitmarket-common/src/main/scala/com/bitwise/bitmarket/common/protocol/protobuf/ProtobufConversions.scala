@@ -29,18 +29,6 @@ object ProtobufConversions {
     seller = PeerConnection.parse(orderMatch.getSeller)
   )
 
-  def fromProtobuf(order: msg.OrderOrBuilder, sender: PeerConnection): Order = {
-    val orderConstructor = order.getType match {
-      case msg.OrderType.BID => Bid.apply _
-      case msg.OrderType.ASK => Ask.apply _
-    }
-    orderConstructor(
-      fromProtobuf(order.getAmount),
-      ProtoMapping.fromProtobuf(order.getPrice),
-      sender
-    )
-  }
-
   def fromProtobuf(crossNotification: msg.CrossNotificationOrBuilder): CrossNotification = CrossNotification(
     exchangeId = crossNotification.getExchangeId,
     cross = fromProtobuf(crossNotification.getCross)
@@ -97,15 +85,6 @@ object ProtobufConversions {
     .setFrom(acceptance.fromId.address)
     .setConnection(acceptance.fromConnection.toString)
     .setAmount(ProtoMapping.toProtobuf(acceptance.amount))
-    .build
-
-  def toProtobuf(order: Order): msg.Order = msg.Order.newBuilder
-    .setType(order match {
-      case _: Bid => msg.OrderType.BID
-      case _: Ask => msg.OrderType.ASK
-    })
-    .setAmount(ProtoMapping.toProtobuf(order.amount))
-    .setPrice(ProtoMapping.toProtobuf(order.price))
     .build
 
   def toProtobuf(quoteRequest: QuoteRequest): msg.QuoteRequest = {

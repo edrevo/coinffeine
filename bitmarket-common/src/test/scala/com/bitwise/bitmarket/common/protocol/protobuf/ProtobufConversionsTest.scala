@@ -18,31 +18,6 @@ import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => msg}
 class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoSugar {
   import ProtobufConversions._
 
-  val bidMessage = msg.Order.newBuilder
-    .setType(msg.OrderType.BID)
-    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-    .setPrice(msg.FiatAmount.newBuilder.setValue(300).setScale(0).setCurrency("EUR"))
-    .build
-  val askMessage = bidMessage.toBuilder.setType(msg.OrderType.ASK).build
-  val senderInfo = PeerConnection("host", 8080)
-  val bid = Bid(BtcAmount(2), EUR(300), senderInfo)
-  val ask = Ask(BtcAmount(2), EUR(300), senderInfo)
-
-  "An order" should "be converted from protobuf" in {
-    fromProtobuf(bidMessage, senderInfo) should be (bid)
-    fromProtobuf(askMessage, senderInfo) should be (ask)
-  }
-
-  it should "be converted to protobuf" in {
-    toProtobuf(bid) should be (bidMessage)
-    toProtobuf(ask) should be (askMessage)
-  }
-
-  it should "be converted to protobuf and back again" in {
-    fromProtobuf(toProtobuf(bid), senderInfo) should be (bid)
-    fromProtobuf(toProtobuf(ask), senderInfo) should be (ask)
-  }
-
   val quoteRequestMessage = msg.QuoteRequest.newBuilder
     .setCurrency("EUR")
     .build

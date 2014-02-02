@@ -9,14 +9,14 @@ import com.bitwise.bitmarket.common.PeerConnection
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(
   currency: Currency,
-  bids: Seq[Bid],
-  asks: Seq[Ask]) {
+  bids: Seq[Position],
+  asks: Seq[Position]) {
 
   requireSameCurrency()
   requireSortedOrders()
   requireSingleOrderPerRequester()
 
-  def orders: Seq[Order] = bids ++ asks
+  def positions: Seq[Position] = bids ++ asks
 
   /** Tells if a transaction is possible with current orders. */
   def hasCross: Boolean = spread match {
@@ -25,23 +25,25 @@ case class OrderBook(
   }
 
   /** Get current spread (interval between the highest bet price to the lowest bid price */
-  def spread: Spread = (bids.headOption.map(_.price), asks.headOption.map(_.price))
+  def spread: Spread = (bids.headOption.map(_.order.price), asks.headOption.map(_.order.price))
 
   /** Place a new order.
     *
     * Note that a preexisting order by the same requester will be replaced by the new one.
     *
-    * @param order  Ask or Bid to place
-    * @return       New order book
+    * @param requester  Who is placing the order
+    * @param order      Ask or Bid to place
+    * @return           New order book
     */
-  def placeOrder(order: Order): OrderBook = {
-    val (newBid, newAsk) = order match {
-      case bid: Bid => (Some(bid), None)
-      case ask: Ask => (None, Some(ask))
+  def placeOrder(requester: PeerConnection, order: Order): OrderBook = {
+    val position = Position(requester, order)
+    val (newBid, newAsk) = order.orderType match {
+      case Bid => (Some(position), None)
+      case Ask => (None, Some(position))
     }
     copy(
-      bids = (bids.filter(_.requester != order.requester) ++ newBid).sorted,
-      asks = (asks.filter(_.requester != order.requester) ++ newAsk).sorted
+      bids = sortBids(bids.filter(_.requester != requester) ++ newBid),
+      asks = sortAsks(asks.filter(_.requester != requester) ++ newAsk)
     )
   }
 
@@ -61,11 +63,11 @@ case class OrderBook(
   @tailrec
   private def clearMarket(
       idStream: Stream[String],
-      bids: Seq[Bid],
-      asks: Seq[Ask],
+      bids: Seq[Position],
+      asks: Seq[Position],
       crosses: Seq[OrderMatch]): (OrderBook, Seq[OrderMatch]) = {
     (bids.headOption, asks.headOption) match {
-      case (Some(bid), Some(ask)) if bid.price.amount >= ask.price.amount =>
+      case (Some(bid), Some(ask)) if bid.order.price.amount >= ask.order.price.amount =>
         val (cross, remainingBid, remainingAsk) = crossOrders(idStream.head, bid, ask)
         clearMarket(
           idStream.tail,
@@ -77,24 +79,29 @@ case class OrderBook(
     }
   }
 
-  private def crossOrders(id: String, bid: Bid, ask: Ask): (OrderMatch, Option[Bid], Option[Ask]) = {
-    val crossedAmount = bid.amount min ask.amount
+  private def crossOrders(id: String, bid: Position, ask: Position):
+      (OrderMatch, Option[Position], Option[Position]) = {
+    val crossedAmount = bid.order.amount min ask.order.amount
     val remainingBid =
-      if (bid.amount > crossedAmount) Some(bid.copy(amount = bid.amount - crossedAmount)) else None
+      if (bid.order.amount > crossedAmount) Some(bid.reduceAmount(crossedAmount)) else None
     val remainingAsk =
-      if (ask.amount > crossedAmount) Some(ask.copy(amount = ask.amount - crossedAmount)) else None
+      if (ask.order.amount > crossedAmount) Some(ask.reduceAmount(crossedAmount)) else None
     val cross = OrderMatch(
       orderMatchId = id,
       amount = crossedAmount,
-      price = (bid.price + ask.price) / 2,
+      price = (bid.order.price + ask.order.price) / 2,
       buyer = bid.requester,
       seller = ask.requester
     )
     (cross, remainingBid, remainingAsk)
   }
 
+  private def sortBids(bids: Seq[Position]) = bids.sortBy(_.order)(Order.DescendingPriceOrder)
+
+  private def sortAsks(asks: Seq[Position]) = asks.sortBy(_.order)(Order.AscendingPriceOrder)
+
   private def requireSameCurrency() {
-    val otherCurrency: Option[Currency] = orders.map(_.price.currency).find(_ != currency)
+    val otherCurrency: Option[Currency] = positions.map(_.order.price.currency).find(_ != currency)
     require(
       otherCurrency.isEmpty,
       s"A currency (${otherCurrency.get}) other than $currency was used"
@@ -102,13 +109,13 @@ case class OrderBook(
   }
 
   private def requireSortedOrders() {
-    require(bids.sorted == bids, "Bids must be sorted")
-    require(asks.sorted == asks, "Asks must be sorted")
+    require(sortBids(bids) == bids, "Bids must be sorted")
+    require(sortAsks(asks) == asks, "Asks must be sorted")
   }
 
   private def requireSingleOrderPerRequester() {
     val requestersWithMultipleOrders = for {
-      (requester, orders) <- orders.groupBy(_.requester)
+      (requester, orders) <- positions.groupBy(_.requester)
       if orders.size > 1
     } yield requester
     require(requestersWithMultipleOrders.isEmpty,

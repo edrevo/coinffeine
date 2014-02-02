@@ -1,31 +1,19 @@
 package com.bitwise.bitmarket.common.protocol
 
-import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 
-/** Request for an interchange */
-sealed trait Order {
-  val amount: BtcAmount
-  val price: FiatAmount
-  val requester: PeerConnection
-}
+sealed trait OrderType
 
-/** Requester is willing to buy `amount` BTC at price `price` */
-case class Bid(
-    override val amount: BtcAmount,
-    override val price: FiatAmount,
-    override val requester: PeerConnection) extends Order
+/** Trying to buy bitcoins */
+case object Bid extends OrderType
 
-object Bid {
-  implicit val Order = Ordering.by[Bid, BigDecimal](bid => -bid.price.amount)
-}
+/** Trying to sell bitcoins */
+case object Ask extends OrderType
 
-/** Requester is willing to sell `amount` BTC at price `price` */
-case class Ask(
-    override val amount: BtcAmount,
-    override val price: FiatAmount,
-    override val requester: PeerConnection) extends Order
+/** Request for an interchange. */
+case class Order(orderType: OrderType, amount: BtcAmount, price: FiatAmount)
 
-object Ask {
-  implicit val Order = Ordering.by[Ask, BigDecimal](ask => ask.price.amount)
+object Order {
+  val AscendingPriceOrder: Ordering[Order] = Ordering.by[Order, BigDecimal](_.price.amount)
+  val DescendingPriceOrder: Ordering[Order] = Ordering.by[Order, BigDecimal](-_.price.amount)
 }

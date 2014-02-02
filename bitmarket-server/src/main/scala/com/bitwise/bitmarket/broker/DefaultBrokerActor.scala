@@ -29,16 +29,16 @@ private[broker] class DefaultBrokerActor(
     case ReceiveMessage(order: Order, _) if order.price.currency != currency =>
       log.error("Dropping order not placed in %s: %s", currency, order)
 
-    case ReceiveMessage(order: Order, requester) if book.orders.contains(order) =>
-      setExpirationFor(requester)
+    case ReceiveMessage(order: Order, requester)
+      if book.positions.contains(Position(requester, order)) => setExpirationFor(requester)
 
     case ReceiveMessage(order: Order, requester) =>
       log.info("Order placed " + order)
-      val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
+      val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
       book = clearedBook
       crosses.foreach { orderMatch => sender ! orderMatch }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
-      if (book.orders.exists(_.requester == requester)) {
+      if (book.positions.exists(_.requester == requester)) {
         setExpirationFor(requester)
       }
 
