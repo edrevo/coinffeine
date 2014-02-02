@@ -10,7 +10,7 @@ import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
-import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 
 class DefaultBrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -22,39 +22,44 @@ class DefaultBrokerActorTest
       gateway = gateway.ref,
       orderExpirationInterval = 1 second
     )), name)
-    val quoteRequest = ReceiveMessage(QuoteRequest(EUR.currency), PeerConnection("someone"))
+
+    def shouldHaveQuote(expectedQuote: Quote) {
+      val quoteRequester = PeerConnection("quoteRequester")
+      gateway.send(broker, ReceiveMessage(QuoteRequest(EUR.currency), quoteRequester))
+      gateway.expectMsg(ForwardMessage(expectedQuote, quoteRequester))
+    }
   }
 
-  "A broker" must "keep orders and notify when they cross" in new WithEurBroker("notify-crosses") {
-    gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
-    gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
-    gateway.expectNoMsg(100 millis)
+  "A broker" must "keep orders and notify both parts when they cross" in
+    new WithEurBroker("notify-crosses") {
+      gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
+      gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
+      gateway.expectNoMsg(100 millis)
 
-    gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.6), EUR(850)), PeerConnection("client3")))
-    val orderMatch = gateway.expectMsgClass(classOf[OrderMatch])
-    orderMatch.amount should be (BtcAmount(0.6))
-    orderMatch.price should be (EUR(900))
-    orderMatch.buyer should be (PeerConnection("client2"))
-    orderMatch.seller should be (PeerConnection("client3"))
-  }
+      gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.6), EUR(850)), PeerConnection("client3")))
+      val ForwardMessage(match1, buyer) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+      val ForwardMessage(match2, seller) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+      match1 should equal (match2)
+      match1.amount should be (BtcAmount(0.6))
+      match1.price should be (EUR(900))
+      match1.buyer should be (PeerConnection("client2"))
+      match1.seller should be (PeerConnection("client3"))
+    }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsg(Quote())
+    shouldHaveQuote(Quote())
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsg(Quote(Some(EUR(900)) -> None))
+    shouldHaveQuote(Quote(Some(EUR(900)) -> None))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsg(Quote(Some(EUR(900)) -> Some(EUR(950))))
+    shouldHaveQuote(Quote(Some(EUR(900)) -> Some(EUR(950))))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(800)), PeerConnection("client2")))
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsgClass(classOf[OrderMatch])
-    gateway.expectMsg(Quote(lastPrice = Some(EUR(850))))
+    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    shouldHaveQuote(Quote(lastPrice = Some(EUR(850))))
   }
 
   it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
@@ -68,15 +73,13 @@ class DefaultBrokerActorTest
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
     gateway.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsg(Quote(None -> Some(EUR(950))))
+    shouldHaveQuote(Quote(None -> Some(EUR(950))))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client")))
     gateway.expectNoMsg(2 seconds)
-    gateway.send(broker, quoteRequest)
-    gateway.expectMsg(Quote())
+    shouldHaveQuote(Quote())
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {
@@ -86,17 +89,19 @@ class DefaultBrokerActorTest
     gateway.send(broker, secondBid)
     gateway.send(broker, firstBid)
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("ask")))
-    val orderMatch = gateway.expectMsgClass(classOf[OrderMatch])
+    val ForwardMessage(orderMatch, _) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     orderMatch.buyer should equal (PeerConnection("first-bid"))
   }
 
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id1 = gateway.expectMsgClass(classOf[OrderMatch]).orderMatchId
+    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.orderMatchId
+    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id2 = gateway.expectMsgClass(classOf[OrderMatch]).orderMatchId
+    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.orderMatchId
+    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     id1 should not (equal (id2))
   }
 }

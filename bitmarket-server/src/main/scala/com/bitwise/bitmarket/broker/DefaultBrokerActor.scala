@@ -11,7 +11,7 @@ import akka.actor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
 import com.bitwise.bitmarket.common.protocol._
-import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.bitwise.bitmarket.market._
 
 private[broker] class DefaultBrokerActor(
@@ -36,13 +36,17 @@ private[broker] class DefaultBrokerActor(
       log.info("Order placed " + order)
       val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
       book = clearedBook
-      crosses.foreach { orderMatch => sender ! orderMatch }
+      crosses.foreach { orderMatch =>
+        gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
+        gateway ! ForwardMessage(orderMatch, orderMatch.seller)
+      }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
       if (book.positions.exists(_.requester == requester)) {
         setExpirationFor(requester)
       }
 
-    case ReceiveMessage(QuoteRequest(_), _) => sender ! Quote(book.spread, lastPrice)
+    case ReceiveMessage(QuoteRequest(_), requester) =>
+      gateway ! ForwardMessage(Quote(book.spread, lastPrice), requester)
 
     case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")
