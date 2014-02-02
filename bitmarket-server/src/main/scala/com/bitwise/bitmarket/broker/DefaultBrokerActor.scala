@@ -11,7 +11,7 @@ import akka.actor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
 import com.bitwise.bitmarket.common.protocol._
-import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 import com.bitwise.bitmarket.market._
 
 private[broker] class DefaultBrokerActor(
@@ -22,6 +22,16 @@ private[broker] class DefaultBrokerActor(
   private var book = OrderBook.empty(currency)
   private var expirationTimes = Map[PeerConnection, FiniteDuration]()
   private var lastPrice: Option[FiatAmount] = None
+
+  override def preStart() {
+    gateway ! Subscribe {
+      case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
+      case ReceiveMessage(quoteRequest: QuoteRequest, _)
+        if quoteRequest.currency == currency => true
+      case ReceiveMessage(OrderCancellation(`currency`), _) => true
+      case _ => false
+    }
+  }
 
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
 
