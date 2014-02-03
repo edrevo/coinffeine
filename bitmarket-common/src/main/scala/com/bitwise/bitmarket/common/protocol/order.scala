@@ -11,9 +11,14 @@ case object Bid extends OrderType
 case object Ask extends OrderType
 
 /** Request for an interchange. */
-case class Order(orderType: OrderType, amount: BtcAmount, price: FiatAmount)
+case class Order(orderType: OrderType, amount: BtcAmount, price: FiatAmount) {
+  require(amount.amount > 0, "Amount ordered must be strictly positive")
+  require(price.amount > 0, "Price must be strictly positive")
+}
 
 object Order {
-  val AscendingPriceOrder: Ordering[Order] = Ordering.by[Order, BigDecimal](_.price.amount)
-  val DescendingPriceOrder: Ordering[Order] = Ordering.by[Order, BigDecimal](-_.price.amount)
+  implicit val naturalOrdering: Ordering[Order] = Ordering.by[Order, BigDecimal] {
+    case Order(Bid, _, price) => -price.amount
+    case Order(Ask, _, price) => price.amount
+  }
 }

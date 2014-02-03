@@ -96,9 +96,9 @@ case class OrderBook(
     (cross, remainingBid, remainingAsk)
   }
 
-  private def sortBids(bids: Seq[Position]) = bids.sortBy(_.order)(Order.DescendingPriceOrder)
+  private def sortBids(bids: Seq[Position]) = bids.sortBy(_.order)
 
-  private def sortAsks(asks: Seq[Position]) = asks.sortBy(_.order)(Order.AscendingPriceOrder)
+  private def sortAsks(asks: Seq[Position]) = asks.sortBy(_.order)
 
   private def requireSameCurrency() {
     val otherCurrency: Option[Currency] = positions.map(_.order.price.currency).find(_ != currency)
