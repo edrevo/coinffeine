@@ -63,32 +63,14 @@ object DefaultProtoMappings {
       currency = Currency.getInstance(message.getCurrency)
     )
     override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
-      .setCurrency(obj.currency.getSymbol)
+      .setCurrency(obj.currency.getCurrencyCode)
       .build
-  }
-
-  implicit val exchangeRequestMapping = new ProtoMapping[ExchangeRequest, msg.ExchangeRequest] {
-
-    override def fromProtobuf(message: msg.ExchangeRequest): ExchangeRequest = ExchangeRequest(
-      exchangeId = message.getId,
-      fromId = PeerId(message.getFrom),
-      fromConnection = PeerConnection.parse(message.getConnection),
-      amount = ProtoMapping.fromProtobuf(message.getAmount)
-    )
-
-    override def toProtobuf(acceptance: ExchangeRequest): msg.ExchangeRequest =
-      msg.ExchangeRequest.newBuilder
-        .setId(acceptance.exchangeId)
-        .setFrom(acceptance.fromId.address)
-        .setConnection(acceptance.fromConnection.toString)
-        .setAmount(ProtoMapping.toProtobuf(acceptance.amount))
-        .build
   }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
-      orderMatchId = orderMatch.getOrderMatchId,
+      exchangeId = orderMatch.getExchangeId,
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
       buyer = PeerConnection.parse(orderMatch.getBuyer),
@@ -96,7 +78,7 @@ object DefaultProtoMappings {
     )
 
     override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
-      .setOrderMatchId(orderMatch.orderMatchId)
+      .setExchangeId(orderMatch.exchangeId)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
       .setBuyer(orderMatch.buyer.toString)

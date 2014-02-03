@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.client.handshake
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.bitwise.bitmarket.common.protocol.RejectExchange
+import com.bitwise.bitmarket.common.protocol.ExchangeRejection
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.bitwise.bitmarket.client.ProtocolConstants
 
@@ -26,7 +26,7 @@ class RefundUnsignedDefaultHandshakeActorTest
 
   it must "notify the broker that the exchange is rejected" in {
     gateway.fishForMessage() {
-      case ForwardMessage(RejectExchange("id", _), handshake.exchange.`broker`) => true
+      case ForwardMessage(ExchangeRejection("id", _), handshake.exchange.`broker`) => true
       case _ => false
     }
   }

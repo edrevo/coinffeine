@@ -11,6 +11,7 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.protocol.{TestClient, OrderMatch}
+import com.bitwise.bitmarket.common.protocol.protobuf.{ProtoMapping, ProtobufConversions}
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.toProtobuf
@@ -19,7 +20,7 @@ class ProtoRpcMessageGatewayTest
     extends AkkaSpec("MessageGatewaySystem") with Eventually with IntegrationPatience {
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in new FreshGateway {
-    val msg = makeOrderMatch
+    val msg = makeMessage
     gateway ! MessageGateway.ForwardMessage(msg, remotePeerConnection)
     eventually {
       remotePeer.receivedMessagesNumber should be (1)
@@ -28,7 +29,7 @@ class ProtoRpcMessageGatewayTest
   }
 
   it must "send a known message twice reusing the connection to the remote peer" in new FreshGateway {
-    val (msg1, msg2) = (makeOrderMatch, makeOrderMatch)
+    val (msg1, msg2) = (makeMessage, makeMessage)
     gateway ! MessageGateway.ForwardMessage(msg1, remotePeerConnection)
     gateway ! MessageGateway.ForwardMessage(msg2, remotePeerConnection)
     eventually {
@@ -39,7 +40,7 @@ class ProtoRpcMessageGatewayTest
   }
 
   it must "throw while forwarding when recipient was never connected" in new FreshGateway {
-    val msg = makeOrderMatch
+    val msg = makeMessage
     remotePeer.shutdown()
     intercept[MessageGateway.ForwardException] {
       testGateway.receive(MessageGateway.ForwardMessage(msg, remotePeerConnection))
@@ -47,7 +48,7 @@ class ProtoRpcMessageGatewayTest
   }
 
   it must "throw while forwarding when recipient was connected and then disconnects" in new FreshGateway {
-    val (msg1, msg2) = (makeOrderMatch, makeOrderMatch)
+    val (msg1, msg2) = (makeMessage, makeMessage)
     testGateway.receive(MessageGateway.ForwardMessage(msg1, remotePeerConnection))
     eventually { remotePeer.receivedMessagesNumber should be (1) }
     remotePeer.shutdown()
@@ -64,24 +65,24 @@ class ProtoRpcMessageGatewayTest
   }
 
   it must "deliver messages to subscribers when filter match" in new FreshGateway {
-    val msg = makeOrderMatch
+    val msg = makeMessage
     gateway ! subscribeToOrderMatches
-    remotePeer.notifyMatchToRemote(toProtobuf(msg))
+    remotePeer.notifyOrderMatch(ProtoMapping.toProtobuf(msg))
     expectMsg(ReceiveMessage(msg, remotePeer.connection))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in new FreshGateway {
-    val msg = makeOrderMatch
+    val msg = makeMessage
     gateway ! MessageGateway.Subscribe(msg => false)
-    remotePeer.notifyMatchToRemote(toProtobuf(msg))
+    remotePeer.notifyOrderMatch(ProtoMapping.toProtobuf(msg))
     expectNoMsg()
   }
 
   it must "deliver messages to several subscribers when filter match" in new FreshGateway {
-    val msg = makeOrderMatch
+    val msg = makeMessage
     val subs = for (i <- 1 to 5) yield TestProbe()
     subs.foreach(_.send(gateway, subscribeToOrderMatches))
-    remotePeer.notifyMatchToRemote(toProtobuf(msg))
+    remotePeer.notifyOrderMatch(ProtoMapping.toProtobuf(msg))
     subs.foreach(_.expectMsg(ReceiveMessage(msg, remotePeer.connection)))
   }
 
@@ -91,12 +92,12 @@ class ProtoRpcMessageGatewayTest
       Math.round(Random.nextDouble() * BtcAmount.OneBtcInSatoshi.doubleValue()) /
         BtcAmount.OneBtcInSatoshi.doubleValue()
 
-    def makeOrderMatch: OrderMatch = new OrderMatch(
-      orderMatchId = s"orderId-${Random.nextLong().toHexString}",
+    def makeMessage: OrderMatch = OrderMatch(
+      exchangeId = s"exchange-${Random.nextLong().toHexString}",
       amount = new BtcAmount(BigDecimal(getRandomSatoshi())),
       price = new FiatAmount(BigDecimal(Random.nextDouble()), Currency.getInstance("EUR")),
-      buyer = PeerConnection("buyer", randomPort()),
-      seller = PeerConnection("seller", randomPort())
+      buyer = PeerConnection("bob", randomPort()),
+      seller = PeerConnection("sam", randomPort())
     )
 
     private def randomPort() = Random.nextInt(50000) + 10000

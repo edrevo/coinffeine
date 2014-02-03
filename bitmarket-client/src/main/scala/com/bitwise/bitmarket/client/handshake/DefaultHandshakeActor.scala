@@ -83,7 +83,7 @@ private[handshake] class DefaultHandshakeActor(
 
     case RequestSignatureTimeout =>
       val cause = RefundSignatureTimeoutException(exchangeInfo.id)
-      forwardToBroker(RejectExchange(exchangeInfo.id, cause.toString))
+      forwardToBroker(ExchangeRejection(exchangeInfo.id, cause.toString))
       notifyResult(Failure(cause))
       self ! PoisonPill
   }

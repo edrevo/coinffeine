@@ -12,8 +12,9 @@ import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.fromProtobuf
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
-import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto, ProtoMapping, ProtobufConversions}
 import com.bitwise.bitmarket.common.protorpc.{PeerSession, PeerServer}
+import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession, PeerServer}
 
 private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
 
@@ -24,20 +25,61 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
 
   private class PeerServiceImpl extends proto.PeerService.Interface {
 
+    override def submitTxRefundSignature(
+        controller: RpcController,
+        request: proto.RefundTxSignatureResponse,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
+    override def requestTxRefundSignature(
+        controller: RpcController,
+        request: proto.RefundTxSignatureRequest,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
+    override def rejectExchange(
+        controller: RpcController,
+        request: proto.ExchangeRejection,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
     override def notifyMatch(
         controller: RpcController,
         request: proto.OrderMatch,
-        done: RpcCallback[proto.Void]) {
-      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
-      done.run(VoidResponse)
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtoMapping.fromProtobuf(request)
     }
 
-    override def requestExchange(
+    override def notifyCommitment(
         controller: RpcController,
-        request: proto.ExchangeRequest,
-        done: RpcCallback[proto.ExchangeRequestResponse]) {
-      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
-      done.run(SuccessExchangeResponse)
+        request: proto.CommitmentNotification,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
+    override def beginExchange(
+        controller: RpcController,
+        request: proto.EnterExchange,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
+    override def abortExchange(
+        controller: RpcController,
+        request: proto.ExchangeAborted,
+        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
+      ProtobufConversions.fromProtobuf(request)
+    }
+
+    private def dispatch[T](
+        controller: RpcController,
+        done: RpcCallback[proto.Void])(msg: => T) {
+      dispatchToSubscriptions(msg, clientPeerConnection(controller))
+      done.run(VoidResponse)
+      Callbacks.noop[proto.Void]
     }
 
     private def clientPeerConnection(controller: RpcController) = {
@@ -106,12 +148,6 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
 object ProtoRpcMessageGateway {
 
   private[protocol] val VoidResponse = proto.Void.newBuilder().build()
-  private[protocol] val SuccessPublishResponse = proto.PublishResponse.newBuilder()
-    .setResult(proto.PublishResponse.Result.SUCCESS)
-    .build()
-  private[protocol] val SuccessExchangeResponse = proto.ExchangeRequestResponse.newBuilder()
-    .setResult(proto.ExchangeRequestResponse.Result.SUCCESS)
-    .build()
 
   trait Component extends MessageGateway.Component {
     override def messageGatewayProps(serverInfo: PeerInfo): Props =

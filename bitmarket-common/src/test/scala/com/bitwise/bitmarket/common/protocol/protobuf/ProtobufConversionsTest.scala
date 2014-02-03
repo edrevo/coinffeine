@@ -58,28 +58,13 @@ class ProtobufConversionsTest extends FlatSpec with ShouldMatchers with MockitoS
     fromProtobuf(toProtobuf(emptyQuote)) should be (emptyQuote)
   }
 
-  "An Cross Notification" should "be converted to protobuf and back again" in {
-    val orderMatch = OrderMatch(
-      orderMatchId = "1234",
-      amount = BtcAmount(0.1),
-      price = EUR(10000),
-      buyer = PeerConnection("buyer", 8080),
-      seller = PeerConnection("seller", 1234)
-    )
-    val crossNotification = CrossNotification(
-      exchangeId = "1234",
-      cross = orderMatch
-    )
-    fromProtobuf(toProtobuf(crossNotification)) should be (crossNotification)
-  }
-
   "An Exchange Aborted" should "be converted to protobuf and back again" in {
     val exchangeAborted = ExchangeAborted("1234", "a reason")
     fromProtobuf(toProtobuf(exchangeAborted)) should be (exchangeAborted)
   }
 
   "An Reject Exchange" should "be converted to protobuf and back again" in {
-    val rejectExchange = RejectExchange(
+    val rejectExchange = ExchangeRejection(
       exchangeId = "1234",
       reason = "a reason")
     fromProtobuf(toProtobuf(rejectExchange)) should be (rejectExchange)

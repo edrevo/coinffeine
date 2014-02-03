@@ -58,29 +58,15 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
   "Order cancellation" should behave like thereIsAMappingBetween(cancellation, cancellationMessage)
 
-  val exchange = ExchangeRequest(
-    exchangeId = "1234567890",
-    fromId = PeerId("abcdefghijklmnopqrsruvwxyz"),
-    fromConnection = PeerConnection.parse("bitmarket://example.com:1234/"),
-    amount = BtcAmount(2)
-  )
-  val exchangeMessage = msg.ExchangeRequest.newBuilder
-    .setId("1234567890")
-    .setFrom("abcdefghijklmnopqrsruvwxyz")
-    .setConnection("bitmarket://example.com:1234/")
-    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-    .build
-  "Exchange request" must behave like thereIsAMappingBetween(exchange, exchangeMessage)
-
   val orderMatch = OrderMatch(
-    orderMatchId = "1234",
+    exchangeId = "1234",
     amount = BtcAmount(0.1),
     price = EUR(10000),
     buyer = PeerConnection("buyer", 8080),
     seller = PeerConnection("seller", 1234)
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setOrderMatchId("1234")
+    .setExchangeId("1234")
     .setAmount(ProtoMapping.toProtobuf[BtcAmount, msg.BtcAmount](BtcAmount(0.1)))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(10000)))
     .setBuyer("bitmarket://buyer:8080/")
