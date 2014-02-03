@@ -45,7 +45,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
    it should "reject signature of invalid counterpart refund transactions" in {
      val invalidRequest = RefundTxSignatureRequest("id", mock[Transaction])
-     gateway.send(actor, ReceiveMessage(invalidRequest, handshake.counterpart))
+     gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchange.counterpart))
      gateway.expectNoMsg(100 millis)
    }
 

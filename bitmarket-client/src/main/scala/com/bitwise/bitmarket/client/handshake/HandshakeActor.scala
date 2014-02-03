@@ -12,31 +12,6 @@ import com.bitwise.bitmarket.common.PeerConnection
   * transaction signed and relying on the broker to publish the commitment TX.
   */
 object HandshakeActor {
-
-  /** Handshake configuration */
-  trait ExchangeHandshake {
-    val id: String
-    val counterpart: PeerConnection
-    val broker: PeerConnection
-    val commitmentTransaction: Transaction
-    val refundTransaction: Transaction
-
-    /** Signs counterpart refundSignature transaction
-      *
-      * @param refundTransaction  Transaction to sign
-      * @return  TX signature or a failure if the refundSignature was not valid (e.g. incorrect
-      *          amount)
-      */
-    def signCounterpartRefundTransaction(refundTransaction: Transaction): Try[TransactionSignature]
-
-    /** Validate counterpart signature of our refundSignature transaction.
-      *
-      * @param signature  Signed refundSignature TX
-      * @return           Success when valid or rejection cause as an exception
-      */
-    def validateRefundSignature(signature: TransactionSignature): Try[Unit]
-  }
-
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
