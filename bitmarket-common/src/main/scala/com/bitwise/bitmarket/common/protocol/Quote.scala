@@ -1,6 +1,7 @@
 package com.bitwise.bitmarket.common.protocol
 
 import com.bitwise.bitmarket.common.currency.FiatAmount
+import com.bitwise.bitmarket.common.protorpc.PeerSession
 
 case class Quote(spread: Spread = (None, None), lastPrice: Option[FiatAmount] = None) {
   require(
@@ -20,4 +21,8 @@ object Quote {
   /** Utility constructor for the case of having all prices defined */
   def apply(spread: (FiatAmount, FiatAmount), lastPrice: FiatAmount): Quote =
     Quote(spread = Some(spread._1) -> Some(spread._2), lastPrice = Some(lastPrice))
+
+  implicit val Write = new MessageSend[Quote] {
+    override def sendAsProto(msg: Quote, session: PeerSession) = ???
+  }
 }

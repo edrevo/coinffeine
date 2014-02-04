@@ -8,42 +8,57 @@ import scala.util.Random
 
 import akka.actor._
 
-import com.bitwise.bitmarket.broker.BrokerActor._
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.FiatAmount
-import com.bitwise.bitmarket.common.protocol.Quote
+import com.bitwise.bitmarket.common.protocol._
+import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 import com.bitwise.bitmarket.market._
 
 private[broker] class DefaultBrokerActor(
     currency: Currency,
+    gateway: ActorRef,
     orderExpirationInterval: Duration) extends Actor with ActorLogging {
 
   private var book = OrderBook.empty(currency)
   private var expirationTimes = Map[PeerConnection, FiniteDuration]()
   private var lastPrice: Option[FiatAmount] = None
 
+  override def preStart() {
+    gateway ! Subscribe {
+      case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
+      case ReceiveMessage(quoteRequest: QuoteRequest, _)
+        if quoteRequest.currency == currency => true
+      case ReceiveMessage(OrderCancellation(`currency`), _) => true
+      case _ => false
+    }
+  }
+
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
 
   private def processMessage: Receive = {
-    case OrderPlacement(order) if order.price.currency != currency =>
+    case ReceiveMessage(order: Order, _) if order.price.currency != currency =>
       log.error("Dropping order not placed in %s: %s", currency, order)
 
-    case OrderPlacement(order) if book.orders.contains(order) =>
-      setExpirationFor(order.requester)
+    case ReceiveMessage(order: Order, requester)
+      if book.positions.contains(Position(requester, order)) => setExpirationFor(requester)
 
-    case OrderPlacement(order) =>
+    case ReceiveMessage(order: Order, requester) =>
       log.info("Order placed " + order)
-      val (clearedBook, crosses) = book.placeOrder(order).clearMarket(idGenerator)
+      val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
       book = clearedBook
-      crosses.foreach { cross => sender ! NotifyCross(cross) }
+      crosses.foreach { orderMatch =>
+        gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
+        gateway ! ForwardMessage(orderMatch, orderMatch.seller)
+      }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
-      if (book.orders.exists(_.requester == order.requester)) {
-        setExpirationFor(order.requester)
+      if (book.positions.exists(_.requester == requester)) {
+        setExpirationFor(requester)
       }
 
-    case QuoteRequest => sender ! QuoteResponse(Quote(book.spread, lastPrice))
+    case ReceiveMessage(QuoteRequest(_), requester) =>
+      gateway ! ForwardMessage(Quote(book.spread, lastPrice), requester)
 
-    case OrderCancellation(requester) =>
+    case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")
       book = book.cancelOrder(requester)
 
@@ -80,7 +95,8 @@ private[broker] class DefaultBrokerActor(
 
 object DefaultBrokerActor {
   trait Component extends BrokerActor.Component {
-    override def brokerActorProps(currency: Currency, orderExpirationInterval: Duration) =
-      Props(new DefaultBrokerActor(currency, orderExpirationInterval))
+    override def brokerActorProps(
+        currency: Currency, gateway: ActorRef, orderExpirationInterval: Duration) =
+      Props(new DefaultBrokerActor(currency, gateway, orderExpirationInterval))
   }
 }

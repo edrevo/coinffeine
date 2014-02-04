@@ -10,9 +10,10 @@ import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
-import com.bitwise.bitmarket.common.protocol.protobuf.ProtobufConversions.{fromProtobuf, toProtobuf}
+import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.fromProtobuf
+import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto}
-import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession, PeerServer}
+import com.bitwise.bitmarket.common.protorpc.{PeerSession, PeerServer}
 
 private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
 
@@ -29,14 +30,6 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
         done: RpcCallback[proto.Void]) {
       dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
       done.run(VoidResponse)
-    }
-
-    override def publish(
-        controller: RpcController,
-        request: proto.Offer,
-        done: RpcCallback[proto.PublishResponse]) {
-      dispatchToSubscriptions(fromProtobuf(request), clientPeerConnection(controller))
-      done.run(SuccessPublishResponse)
     }
 
     override def requestExchange(

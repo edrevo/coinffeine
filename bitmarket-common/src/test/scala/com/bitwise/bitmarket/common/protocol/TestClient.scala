@@ -73,10 +73,6 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
     done.run(msg.Void.getDefaultInstance)
   }
 
-  override def publish(c: RpcController, r: msg.Offer, done: RpcCallback[msg.PublishResponse]) {
-    ???
-  }
-
   def requestExchange(
       c: RpcController, r: msg.ExchangeRequest, done: RpcCallback[msg.ExchangeRequestResponse]) {
     ???
