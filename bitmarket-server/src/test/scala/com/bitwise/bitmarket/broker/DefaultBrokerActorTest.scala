@@ -116,11 +116,11 @@ class DefaultBrokerActorTest
     gateway.expectMsgClass(classOf[Subscribe])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.orderMatchId
+    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.exchangeId
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.orderMatchId
+    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.exchangeId
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     id1 should not (equal (id2))
   }

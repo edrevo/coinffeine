@@ -14,17 +14,12 @@ import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 /** Conversion from/to domain classes and Protobuf messages. */
 object ProtobufConversions {
 
-  def fromProtobuf(crossNotification: msg.CrossNotificationOrBuilder): CrossNotification = CrossNotification(
-    exchangeId = crossNotification.getExchangeId,
-    cross = ProtoMapping.fromProtobuf(crossNotification.getCross)
-  )
-
   def fromProtobuf(exchangeAborted: msg.ExchangeAbortedOrBuilder): ExchangeAborted = ExchangeAborted(
     exchangeId = exchangeAborted.getExchangeId,
     reason = exchangeAborted.getReason
   )
 
-  def fromProtobuf(rejectExchange: msg.RejectExchangeOrBuilder): RejectExchange = RejectExchange(
+  def fromProtobuf(rejectExchange: msg.ExchangeRejectionOrBuilder): ExchangeRejection = ExchangeRejection(
     exchangeId = rejectExchange.getExchangeId,
     reason = rejectExchange.getReason
   )
@@ -65,16 +60,9 @@ object ProtobufConversions {
     Quote(bidOption -> askOption, lastPriceOption)
   }
 
-  def toProtobuf(acceptance: ExchangeRequest): msg.ExchangeRequest = msg.ExchangeRequest.newBuilder
-    .setId(acceptance.exchangeId)
-    .setFrom(acceptance.fromId.address)
-    .setConnection(acceptance.fromConnection.toString)
-    .setAmount(ProtoMapping.toProtobuf(acceptance.amount))
-    .build
-
   def toProtobuf(quoteRequest: QuoteRequest): msg.QuoteRequest = {
     msg.QuoteRequest.newBuilder
-      .setCurrency(quoteRequest.currency.getSymbol)
+      .setCurrency(quoteRequest.currency.getCurrencyCode)
       .build
   }
 
@@ -87,19 +75,13 @@ object ProtobufConversions {
     builder.build
   }
 
-  def toProtobuf(crossNotification: CrossNotification): msg.CrossNotification =
-    msg.CrossNotification.newBuilder
-      .setExchangeId(crossNotification.exchangeId)
-      .setCross(ProtoMapping.toProtobuf(crossNotification.cross))
-      .build
-
   def toProtobuf(exchangeAborted: ExchangeAborted): msg.ExchangeAborted =
     msg.ExchangeAborted.newBuilder
       .setExchangeId(exchangeAborted.exchangeId)
       .setReason(exchangeAborted.reason)
       .build
 
-  def toProtobuf(rejectExchange: RejectExchange): msg.RejectExchange = msg.RejectExchange.newBuilder
+  def toProtobuf(rejectExchange: ExchangeRejection): msg.ExchangeRejection = msg.ExchangeRejection.newBuilder
     .setExchangeId(rejectExchange.exchangeId)
     .setReason(rejectExchange.reason)
     .build

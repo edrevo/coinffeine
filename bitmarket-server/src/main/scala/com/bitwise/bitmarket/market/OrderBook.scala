@@ -87,7 +87,7 @@ case class OrderBook(
     val remainingAsk =
       if (ask.order.amount > crossedAmount) Some(ask.reduceAmount(crossedAmount)) else None
     val cross = OrderMatch(
-      orderMatchId = id,
+      exchangeId = id,
       amount = crossedAmount,
       price = (bid.order.price + ask.order.price) / 2,
       buyer = bid.requester,

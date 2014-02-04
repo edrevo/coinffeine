@@ -56,7 +56,7 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
     promise.future
   }
 
-  def notifyMatchToRemote(request: msg.OrderMatch): Future[msg.Void] = {
+  def notifyOrderMatch(request: msg.OrderMatch): Future[msg.Void] = {
     val session = sessionOption.get
     val stub = msg.PeerService.newStub(session.channel)
     val promise = Promise[msg.Void]()
@@ -73,8 +73,33 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
     done.run(msg.Void.getDefaultInstance)
   }
 
-  def requestExchange(
-      c: RpcController, r: msg.ExchangeRequest, done: RpcCallback[msg.ExchangeRequestResponse]) {
-    ???
-  }
+  override def submitTxRefundSignature(
+      c: RpcController,
+      request: msg.RefundTxSignatureResponse,
+      done: RpcCallback[msg.Void]): Unit = ???
+
+  override def requestTxRefundSignature(
+      c: RpcController,
+      request: msg.RefundTxSignatureRequest,
+      done: RpcCallback[msg.Void]): Unit = ???
+
+  override def rejectExchange(
+      c: RpcController,
+      request: msg.ExchangeRejection,
+      done: RpcCallback[msg.Void]): Unit = ???
+
+  override def notifyCommitment(
+      c: RpcController,
+      request: msg.CommitmentNotification,
+      done: RpcCallback[msg.Void]): Unit = ???
+
+  override def beginExchange(
+      c: RpcController,
+      request: msg.EnterExchange,
+      done: RpcCallback[msg.Void]): Unit = ???
+
+  override def abortExchange(
+      c: RpcController,
+      request: msg.ExchangeAborted,
+      done: RpcCallback[msg.Void]): Unit = ???
 }

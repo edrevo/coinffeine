@@ -8,7 +8,7 @@ import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
 
 /** Represents a coincidence of desires of both a buyer and a seller */
 case class OrderMatch(
-    orderMatchId: String,
+    exchangeId: String,
     amount: BtcAmount,
     price: FiatAmount,
     buyer: PeerConnection,

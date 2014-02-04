@@ -63,16 +63,11 @@ message QuoteResponse {
 }
 
 message OrderMatch {
-    required string orderMatchId = 1;
+    required string exchangeId = 1;
     required BtcAmount amount = 2;
     required FiatAmount price = 3;
     required string buyer = 4;
     required string seller = 5;
-}
-
-message CrossNotification {
-    required string exchangeId = 1;
-    required OrderMatch cross = 2;
 }
 
 message ExchangeAborted {
@@ -80,7 +75,7 @@ message ExchangeAborted {
     required string reason = 2;
 }
 
-message RejectExchange {
+message ExchangeRejection {
     required string exchangeId = 1;
     required string reason = 2;
 }
@@ -111,36 +106,14 @@ service BrokerService {
     rpc PlaceOrder (Order) returns (OrderResponse);
 }
 
-// Old services
-
-message PublishResponse {
-    enum Result {
-        SUCCESS = 0;
-        SERVICE_UNAVAILABLE = 1;
-    }
-    required Result result = 1;
-}
-
-message ExchangeRequest {
-	required string id = 1;
-	required string from = 2;
-	required string connection = 3;
-	required BtcAmount amount = 4;
-}
-
-message ExchangeRequestResponse {
-    enum Result {
-        SUCCESS = 0;
-        INVALID_AMOUNT = 1;
-    }
-    required Result result = 1;
-}
-
 message Void {}
 
 service PeerService {
+    rpc AbortExchange (ExchangeAborted) returns (Void);
+    rpc BeginExchange (EnterExchange) returns (Void);
+    rpc NotifyCommitment (CommitmentNotification) returns (Void);
     rpc NotifyMatch (OrderMatch) returns (Void);
-
-    // Old service
-    rpc RequestExchange (ExchangeRequest) returns (ExchangeRequestResponse);
+    rpc RejectExchange (ExchangeRejection) returns (Void);
+    rpc RequestTxRefundSignature (RefundTxSignatureRequest) returns (Void);
+    rpc SubmitTxRefundSignature (RefundTxSignatureResponse) returns (Void);
 }
