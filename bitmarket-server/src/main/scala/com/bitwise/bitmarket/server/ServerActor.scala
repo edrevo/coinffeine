@@ -49,6 +49,6 @@ object ServerActor {
 
     private def brokerProps(gateway: ActorRef): Seq[Props] = for {
       currency <- TradedCurrencies.toSeq
-    } yield brokerActorProps(currency, gateway)
+    } yield brokerActorProps(currency, gateway, ???) // FIXME: inject an actual handshake arbiter
   }
 }

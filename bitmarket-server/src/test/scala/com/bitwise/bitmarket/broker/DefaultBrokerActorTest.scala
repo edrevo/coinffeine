@@ -15,13 +15,26 @@ import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 class DefaultBrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
 
+  class FakeHandshakeArbiterActor(listener: ActorRef, orderMatch: OrderMatch) extends Actor {
+    override def preStart() {
+      listener ! orderMatch
+      self ! PoisonPill
+    }
+    override def receive: Actor.Receive = { case _ => }
+  }
+
   class WithEurBroker(name: String) {
+    val arbiterProbe = TestProbe()
     val gateway = TestProbe()
     val broker = system.actorOf(Props(new DefaultBrokerActor(
       currency = EUR.currency,
       gateway = gateway.ref,
+      handshakeArbiterProps = fakeHandshakeArbiterProps,
       orderExpirationInterval = 1 second
     )), name)
+
+    private def fakeHandshakeArbiterProps(orderMatch: OrderMatch) =
+      Props(new FakeHandshakeArbiterActor(arbiterProbe.ref, orderMatch))
 
     def shouldHaveQuote(expectedQuote: Quote) {
       val quoteRequester = PeerConnection("quoteRequester")
@@ -42,7 +55,7 @@ class DefaultBrokerActorTest
     filter(ReceiveMessage(QuoteRequest(USD.currency), client)) should be (false)
   }
 
-  it must "keep orders and notify both parts when they cross" in
+  it must "keep orders and notify both parts and start an arbiter when they cross" in
     new WithEurBroker("notify-crosses") {
       gateway.expectMsgClass(classOf[Subscribe])
       gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
@@ -57,6 +70,7 @@ class DefaultBrokerActorTest
       match1.price should be (EUR(900))
       match1.buyer should be (PeerConnection("client2"))
       match1.seller should be (PeerConnection("client3"))
+      arbiterProbe.expectMsg(match1)
     }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {

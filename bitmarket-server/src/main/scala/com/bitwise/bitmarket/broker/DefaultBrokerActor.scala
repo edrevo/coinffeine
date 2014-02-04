@@ -17,6 +17,7 @@ import com.bitwise.bitmarket.market._
 private[broker] class DefaultBrokerActor(
     currency: Currency,
     gateway: ActorRef,
+    handshakeArbiterProps: OrderMatch => Props,
     orderExpirationInterval: Duration) extends Actor with ActorLogging {
 
   private var book = OrderBook.empty(currency)
@@ -47,8 +48,8 @@ private[broker] class DefaultBrokerActor(
       val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
       book = clearedBook
       crosses.foreach { orderMatch =>
-        gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
-        gateway ! ForwardMessage(orderMatch, orderMatch.seller)
+        notifyOrderMatch(orderMatch)
+        context.actorOf(handshakeArbiterProps(orderMatch))
       }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
       if (book.positions.exists(_.requester == requester)) {
@@ -63,6 +64,11 @@ private[broker] class DefaultBrokerActor(
       book = book.cancelOrder(requester)
 
     case ReceiveTimeout => expireOrders()
+  }
+
+  private def notifyOrderMatch(orderMatch: OrderMatch) {
+    gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
+    gateway ! ForwardMessage(orderMatch, orderMatch.seller)
   }
 
   private def setExpirationFor(requester: PeerConnection) {
@@ -96,7 +102,10 @@ private[broker] class DefaultBrokerActor(
 object DefaultBrokerActor {
   trait Component extends BrokerActor.Component {
     override def brokerActorProps(
-        currency: Currency, gateway: ActorRef, orderExpirationInterval: Duration) =
-      Props(new DefaultBrokerActor(currency, gateway, orderExpirationInterval))
+        currency: Currency,
+        gateway: ActorRef,
+        handshakeArbiterProps: OrderMatch => Props,
+        orderExpirationInterval: Duration) =
+      Props(new DefaultBrokerActor(currency, gateway, handshakeArbiterProps, orderExpirationInterval))
   }
 }
