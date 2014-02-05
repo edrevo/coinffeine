@@ -1,6 +1,11 @@
 package com.bitwise.bitmarket.common.protocol.protobuf
 
-import com.google.protobuf.Message
+import java.io.{ObjectOutputStream, ByteArrayOutputStream}
+import java.math.BigInteger
+
+import com.google.bitcoin.core.{NetworkParameters, Transaction, Sha256Hash}
+import com.google.bitcoin.crypto.TransactionSignature
+import com.google.protobuf.{ByteString, Message}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
@@ -28,6 +33,8 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
     }
   }
 
+  val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+
   val btcAmount = BtcAmount(1.1)
   val btcAmountMessage = msg.BtcAmount.newBuilder
     .setValue(11)
@@ -51,11 +58,59 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   val bid = Order(Bid, BtcAmount(2), EUR(300))
   val ask = Order(Ask, BtcAmount(2), EUR(300))
 
-  "A bid order" should behave like thereIsAMappingBetween(bid, bidMessage)
-  "An ask order" should behave like thereIsAMappingBetween(ask, askMessage)
+  "Bid order" should behave like thereIsAMappingBetween(bid, bidMessage)
+  "Ask order" should behave like thereIsAMappingBetween(ask, askMessage)
+
+  val commitmentNotification = CommitmentNotification(
+    exchangeId = "1234",
+    buyerTxId = sampleTxId,
+    sellerTxId = sampleTxId
+  )
+  val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
+    .setExchangeId("1234")
+    .setBuyerTxId(ByteString.copyFrom(sampleTxId.getBytes))
+    .setSellerTxId(ByteString.copyFrom(sampleTxId.getBytes))
+    .build()
+
+  "Commitment notification" should behave like thereIsAMappingBetween(
+    commitmentNotification, commitmentNotificationMessage)
+
+  val commitmentTransaction = new Transaction(new NetworkParameters {})
+  val enterExchange = EnterExchange(
+    exchangeId = "1234",
+    commitmentTransaction
+  )
+  val enterExchageMessage = msg.EnterExchange.newBuilder()
+    .setExchangeId("1234")
+    .setCommitmentTransaction(ByteString.copyFrom(toByteArray(commitmentTransaction)))
+    .build()
+
+  "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchageMessage)
+
+  val exchangeAborted = ExchangeAborted("1234", "a reason")
+  val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
+    .setExchangeId("1234")
+    .setReason("a reason")
+    .build()
+
+  "Exchange aborted" should behave like thereIsAMappingBetween(
+    exchangeAborted, exchangeAbortedMessage)
+
+  val exchangeRejection = ExchangeRejection(
+    exchangeId = "1234",
+    reason = "a reason")
+  val exchangeRejectionMessage = msg.ExchangeRejection.newBuilder()
+    .setExchangeId("1234")
+    .setReason("a reason")
+    .build()
+
+  "Exchange rejection" should behave like thereIsAMappingBetween(
+    exchangeRejection, exchangeRejectionMessage)
+
 
   val cancellation = OrderCancellation(EUR.currency)
   val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
+
   "Order cancellation" should behave like thereIsAMappingBetween(cancellation, cancellationMessage)
 
   val orderMatch = OrderMatch(
@@ -73,4 +128,56 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
     .setSeller("bitmarket://seller:1234/")
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
+
+  val quoteMessage = msg.Quote.newBuilder
+    .setHighestBid(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(20)))
+    .setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(30)))
+    .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(22)))
+    .build
+  val emptyQuoteMessage = msg.Quote.newBuilder.build
+  val quote = Quote(EUR(20) -> EUR(30), EUR(22))
+  val emptyQuote = Quote(None -> None, None)
+
+  "Quota" must behave like thereIsAMappingBetween(quote, quoteMessage)
+  "Empty quota" must behave like thereIsAMappingBetween(emptyQuote, emptyQuoteMessage)
+
+  val quoteRequest = QuoteRequest(EUR.currency)
+  val quoteRequestMessage = msg.QuoteRequest.newBuilder
+    .setCurrency("EUR")
+    .build
+
+  "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
+
+  val refundTx = new Transaction(new NetworkParameters {})
+  val refundTxSignatureRequest = RefundTxSignatureRequest(
+    exchangeId = "1234",
+    refundTx = refundTx
+  )
+  val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
+    .setExchangeId("1234")
+    .setRefundTx(ByteString.copyFrom(toByteArray(refundTx)))
+    .build()
+
+  "Refund TX signature request" must behave like thereIsAMappingBetween(
+    refundTxSignatureRequest, refundTxSignatureRequestMessage)
+
+  val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+  val refundTxSignatureResponse = RefundTxSignatureResponse(
+    exchangeId = "1234",
+    refundSignature = refundTxSignature
+  )
+  val refundTxSignatureResponseMessage = msg.RefundTxSignatureResponse.newBuilder()
+    .setExchangeId("1234")
+    .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
+    .build()
+
+  "Refund TX signature response" must behave like thereIsAMappingBetween(
+    refundTxSignatureResponse, refundTxSignatureResponseMessage)
+
+  private def toByteArray(obj: AnyRef): Array[Byte] = {
+    val byteArrayOutputStream = new ByteArrayOutputStream
+    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
+    objectOutputStream.writeObject(obj)
+    byteArrayOutputStream.toByteArray
+  }
 }
