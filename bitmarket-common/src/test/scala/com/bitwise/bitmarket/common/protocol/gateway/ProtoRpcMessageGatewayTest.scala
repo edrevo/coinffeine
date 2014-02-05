@@ -11,9 +11,9 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.{FiatAmount, BtcAmount}
 import com.bitwise.bitmarket.common.protocol.{TestClient, OrderMatch}
-import com.bitwise.bitmarket.common.protocol.protobuf.{ProtoMapping, ProtobufConversions}
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
+import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.toProtobuf
 
 class ProtoRpcMessageGatewayTest

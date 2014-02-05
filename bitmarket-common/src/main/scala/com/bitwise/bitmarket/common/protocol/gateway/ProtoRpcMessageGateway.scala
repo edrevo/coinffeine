@@ -12,7 +12,7 @@ import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 import com.bitwise.bitmarket.common.protocol.protobuf.ProtoMapping.fromProtobuf
 import com.bitwise.bitmarket.common.protocol.protobuf.DefaultProtoMappings._
-import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto, ProtoMapping, ProtobufConversions}
+import com.bitwise.bitmarket.common.protocol.protobuf.{BitmarketProtobuf => proto, ProtoMapping}
 import com.bitwise.bitmarket.common.protorpc.{PeerSession, PeerServer}
 import com.bitwise.bitmarket.common.protorpc.{Callbacks, PeerSession, PeerServer}
 
@@ -29,21 +29,21 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
         controller: RpcController,
         request: proto.RefundTxSignatureResponse,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     override def requestTxRefundSignature(
         controller: RpcController,
         request: proto.RefundTxSignatureRequest,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     override def rejectExchange(
         controller: RpcController,
         request: proto.ExchangeRejection,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     override def notifyMatch(
@@ -57,21 +57,21 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
         controller: RpcController,
         request: proto.CommitmentNotification,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     override def beginExchange(
         controller: RpcController,
         request: proto.EnterExchange,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     override def abortExchange(
         controller: RpcController,
         request: proto.ExchangeAborted,
         done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtobufConversions.fromProtobuf(request)
+      ProtoMapping.fromProtobuf(request)
     }
 
     private def dispatch[T](
