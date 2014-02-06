@@ -1,6 +1,5 @@
 package com.bitwise.bitmarket.client.handshake
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
@@ -20,8 +19,6 @@ import com.bitwise.bitmarket.common.currency.BtcAmount
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
   extends AkkaSpec(systemName) with MockitoSugar {
-
-  import HandshakeActor._
 
   class MockExchangeHandshake extends ExchangeHandshake {
     override val exchange = Exchange(

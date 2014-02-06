@@ -6,10 +6,11 @@ import akka.actor._
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.bitwise.bitmarket.client.BlockchainActor.{NotifyWhenConfirmed, TransactionConfirmed}
 import com.bitwise.bitmarket.client.ProtocolConstants
+import com.bitwise.bitmarket.client.handshake.DefaultHandshakeActor._
 import com.bitwise.bitmarket.client.handshake.HandshakeActor._
 import com.bitwise.bitmarket.common.PeerConnection
+import com.bitwise.bitmarket.common.blockchain.BlockchainActor._
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 
@@ -20,7 +21,6 @@ private[handshake] class DefaultHandshakeActor(
     constants: ProtocolConstants,
     listeners: Seq[ActorRef]) extends Actor with ActorLogging {
 
-  import DefaultHandshakeActor._
   import constants._
   import context.dispatcher
 
@@ -84,7 +84,7 @@ private[handshake] class DefaultHandshakeActor(
     case RequestSignatureTimeout =>
       val cause = RefundSignatureTimeoutException(exchangeInfo.id)
       forwardToBroker(ExchangeRejection(exchangeInfo.id, cause.toString))
-      notifyResult(Failure(cause))
+      finishWithResult(Failure(cause))
       self ! PoisonPill
   }
 
@@ -106,23 +106,30 @@ private[handshake] class DefaultHandshakeActor(
 
   private def waitForConfirmations(
       pendingConfirmation: Set[Sha256Hash], refundSig: TransactionSignature): Receive = {
+
     case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
       val stillPending = pendingConfirmation - tx
       if (!stillPending.isEmpty) {
         context.become(waitForConfirmations(stillPending, refundSig))
       } else {
-        notifyResult(Success(refundSig))
-        self ! PoisonPill
+        finishWithResult(Success(refundSig))
       }
+
+    case TransactionRejected(tx) =>
+      val isOwn = tx == handshake.commitmentTransaction.getHash
+      val cause = CommitmentTransactionRejectedException(exchangeInfo.id, tx, isOwn)
+      log.error("Handshake {}: {}", exchangeInfo.id, cause.getMessage)
+      finishWithResult(Failure(cause))
   }
 
   private def requestRefundSignature() {
     forwardToCounterpart(RefundTxSignatureRequest(exchangeInfo.id, handshake.refundTransaction))
   }
 
-  private def notifyResult(result: Try[TransactionSignature]) {
+  private def finishWithResult(result: Try[TransactionSignature]) {
     log.info("Handshake {}: handshake finished with result {}", exchangeInfo.id, result)
     listeners.foreach(_ ! HandshakeResult(result))
+    self ! PoisonPill
   }
 
   private def forwardToCounterpart[T : MessageSend](message: T) {
