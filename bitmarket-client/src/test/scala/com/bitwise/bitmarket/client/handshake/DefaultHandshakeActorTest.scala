@@ -11,7 +11,7 @@ import com.google.bitcoin.params.TestNet3Params
 import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
 
-import com.bitwise.bitmarket.client.{Exchange, ProtocolConstants}
+import com.bitwise.bitmarket.client.Exchange
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.protocol._

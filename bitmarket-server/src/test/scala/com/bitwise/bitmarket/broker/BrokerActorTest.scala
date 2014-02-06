@@ -12,29 +12,26 @@ import com.bitwise.bitmarket.common.currency.CurrencyCode.{EUR, USD}
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway._
 
-class DefaultBrokerActorTest
+class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
 
-  class FakeHandshakeArbiterActor(listener: ActorRef, orderMatch: OrderMatch) extends Actor {
-    override def preStart() {
-      listener ! orderMatch
-      self ! PoisonPill
+  class FakeHandshakeArbiterActor(listener: ActorRef) extends Actor {
+    override def receive: Receive = {
+      case orderMatch: OrderMatch =>
+        listener ! orderMatch
+        self ! PoisonPill
     }
-    override def receive: Actor.Receive = { case _ => }
   }
 
   class WithEurBroker(name: String) {
     val arbiterProbe = TestProbe()
     val gateway = TestProbe()
-    val broker = system.actorOf(Props(new DefaultBrokerActor(
+    val broker = system.actorOf(Props(new BrokerActor(
       currency = EUR.currency,
       gateway = gateway.ref,
-      handshakeArbiterProps = fakeHandshakeArbiterProps,
+      handshakeArbiterProps = Props(new FakeHandshakeArbiterActor(arbiterProbe.ref)),
       orderExpirationInterval = 1 second
     )), name)
-
-    private def fakeHandshakeArbiterProps(orderMatch: OrderMatch) =
-      Props(new FakeHandshakeArbiterActor(arbiterProbe.ref, orderMatch))
 
     def shouldHaveQuote(expectedQuote: Quote) {
       val quoteRequester = PeerConnection("quoteRequester")

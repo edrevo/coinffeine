@@ -7,12 +7,11 @@ import scala.util.Success
 import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 
+import com.bitwise.bitmarket.client.handshake.HandshakeActor.HandshakeResult
 import com.bitwise.bitmarket.common.blockchain.BlockchainActor._
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.bitwise.bitmarket.common.PeerConnection
-import com.bitwise.bitmarket.client.ProtocolConstants
-import com.bitwise.bitmarket.client.handshake.HandshakeActor.HandshakeResult
 
 class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
 

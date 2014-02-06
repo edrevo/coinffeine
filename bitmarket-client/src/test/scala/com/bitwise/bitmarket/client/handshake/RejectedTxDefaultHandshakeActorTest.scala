@@ -3,10 +3,9 @@ package com.bitwise.bitmarket.client.handshake
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.bitwise.bitmarket.client.ProtocolConstants
 import com.bitwise.bitmarket.client.handshake.HandshakeActor._
 import com.bitwise.bitmarket.common.blockchain.BlockchainActor.TransactionRejected
-import com.bitwise.bitmarket.common.protocol.{CommitmentNotification, RefundTxSignatureResponse}
+import com.bitwise.bitmarket.common.protocol._
 
 class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rejected-tx") {
 

@@ -3,8 +3,7 @@ package com.bitwise.bitmarket.client.handshake
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.bitwise.bitmarket.common.protocol.ExchangeAborted
-import com.bitwise.bitmarket.client.ProtocolConstants
+import com.bitwise.bitmarket.common.protocol.{ExchangeAborted, ProtocolConstants}
 import com.bitwise.bitmarket.client.handshake.HandshakeActor._
 
 class BrokerAbortionDefaultHandshakeActorTest
