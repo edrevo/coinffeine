@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.client.handshake
 import scala.util.Try
 
 import akka.actor.{ActorRef, Props}
-import com.google.bitcoin.core.Transaction
+import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.bitwise.bitmarket.common.PeerConnection
@@ -19,6 +19,11 @@ object HandshakeActor {
 
   case class RefundSignatureTimeoutException(exchangeId: String) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")
+
+  case class CommitmentTransactionRejectedException(
+       exchangeId: String, rejectedTx: Sha256Hash, isOwn: Boolean) extends RuntimeException(
+    s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
+  )
 
   trait Component {
     /** Create the properties of a handshake actor.
