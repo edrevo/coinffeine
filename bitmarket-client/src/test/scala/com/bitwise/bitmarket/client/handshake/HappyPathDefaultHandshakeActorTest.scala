@@ -23,15 +23,18 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   )
 
   "Handshake happy path" should "start with a subscription to the relevant messages" in {
-     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-     val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
-     val irrelevantSignatureRequest =
-       RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
-     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
-     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
-     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
-     filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
-     filter(fromBroker(CommitmentNotification("id", mock[Sha256Hash], mock[Sha256Hash]))) should be (true)
+    val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
+    val irrelevantSignatureRequest =
+      RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
+    filter(fromCounterpart(relevantSignatureRequest)) should be (true)
+    filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
+    filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
+    filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
+    filter(fromBroker(CommitmentNotification("id", mock[Sha256Hash], mock[Sha256Hash]))) should be (true)
+    filter(fromBroker(ExchangeAborted("id", "failed"))) should be (true)
+    filter(fromCounterpart(ExchangeAborted("id", "failed"))) should be (false)
+    filter(fromBroker(ExchangeAborted("other", "failed"))) should be (false)
   }
 
   it should "and requesting refund transaction signature" in {
