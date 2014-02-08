@@ -1,10 +1,6 @@
 package com.bitwise.bitmarket.common.currency
 
 case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
-  /** Alternative constructor for Java code */
-  def this(amount: java.math.BigDecimal) = this(new BigDecimal(amount))
-  def this(amount: java.math.BigInteger) = this(BigDecimal(amount) / BtcAmount.OneBtcInSatoshi)
-
   val asSatoshi = (amount * BtcAmount.OneBtcInSatoshi).toBigIntExact().get.underlying()
 
   def min(other: BtcAmount): BtcAmount = if (this <= other) this else other
@@ -21,6 +17,10 @@ case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
 
 object BtcAmount {
   val OneBtcInSatoshi = BigDecimal(100000000)
+  /** Alternative constructors for Java code */
+  def apply(amount: java.math.BigDecimal): BtcAmount = BtcAmount(new BigDecimal(amount))
+  def apply(amount: java.math.BigInteger): BtcAmount =
+    BtcAmount(BigDecimal(amount) / OneBtcInSatoshi)
   implicit object BtcAmountNumeric extends Numeric[BtcAmount] {
     def plus(x: BtcAmount, y: BtcAmount): BtcAmount = x + y
 
@@ -30,7 +30,7 @@ object BtcAmount {
 
     def negate(x: BtcAmount): BtcAmount = BtcAmount(-x.amount)
 
-    def fromInt(x: Int): BtcAmount = new BtcAmount(BigInt(x).underlying())
+    def fromInt(x: Int): BtcAmount = BtcAmount(BigInt(x).underlying())
 
     def toInt(x: BtcAmount): Int = x.asSatoshi.intValue()
 
@@ -41,5 +41,15 @@ object BtcAmount {
     def toDouble(x: BtcAmount): Double = x.asSatoshi.doubleValue()
 
     def compare(x: BtcAmount, y: BtcAmount): Int = x.amount.compare(y.amount)
+  }
+
+  object Implicits {
+    import scala.language.implicitConversions
+
+    class IntImplicits(i: Int) {
+      def bitcoins = BtcAmount(i)
+      def bitcoin = BtcAmount(i)
+    }
+    implicit def pimpMyInt(i: Int) = new IntImplicits(i)
   }
 }
