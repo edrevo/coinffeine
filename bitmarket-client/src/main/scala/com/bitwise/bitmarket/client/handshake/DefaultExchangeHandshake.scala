@@ -1,40 +1,54 @@
 package com.bitwise.bitmarket.client.handshake
 
 import scala.collection.JavaConversions._
+import scala.language.postfixOps
 import scala.util.Try
 
-import com.google.bitcoin.core.{Transaction, TransactionOutput, Wallet}
+import com.google.bitcoin.core.{Transaction, Wallet}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.bitwise.bitmarket.client.Exchange
 import com.bitwise.bitmarket.common.currency.BtcAmount
+import com.bitwise.bitmarket.common.currency.BtcAmount.Implicits._
 import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 
 abstract class DefaultExchangeHandshake(
     val exchange: Exchange,
-    inputFunds: Seq[TransactionOutput],
     amountToCommit: BtcAmount,
     userWallet: Wallet) extends ExchangeHandshake {
   require(userWallet.hasKey(exchange.userKey), "User wallet does not contain the user's private key")
-  require(amountToCommit > BtcAmount(0), "Amount to commit must be greater than zero")
+  require(amountToCommit > (0 bitcoins), "Amount to commit must be greater than zero")
 
-  private val totalInputFunds = inputFunds.map(funds => new BtcAmount(funds.getValue)).sum
-  require(totalInputFunds > amountToCommit, "Input funds must cover the amount of funds to commit")
+  private val inputFunds = {
+    val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
+    val necessaryInputCount = inputFundCandidates.view
+      .scanLeft(0 bitcoins)((accum, output) => accum + BtcAmount(output.getValue))
+      .takeWhile(_ < amountToCommit)
+      .length
+    inputFundCandidates.take(necessaryInputCount)
+  }
+  private val totalInputFunds = inputFunds.map(funds => BtcAmount(funds.getValue)).sum
+  require(totalInputFunds >= amountToCommit, "Input funds must cover the amount of funds to commit")
 
   override val commitmentTransaction: Transaction = {
     val tx = new Transaction(exchange.network)
     inputFunds.foreach(tx.addInput)
-    tx.addOutput(
-      (totalInputFunds - amountToCommit).asSatoshi,
-      userWallet.getChangeAddress)
+    val changeAmount = totalInputFunds - amountToCommit
+    require(changeAmount >= (0 bitcoins))
     tx.addOutput(
       amountToCommit.asSatoshi,
       ScriptBuilder.createMultiSigOutputScript(2, List(exchange.counterpartKey, exchange.userKey)))
+    if (changeAmount > (0 bitcoins)) {
+      tx.addOutput(
+        (totalInputFunds - amountToCommit).asSatoshi,
+        userWallet.getChangeAddress)
+    }
+    tx.signInputs(SigHash.ALL, userWallet)
     tx
   }
-  private val committedFunds = commitmentTransaction.getOutput(1)
+  private val committedFunds = commitmentTransaction.getOutput(0)
   override val refundTransaction: Transaction = {
     val tx = new Transaction(exchange.network)
     tx.setLockTime(exchange.lockTime)
