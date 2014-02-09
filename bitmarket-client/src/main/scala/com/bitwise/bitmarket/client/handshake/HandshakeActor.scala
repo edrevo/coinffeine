@@ -25,6 +25,10 @@ object HandshakeActor {
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 
+  case class HandshakeAbortedException(exchangeId: String, reason: String) extends RuntimeException(
+    s"Handshake $exchangeId aborted externally: $reason"
+  )
+
   trait Component {
     /** Create the properties of a handshake actor.
       *

@@ -12,9 +12,9 @@ import org.scalatest.mock.MockitoSugar
 
 import com.bitwise.bitmarket.client.{Exchange, ProtocolConstants}
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
+import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.protocol._
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.{ReceiveMessage, ForwardMessage}
-import com.bitwise.bitmarket.common.currency.BtcAmount
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
