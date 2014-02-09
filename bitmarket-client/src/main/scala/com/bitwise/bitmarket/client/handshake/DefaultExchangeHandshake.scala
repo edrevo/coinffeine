@@ -61,8 +61,8 @@ abstract class DefaultExchangeHandshake(
   override def signCounterpartRefundTransaction(
       counterpartRefundTx: Transaction): Try[TransactionSignature] = Try {
     ensureValidRefundTransaction(counterpartRefundTx)
-    val input = counterpartRefundTx.getInput(0)
-    val connectedPubKeyScript = input.getConnectedOutput.getScriptPubKey
+    val connectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
+      2, List(exchange.userKey, exchange.counterpartKey))
     counterpartRefundTx.calculateSignature(
       0, exchange.userKey, connectedPubKeyScript, SigHash.ALL, false)
   }
@@ -73,13 +73,6 @@ abstract class DefaultExchangeHandshake(
     require(refundTx.getLockTime == exchange.lockTime)
     require(refundTx.getInputs.size == 1)
     require(refundTx.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN)
-    val connectedPubKeyScript = refundTx.getInput(0).getConnectedOutput.getScriptPubKey
-    require(connectedPubKeyScript.isSentToMultiSig)
-    val multiSigInfo = MultiSigInfo(connectedPubKeyScript)
-    require(multiSigInfo.possibleKeys.size == 2)
-    require(multiSigInfo.requiredKeyCount == 2)
-    val expectedKeys = Set(exchange.counterpartKey, exchange.userKey)
-    require(multiSigInfo.possibleKeys == expectedKeys)
   }
 
   override def validateRefundSignature(signature: TransactionSignature): Try[Unit] = Try {
