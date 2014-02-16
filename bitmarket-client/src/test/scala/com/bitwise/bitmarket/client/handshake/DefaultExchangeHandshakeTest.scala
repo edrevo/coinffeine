@@ -3,17 +3,16 @@ package com.bitwise.bitmarket.client.handshake
 import scala.language.postfixOps
 import scala.collection.JavaConversions._
 
+import com.google.bitcoin.core.{ECKey, VerificationException}
+import com.google.bitcoin.core.Transaction.SigHash
+import com.google.bitcoin.script.ScriptBuilder
+
 import com.bitwise.bitmarket.client.{BitcoinjTest, Exchange}
 import com.bitwise.bitmarket.common.PeerConnection
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.currency.BtcAmount.Implicits._
 
-import com.google.bitcoin.core.{Transaction, VerificationException, ECKey}
-import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.script.ScriptBuilder
-import org.scalatest.matchers.ShouldMatchers
-
-class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
+class DefaultExchangeHandshakeTest extends BitcoinjTest {
   val exchange = Exchange(
     id = "dummy",
     counterpart = PeerConnection("localhost", 1234),
@@ -25,14 +24,15 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
     steps = 10,
     lockTime = 25)
 
-  "The DefaultExchangeHandshake constructor" should "fail if the wallet does not contain the private key" in {
-    evaluating {
-      new DefaultExchangeHandshake(
-        exchange = exchange,
-        amountToCommit = 2 bitcoins,
-        userWallet = createWallet) {}
-    } should produce [IllegalArgumentException]
-  }
+  "The DefaultExchangeHandshake constructor" should
+    "fail if the wallet does not contain the private key" in {
+      evaluating {
+        new DefaultExchangeHandshake(
+          exchange = exchange,
+          amountToCommit = 2 bitcoins,
+          userWallet = createWallet()) {}
+      } should produce [IllegalArgumentException]
+    }
 
   it should "fail if the amount to commit is less or equal to zero" in {
     val userWallet = createWallet(exchange.userKey, 5 bitcoins)
@@ -44,16 +44,17 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
     } should produce [IllegalArgumentException]
   }
 
-  "The commitment transaction" should "commit the correct amount when the input exceeds the amount needed" in {
-    val userWallet = createWallet(exchange.userKey, 1 bitcoin)
-    sendMoneyToWallet(userWallet, 4 bitcoins)
-    val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
-      exchange,
-      commitmentAmount,
-      userWallet) {}
-    BtcAmount(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
-  }
+  "The commitment transaction" should
+    "commit the correct amount when the input exceeds the amount needed" in {
+      val userWallet = createWallet(exchange.userKey, 1 bitcoin)
+      sendMoneyToWallet(userWallet, 4 bitcoins)
+      val commitmentAmount = 2 bitcoins
+      val handshake = new DefaultExchangeHandshake(
+        exchange,
+        commitmentAmount,
+        userWallet) {}
+      BtcAmount(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
+    }
 
   it should "commit the correct amount when the input matches the amount needed" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
@@ -132,7 +133,8 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
         handshake.commitmentTransaction.getOutput(0).getScriptPubKey,
         SigHash.ALL,
         false))
-    handshake.refundTransaction.getInput(0).setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
+    handshake.refundTransaction.getInput(0)
+      .setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
     sendToBlockChain(handshake.refundTransaction)
     BtcAmount(userWallet.getBalance) should be (initialAmount)
   }
@@ -153,7 +155,10 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
       3 bitcoins,
       counterpartWallet) {}
 
-    def signRefund(exchange: Exchange, userHandshake: ExchangeHandshake, counterpartHandshake: ExchangeHandshake) {
+    def signRefund(
+        exchange: Exchange,
+        userHandshake: ExchangeHandshake,
+        counterpartHandshake: ExchangeHandshake) {
       val signatures = List(
         throughWire(counterpartHandshake.signCounterpartRefundTransaction(
           throughWire(userHandshake.refundTransaction)).get),
@@ -174,8 +179,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest with ShouldMatchers {
       counterpartHandshake.commitmentTransaction,
       userHandshake.commitmentTransaction)
 
-
-    (1L to exchange.lockTime).foreach(_ => mineBlock())
+    for (_ <- 1L to exchange.lockTime) { mineBlock() }
     sendToBlockChain(counterpartHandshake.refundTransaction, userHandshake.refundTransaction)
   }
 }
