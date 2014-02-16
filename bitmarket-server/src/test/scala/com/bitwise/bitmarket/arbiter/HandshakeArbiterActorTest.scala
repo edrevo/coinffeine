@@ -5,8 +5,7 @@ import scala.language.postfixOps
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.{Transaction, Sha256Hash}
-import org.mockito.BDDMockito.given
+import com.google.bitcoin.core.Transaction
 import org.scalatest.mock.MockitoSugar
 
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
@@ -24,18 +23,20 @@ class HandshakeArbiterActorTest
     val exchangeId: String = "1234"
     val buyer: PeerConnection = PeerConnection("buyer")
     val seller: PeerConnection = PeerConnection("seller")
-    val buyerTx = mock[Transaction]
-    val buyerTxId = mock[Sha256Hash]
-    given(buyerTx.getHash).willReturn(buyerTxId)
-    val sellerTx = mock[Transaction]
-    val sellerTxId = mock[Sha256Hash]
-    given(sellerTx.getHash).willReturn(sellerTxId)
+    val buyerTx = MockTransaction()
+    val sellerTx = MockTransaction()
+    val invalidCommitmentTx = MockTransaction()
     val orderMatch = OrderMatch(exchangeId, BtcAmount(1), EUR(500), buyer, seller)
 
     object TestCommitmentValidation extends CommitmentValidation {
       override def isValidCommitment(committer: PeerConnection, tx: Transaction): Boolean =
         Set(buyer -> buyerTx, seller -> sellerTx).contains(committer -> tx)
     }
+
+    val txSerialization = new FakeTransactionSerialization(
+      transactions = Seq(buyerTx, sellerTx, invalidCommitmentTx),
+      signatures = Seq.empty
+    )
 
     val listener = TestProbe()
     val gateway = TestProbe()
@@ -44,6 +45,7 @@ class HandshakeArbiterActorTest
       arbiter = TestCommitmentValidation,
       gateway = gateway.ref,
       blockchain = blockchain.ref,
+      transactionSerialization = txSerialization,
       constants = ProtocolConstants(commitmentAbortTimeout = timeout)
     )))
     listener.watch(arbiter)
@@ -65,12 +67,13 @@ class HandshakeArbiterActorTest
 
   "An arbiter" must "subscribe to relevant messages" in new WithTestArbiter {
     val Subscribe(filter) = shouldSubscribeForMessages()
+    val commitmentTransaction = new Array[Byte](0)
     val unknownPeer = PeerConnection("unknownPeer")
 
-    val relevantEntrance = EnterExchange(exchangeId, mock[Transaction])
+    val relevantEntrance = EnterExchange(exchangeId, commitmentTransaction)
     filter(ReceiveMessage(relevantEntrance, buyer)) should be (true)
     filter(ReceiveMessage(relevantEntrance, seller)) should be (true)
-    filter(ReceiveMessage(EnterExchange("other exchange", mock[Transaction]), buyer)) should be (false)
+    filter(ReceiveMessage(EnterExchange("other exchange", commitmentTransaction), buyer)) should be (false)
     filter(ReceiveMessage(relevantEntrance, unknownPeer)) should be (false)
 
     filter(ReceiveMessage(ExchangeRejection(exchangeId, "reason"), buyer)) should be (true)
@@ -81,10 +84,10 @@ class HandshakeArbiterActorTest
 
   it must "check TXs, publish them and terminate" in new WithTestArbiter {
     shouldSubscribeForMessages()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, sellerTx), seller))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx.bitcoinSerialize()), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, sellerTx.bitcoinSerialize()), seller))
     blockchain.expectMsgAllOf(PublishTransaction(buyerTx), PublishTransaction(sellerTx))
-    val notification = CommitmentNotification(exchangeId, buyerTxId, sellerTxId)
+    val notification = CommitmentNotification(exchangeId, buyerTx.getHash, sellerTx.getHash)
     gateway.expectMsgAllOf(
       ForwardMessage(notification, buyer),
       ForwardMessage(notification, seller)
@@ -94,8 +97,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel exchange if a TX is not valid" in new WithTestArbiter {
     shouldSubscribeForMessages()
-    val invalidTransaction = mock[Transaction]
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, invalidTransaction), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, invalidCommitmentTx.bitcoinSerialize()), buyer))
     shouldAbort(s"Invalid commitment from $buyer")
   }
 
@@ -110,7 +112,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel handshake on timeout" in new WithTestArbiter(timeout = 1 second) {
     shouldSubscribeForMessages()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx.bitcoinSerialize()), buyer))
     gateway.expectNoMsg(100 millis)
     shouldAbort("Timeout waiting for commitments")
   }

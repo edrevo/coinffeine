@@ -16,6 +16,7 @@ private[arbiter] class HandshakeArbiterActor(
     arbiter: CommitmentValidation,
     gateway: ActorRef,
     blockchain: ActorRef,
+    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -55,7 +56,8 @@ private[arbiter] class HandshakeArbiterActor(
 
   private val waitForCommitments: Receive = {
 
-    case ReceiveMessage(EnterExchange(_, tx), committer) =>
+    case ReceiveMessage(EnterExchange(_, txBytes), committer) =>
+      val tx = transactionSerialization.deserializeTransaction(txBytes) // TODO: what if deserialization fails?
       if (commitments.contains(committer)) logAlreadyCommitted(committer)
       else if (!arbiter.isValidCommitment(committer, tx)) abortOnInvalidCommitment(committer, tx)
       else acceptCommitment(committer, tx)
@@ -111,9 +113,12 @@ private[arbiter] class HandshakeArbiterActor(
 }
 
 object HandshakeArbiterActor {
-  trait Component { this: ProtocolConstants.Component =>
-    def handshakeArbiterActor(arbiter: CommitmentValidation, gateway: ActorRef, blockchain: ActorRef) =
-      Props(new HandshakeArbiterActor(arbiter, gateway, blockchain, protocolConstants))
+  trait Component { this: ProtocolConstants.Component with TransactionSerialization.Component =>
+    def handshakeArbiterActor(
+        arbiter: CommitmentValidation,
+        gateway: ActorRef,
+        blockchain: ActorRef) = Props(new HandshakeArbiterActor(
+      arbiter, gateway, blockchain, transactionSerialization, protocolConstants))
   }
 
   private case object AbortTimeout

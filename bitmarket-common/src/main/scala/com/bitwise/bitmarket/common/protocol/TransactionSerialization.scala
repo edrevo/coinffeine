@@ -14,3 +14,9 @@ trait TransactionSerialization {
 
   def deserializeTransactionSignature(bytes: Array[Byte]): TransactionSignature
 }
+
+object TransactionSerialization {
+  trait Component {
+    def transactionSerialization: TransactionSerialization
+  }
+}
