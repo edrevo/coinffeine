@@ -24,9 +24,10 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   "Handshake happy path" should "start with a subscription to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
+    val relevantSignatureRequest = RefundTxSignatureRequest(
+      "id", handshake.counterpartRefund.bitcoinSerialize())
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
+      RefundTxSignatureRequest("other-id", handshake.counterpartRefund.bitcoinSerialize())
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
@@ -47,7 +48,8 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
-    val invalidRequest = RefundTxSignatureRequest("id", mock[Transaction])
+    val invalidRequest = RefundTxSignatureRequest(
+      "id", handshake.invalidRefundTransaction.bitcoinSerialize())
     gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchange.counterpart))
     gateway.expectNoMsg(100 millis)
   }
@@ -63,7 +65,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForwardToBroker(EnterExchange("id", handshake.commitmentTransaction))
+    shouldForwardToBroker(EnterExchange("id", handshake.commitmentTransaction.bitcoinSerialize()))
   }
 
   it should "sign counterpart refund after having our refund signed" in {
@@ -71,21 +73,21 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   val publishedTransactions = Set(
-    handshake.commitmentTransactionHash,
-    handshake.counterpartCommitmentTransactionHash
+    handshake.commitmentTransaction.getHash,
+    handshake.counterpartCommitmentTransaction.getHash
   )
 
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
     gateway.send(actor, fromBroker(CommitmentNotification(
       "id",
-      handshake.commitmentTransactionHash,
-      handshake.counterpartCommitmentTransactionHash
+      handshake.commitmentTransaction.getHash,
+      handshake.counterpartCommitmentTransaction.getHash
     )))
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
-      NotifyWhenConfirmed(handshake.commitmentTransactionHash, confirmations),
-      NotifyWhenConfirmed(handshake.counterpartCommitmentTransactionHash, confirmations)
+      NotifyWhenConfirmed(handshake.commitmentTransaction.getHash, confirmations),
+      NotifyWhenConfirmed(handshake.counterpartCommitmentTransaction.getHash, confirmations)
     )
   }
 

@@ -1,12 +1,13 @@
 package com.bitwise.bitmarket.client.handshake
 
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
+import scala.util.{Random, Failure, Success}
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.{ECKey, Sha256Hash, Transaction}
+import com.google.bitcoin.core.{TransactionInput, ECKey, Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
+import com.google.bitcoin.params.TestNet3Params
 import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
 
@@ -25,20 +26,20 @@ abstract class DefaultHandshakeActorTest(systemName: String)
       "id",
       PeerConnection("counterpart"),
       PeerConnection("broker"),
-      network = null,
+      network = TestNet3Params.get(),
       userKey = new ECKey(),
       counterpartKey = null,
       exchangeAmount = BtcAmount(10),
       steps = 10,
       lockTime = 10)
-    override val commitmentTransaction = mock[Transaction]
-    val commitmentTransactionHash = mock[Sha256Hash]
-    override val refundTransaction = mock[Transaction]
-    val counterpartRefund = mock[Transaction]
+    override val commitmentTransaction = mockTransaction()
+    override val refundTransaction = mockTransaction()
+    val counterpartCommitmentTransaction = mockTransaction()
+    val counterpartRefund = mockTransaction()
+    val invalidRefundTransaction = mockTransaction()
+
     val refundSignature = mock[TransactionSignature]
     val counterpartRefundSignature = mock[TransactionSignature]
-    val counterpartCommitmentTransaction = mock[Transaction]
-    val counterpartCommitmentTransactionHash = mock[Sha256Hash]
 
     override def signCounterpartRefundTransaction(txToSign: Transaction) =
       if (txToSign == counterpartRefund) Success(counterpartRefundSignature)
@@ -47,8 +48,18 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     override def validateRefundSignature(sig: TransactionSignature) =
       if (sig == refundSignature) Success(()) else Failure(new Error("Invalid signature!"))
 
-    given(commitmentTransaction.getHash).willReturn(commitmentTransactionHash)
-    given(counterpartCommitmentTransaction.getHash).willReturn(counterpartCommitmentTransactionHash)
+    private def mockTransaction(): Transaction = {
+      val tx = mock[Transaction]
+      val hash = randomHash()
+      val encoded = randomByteArray(16)
+      given(tx.getHash).willReturn(hash)
+      given(tx.bitcoinSerialize).willReturn(encoded)
+      tx
+    }
+
+    private def randomHash() = new Sha256Hash(randomByteArray(32))
+
+    private def randomByteArray(len: Int) = Array.fill(len)(Random.nextInt(256).toByte)
   }
 
   def protocolConstants: ProtocolConstants
@@ -57,17 +68,27 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   val listener = TestProbe()
   val gateway = TestProbe()
   val blockchain = TestProbe()
+  val transactionSerialization = new FakeTransactionSerialization(
+    transactions = Seq(
+      handshake.commitmentTransaction,
+      handshake.refundTransaction,
+      handshake.counterpartCommitmentTransaction,
+      handshake.counterpartRefund,
+      handshake.invalidRefundTransaction
+    ),
+    signatures = Seq.empty
+  )
   val actor = system.actorOf(Props(new DefaultHandshakeActor(handshake,
-    gateway.ref, blockchain.ref, protocolConstants, Seq(listener.ref))
+    gateway.ref, blockchain.ref, transactionSerialization, protocolConstants, Seq(listener.ref))
   ), "handshake-actor")
   listener.watch(actor)
 
   def shouldForwardRefundSignatureRequest() {
-    shouldForwardToCounterpart(RefundTxSignatureRequest("id", handshake.refundTransaction))
+    shouldForwardToCounterpart(RefundTxSignatureRequest("id", handshake.refundTransaction.bitcoinSerialize()))
   }
 
   def shouldSignCounterpartRefund() {
-    val request = RefundTxSignatureRequest("id", handshake.counterpartRefund)
+    val request = RefundTxSignatureRequest("id", handshake.counterpartRefund.bitcoinSerialize())
     gateway.send(actor, ReceiveMessage(request, handshake.exchange.counterpart))
     shouldForwardToCounterpart(RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
   }
