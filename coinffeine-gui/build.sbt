@@ -1,0 +1,1 @@
+name := "Coinffeine GUI"

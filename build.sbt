@@ -1,8 +1,8 @@
-name := "bitmarket"
+name := "coinffeine"
 
 version := "0.1-SNAPSHOT"
 
-organization in ThisBuild := "com.bitwise"
+organization in ThisBuild := "com.coinffeine"
 
 scalaVersion in ThisBuild := "2.10.3"
 

@@ -39,20 +39,20 @@ object Build extends sbt.Build {
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.5"
   }
 
-  lazy val root = (Project(id = "bitmarket", base = file("."))
+  lazy val root = (Project(id = "coinffeine", base = file("."))
     aggregate(client, common, commonTest, gui, server)
   )
 
-  lazy val client = (Project(id = "client", base = file("bitmarket-client"))
+  lazy val client = (Project(id = "client", base = file("coinffeine-client"))
     dependsOn(common % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val common = (Project(
     id = "common",
-    base = file("bitmarket-common"),
+    base = file("coinffeine-common"),
     settings = Defaults.defaultSettings ++ PB.protobufSettings ++ sbtAxisSettings ++ Seq(
-      SbtAxisKeys.wsdlFiles += file("bitmarket-common/src/main/resources/wsdl/okpay.wsdl"),
-      SbtAxisKeys.packageSpace := Some("com.bitwise.bitmarket.common.paymentprocessor.okpay"),
+      SbtAxisKeys.wsdlFiles += file("coinffeine-common/src/main/resources/wsdl/okpay.wsdl"),
+      SbtAxisKeys.packageSpace := Some("com.coinffeine.common.paymentprocessor.okpay"),
       SbtAxisKeys.dataBindingName := Some("adb")
     ))
       dependsOn(commonTest % "test->compile")
@@ -60,15 +60,15 @@ object Build extends sbt.Build {
 
   lazy val commonTest = Project(
     id = "common-test",
-    base = file("bitmarket-common-test"),
+    base = file("coinffeine-common-test"),
     settings = Defaults.defaultSettings ++ PB.protobufSettings
   )
 
-  lazy val gui = (Project(id = "gui", base = file("bitmarket-gui"))
+  lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
     dependsOn(client)
   )
 
-  lazy val server = (Project(id = "server", base = file("bitmarket-server"))
+  lazy val server = (Project(id = "server", base = file("coinffeine-server"))
     dependsOn(common % "compile->compile;test->test", commonTest % "test->compile")
   )
 }
