@@ -20,6 +20,9 @@ case class ProtocolConstants(
 )
 
 object ProtocolConstants {
+
+  val DefaultConstants = ProtocolConstants()
+
   trait Component {
     val protocolConstants: ProtocolConstants
   }
