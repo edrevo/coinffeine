@@ -3,9 +3,8 @@ package com.bitwise.bitmarket.client.handshake
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.bitwise.bitmarket.common.protocol.ExchangeRejection
+import com.bitwise.bitmarket.common.protocol.{ProtocolConstants, ExchangeRejection}
 import com.bitwise.bitmarket.common.protocol.gateway.MessageGateway.ForwardMessage
-import com.bitwise.bitmarket.client.ProtocolConstants
 
 class RefundUnsignedDefaultHandshakeActorTest
   extends DefaultHandshakeActorTest("signature-timeout") {

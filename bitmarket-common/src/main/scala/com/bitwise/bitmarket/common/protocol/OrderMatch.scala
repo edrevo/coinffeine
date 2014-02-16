@@ -13,7 +13,9 @@ case class OrderMatch(
     price: FiatAmount,
     buyer: PeerConnection,
     seller: PeerConnection
-)
+) {
+  def participants: Set[PeerConnection] = Set(buyer, seller)
+}
 
 object OrderMatch {
 

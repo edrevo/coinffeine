@@ -44,7 +44,7 @@ object Build extends sbt.Build {
   )
 
   lazy val client = (Project(id = "client", base = file("bitmarket-client"))
-    dependsOn(common, commonTest % "test->compile")
+    dependsOn(common % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val common = (Project(

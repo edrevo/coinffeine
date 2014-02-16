@@ -1,7 +1,6 @@
-package com.bitwise.bitmarket.client.handshake
+package com.bitwise.bitmarket.common.protocol
 
 import com.google.bitcoin.core.Transaction
-import com.bitwise.bitmarket.common.protocol.TransactionSerialization
 import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.Assertions
 

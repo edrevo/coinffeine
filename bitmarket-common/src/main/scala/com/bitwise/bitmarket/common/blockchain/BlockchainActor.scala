@@ -1,7 +1,7 @@
 package com.bitwise.bitmarket.common.blockchain
 
 import akka.actor.Props
-import com.google.bitcoin.core.Sha256Hash
+import com.google.bitcoin.core.{Transaction, Sha256Hash}
 
 /** A BlockchainActor keeps a blockchain and can notify when a transaction reaches a number of
   * confirmations.
@@ -20,6 +20,8 @@ object BlockchainActor {
     * waiting for it to be confirmed.
     */
   case class TransactionRejected(transactionHash: Sha256Hash)
+
+  case class PublishTransaction(transaction: Transaction)
 
   trait Component {
     def blockchainActorProps(): Props

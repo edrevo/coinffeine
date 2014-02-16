@@ -1,17 +1,16 @@
 package com.bitwise.bitmarket.client.handshake
 
 import scala.language.postfixOps
-import scala.util.{Random, Failure, Success}
+import scala.util.{Failure, Success}
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.{TransactionInput, ECKey, Sha256Hash, Transaction}
+import com.google.bitcoin.core.{ECKey, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.TestNet3Params
-import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
 
-import com.bitwise.bitmarket.client.{Exchange, ProtocolConstants}
+import com.bitwise.bitmarket.client.Exchange
 import com.bitwise.bitmarket.common.{PeerConnection, AkkaSpec}
 import com.bitwise.bitmarket.common.currency.BtcAmount
 import com.bitwise.bitmarket.common.protocol._
@@ -32,11 +31,11 @@ abstract class DefaultHandshakeActorTest(systemName: String)
       exchangeAmount = BtcAmount(10),
       steps = 10,
       lockTime = 10)
-    override val commitmentTransaction = mockTransaction()
-    override val refundTransaction = mockTransaction()
-    val counterpartCommitmentTransaction = mockTransaction()
-    val counterpartRefund = mockTransaction()
-    val invalidRefundTransaction = mockTransaction()
+    override val commitmentTransaction = MockTransaction()
+    override val refundTransaction = MockTransaction()
+    val counterpartCommitmentTransaction = MockTransaction()
+    val counterpartRefund = MockTransaction()
+    val invalidRefundTransaction = MockTransaction()
 
     val refundSignature = mock[TransactionSignature]
     val counterpartRefundSignature = mock[TransactionSignature]
@@ -47,19 +46,6 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
     override def validateRefundSignature(sig: TransactionSignature) =
       if (sig == refundSignature) Success(()) else Failure(new Error("Invalid signature!"))
-
-    private def mockTransaction(): Transaction = {
-      val tx = mock[Transaction]
-      val hash = randomHash()
-      val encoded = randomByteArray(16)
-      given(tx.getHash).willReturn(hash)
-      given(tx.bitcoinSerialize).willReturn(encoded)
-      tx
-    }
-
-    private def randomHash() = new Sha256Hash(randomByteArray(32))
-
-    private def randomByteArray(len: Int) = Array.fill(len)(Random.nextInt(256).toByte)
   }
 
   def protocolConstants: ProtocolConstants

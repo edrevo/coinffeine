@@ -6,7 +6,6 @@ import akka.actor._
 import com.google.bitcoin.core.{Transaction, Sha256Hash}
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.bitwise.bitmarket.client.ProtocolConstants
 import com.bitwise.bitmarket.client.handshake.DefaultHandshakeActor._
 import com.bitwise.bitmarket.client.handshake.HandshakeActor._
 import com.bitwise.bitmarket.common.PeerConnection
@@ -38,12 +37,17 @@ private[handshake] class DefaultHandshakeActor(
     }
     requestRefundSignature()
     timers = Seq(
-      context.system.scheduler.schedule(resubmitRefundSignatureTimeout, resubmitRefundSignatureTimeout) {
-        self ! ResubmitRequestSignature
-      },
-      context.system.scheduler.scheduleOnce(refundSignatureAbortTimeout) {
-        self ! RequestSignatureTimeout
-      }
+      context.system.scheduler.schedule(
+        initialDelay = resubmitRefundSignatureTimeout,
+        interval = resubmitRefundSignatureTimeout,
+        receiver = self,
+        message = ResubmitRequestSignature
+      ),
+      context.system.scheduler.scheduleOnce(
+        delay = refundSignatureAbortTimeout,
+        receiver = self,
+        message = RequestSignatureTimeout
+      )
     )
     log.info("Handshake {}: Handshake started", exchange.id)
   }
