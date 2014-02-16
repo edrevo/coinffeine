@@ -1,5 +1,6 @@
 package com.bitwise.bitmarket.client
 
+import java.io.File
 import java.math.BigInteger
 import scala.collection.JavaConversions._
 import scala.language.postfixOps
@@ -18,19 +19,20 @@ import com.bitwise.bitmarket.common.currency.BtcAmount.Implicits._
 /** Base class for testing against an in-memory, validated blockchain.  */
 abstract class BitcoinjTest extends FlatSpec with ShouldMatchers with BeforeAndAfter {
   val network = BitmarketUnitTestParams
+  var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
   var chain: FullPrunedBlockChain = _
 
   before{
     BriefLogFormatter.init()
     Wallet.SendRequest.DEFAULT_FEE_PER_KB = BigInteger.ZERO
-    blockStore = new H2FullPrunedBlockStore(network, "test", 1000)
-    blockStore.resetStore()
+    createH2BlockStore()
     chain = new FullPrunedBlockChain(network, blockStore)
   }
 
   after {
     blockStore.close()
+    destroyH2BlockStore()
     Wallet.SendRequest.DEFAULT_FEE_PER_KB = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
   }
 
@@ -99,4 +101,23 @@ abstract class BitcoinjTest extends FlatSpec with ShouldMatchers with BeforeAndA
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
   def throughWire(sig: TransactionSignature) =
     TransactionSignature.decodeFromBitcoin(sig.encodeToBitcoin(), true)
+
+  private def createH2BlockStore() {
+    blockStorePath = File.createTempFile("temp", "blockStore")
+    blockStorePath.delete()
+    blockStorePath.mkdir()
+    blockStore = new H2FullPrunedBlockStore(network, new File(blockStorePath, "db").toString, 1000)
+    blockStore.resetStore()
+  }
+
+  private def destroyH2BlockStore() {
+    blockStore.close()
+    recursiveDelete(blockStorePath)
+  }
+
+  private def recursiveDelete(file: File) {
+    val files = Option(file.listFiles()).getOrElse(Array.empty)
+    files.foreach(recursiveDelete)
+    file.delete()
+  }
 }
