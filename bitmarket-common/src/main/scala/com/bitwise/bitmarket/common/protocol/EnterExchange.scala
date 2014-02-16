@@ -1,13 +1,16 @@
 package com.bitwise.bitmarket.common.protocol
 
-import com.google.bitcoin.core.Transaction
-
 import com.bitwise.bitmarket.common.protorpc.PeerSession
 
 case class EnterExchange(
   exchangeId: String,
-  commitmentTransaction: Transaction
-)
+  commitmentTransaction: Array[Byte]
+) {
+
+  override def equals(what: Any) = what match {
+    case EnterExchange(id, tx) => (exchangeId == id) && (commitmentTransaction.deep == tx.deep)
+  }
+}
 
 object EnterExchange {
 

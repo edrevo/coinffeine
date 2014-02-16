@@ -7,6 +7,7 @@ import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.bitwise.bitmarket.common.PeerConnection
+import com.bitwise.bitmarket.common.protocol.TransactionSerialization
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
   * transaction signed and relying on the broker to publish the commitment TX.
@@ -32,16 +33,18 @@ object HandshakeActor {
   trait Component {
     /** Create the properties of a handshake actor.
       *
-      * @param exchangeHandshake  Handshake to perform
-      * @param messageGateway     Communications gateway
-      * @param blockchain         Actor to ask for TX confirmations for
-      * @param resultListeners    Actors to be notified of the handshake result
-      * @return                   Actor properties
+      * @param exchangeHandshake        Handshake to perform
+      * @param messageGateway           Communications gateway
+      * @param blockchain               Actor to ask for TX confirmations for
+      * @param transactionSerialization Serialization method for transactions
+      * @param resultListeners          Actors to be notified of the handshake result
+      * @return                         Actor properties
       */
     def handshakeActorProps(
         exchangeHandshake: ExchangeHandshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
+        transactionSerialization: TransactionSerialization,
         resultListeners: Seq[ActorRef]): Props
   }
 }

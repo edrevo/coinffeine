@@ -3,7 +3,7 @@ package com.bitwise.bitmarket.client.handshake
 import scala.util.{Try, Failure, Success}
 
 import akka.actor._
-import com.google.bitcoin.core.Sha256Hash
+import com.google.bitcoin.core.{Transaction, Sha256Hash}
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.bitwise.bitmarket.client.ProtocolConstants
@@ -18,6 +18,7 @@ private[handshake] class DefaultHandshakeActor(
     handshake: ExchangeHandshake,
     messageGateway: ActorRef,
     blockchain: ActorRef,
+    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants,
     listeners: Seq[ActorRef]) extends Actor with ActorLogging {
 
@@ -54,7 +55,8 @@ private[handshake] class DefaultHandshakeActor(
   override def receive = waitForRefundSignature
 
   private val signCounterpartRefund: Receive = {
-    case ReceiveMessage(RefundTxSignatureRequest(_, refundTransaction), _) =>
+    case ReceiveMessage(RefundTxSignatureRequest(_, refundTransactionBytes), _) =>
+      val refundTransaction = transactionSerialization.deserializeTransaction(refundTransactionBytes)
       handshake.signCounterpartRefundTransaction(refundTransaction) match {
         case Success(refundSignature) =>
           forwardToCounterpart(RefundTxSignatureResponse(exchange.id, refundSignature))
@@ -69,7 +71,8 @@ private[handshake] class DefaultHandshakeActor(
     case ReceiveMessage(RefundTxSignatureResponse(_, refundSignature), _) =>
       handshake.validateRefundSignature(refundSignature) match {
         case Success(_) =>
-          forwardToBroker(EnterExchange(exchange.id, handshake.commitmentTransaction))
+          forwardToBroker(EnterExchange(exchange.id,
+            transactionSerialization.serializeTransaction(handshake.commitmentTransaction)))
           log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
           context.become(waitForPublication(refundSignature))
 
@@ -130,7 +133,8 @@ private[handshake] class DefaultHandshakeActor(
   }
 
   private def requestRefundSignature() {
-    forwardToCounterpart(RefundTxSignatureRequest(exchange.id, handshake.refundTransaction))
+    forwardToCounterpart(RefundTxSignatureRequest(
+      exchange.id, transactionSerialization.serializeTransaction(handshake.refundTransaction)))
   }
 
   private def finishWithResult(result: Try[TransactionSignature]) {
@@ -158,9 +162,10 @@ object DefaultHandshakeActor {
         exchangeHandshake: ExchangeHandshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
+        transactionSerialization: TransactionSerialization,
         listeners: Seq[ActorRef]): Props = Props(new DefaultHandshakeActor(
-      exchangeHandshake, messageGateway, blockchain, protocolConstants, listeners
-    ))
+          exchangeHandshake, messageGateway, blockchain,
+          transactionSerialization, protocolConstants, listeners))
   }
 
   /** Internal message to remind about resubmitting refund signature requests. */

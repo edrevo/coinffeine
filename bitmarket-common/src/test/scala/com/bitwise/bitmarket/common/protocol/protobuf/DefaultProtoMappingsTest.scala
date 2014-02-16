@@ -78,11 +78,11 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   val commitmentTransaction = new Transaction(new NetworkParameters {})
   val enterExchange = EnterExchange(
     exchangeId = "1234",
-    commitmentTransaction
+    commitmentTransaction.bitcoinSerialize()
   )
   val enterExchageMessage = msg.EnterExchange.newBuilder()
     .setExchangeId("1234")
-    .setCommitmentTransaction(ByteString.copyFrom(toByteArray(commitmentTransaction)))
+    .setCommitmentTransaction(ByteString.copyFrom(commitmentTransaction.bitcoinSerialize()))
     .build()
 
   "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchageMessage)
@@ -151,11 +151,11 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   val refundTx = new Transaction(new NetworkParameters {})
   val refundTxSignatureRequest = RefundTxSignatureRequest(
     exchangeId = "1234",
-    refundTx = refundTx
+    refundTx = refundTx.bitcoinSerialize()
   )
   val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
     .setExchangeId("1234")
-    .setRefundTx(ByteString.copyFrom(toByteArray(refundTx)))
+    .setRefundTx(ByteString.copyFrom(refundTx.bitcoinSerialize()))
     .build()
 
   "Refund TX signature request" must behave like thereIsAMappingBetween(
@@ -173,11 +173,4 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 
   "Refund TX signature response" must behave like thereIsAMappingBetween(
     refundTxSignatureResponse, refundTxSignatureResponseMessage)
-
-  private def toByteArray(obj: AnyRef): Array[Byte] = {
-    val byteArrayOutputStream = new ByteArrayOutputStream
-    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
-    objectOutputStream.writeObject(obj)
-    byteArrayOutputStream.toByteArray
-  }
 }

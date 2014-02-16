@@ -20,15 +20,15 @@ class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rej
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
     gateway.send(actor, fromBroker(CommitmentNotification(
       "id",
-      handshake.commitmentTransactionHash,
-      handshake.counterpartCommitmentTransactionHash
+      handshake.commitmentTransaction.getHash,
+      handshake.counterpartCommitmentTransaction.getHash
     )))
-    blockchain.send(actor, TransactionRejected(handshake.counterpartCommitmentTransactionHash))
+    blockchain.send(actor, TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
 
     val result = listener.expectMsgClass(classOf[HandshakeResult]).refundSig
     result should be ('failure)
     result.toString should include (
-      s"transaction ${handshake.counterpartCommitmentTransactionHash} (counterpart) was rejected")
+      s"transaction ${handshake.counterpartCommitmentTransaction.getHash} (counterpart) was rejected")
   }
 
   it should "terminate" in {

@@ -45,14 +45,13 @@ object DefaultProtoMappings {
   implicit val enterExchangeMapping = new ProtoMapping[EnterExchange, msg.EnterExchange] {
 
       override def fromProtobuf(enter: msg.EnterExchange) = EnterExchange(
-        commitmentTransaction = fromByteArray(
-          enter.getCommitmentTransaction.toByteArray).asInstanceOf[Transaction],
+        commitmentTransaction = enter.getCommitmentTransaction.toByteArray,
         exchangeId = enter.getExchangeId
       )
 
       override def toProtobuf(enter: EnterExchange) = msg.EnterExchange.newBuilder
         .setExchangeId(enter.exchangeId)
-        .setCommitmentTransaction(ByteString.copyFrom(toByteArray(enter.commitmentTransaction)))
+        .setCommitmentTransaction(ByteString.copyFrom(enter.commitmentTransaction))
         .build
     }
 
@@ -185,14 +184,14 @@ object DefaultProtoMappings {
     new ProtoMapping[RefundTxSignatureRequest, msg.RefundTxSignatureRequest] {
 
       override def fromProtobuf(request: msg.RefundTxSignatureRequest) = RefundTxSignatureRequest(
-        refundTx = fromByteArray(request.getRefundTx.toByteArray).asInstanceOf[Transaction],
+        refundTx = request.getRefundTx.toByteArray,
         exchangeId = request.getExchangeId
       )
 
       override def toProtobuf(request: RefundTxSignatureRequest) =
         msg.RefundTxSignatureRequest.newBuilder
           .setExchangeId(request.exchangeId)
-          .setRefundTx(ByteString.copyFrom(toByteArray(request.refundTx)))
+          .setRefundTx(ByteString.copyFrom(request.refundTx))
           .build
     }
 
@@ -211,17 +210,4 @@ object DefaultProtoMappings {
           .setTransactionSignature(ByteString.copyFrom(response.refundSignature.encodeToBitcoin()))
           .build()
     }
-
-  private def toByteArray(obj: AnyRef): Array[Byte] = {
-    val byteArrayOutputStream = new ByteArrayOutputStream
-    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
-    objectOutputStream.writeObject(obj)
-    byteArrayOutputStream.toByteArray
-  }
-
-  private def fromByteArray[T](bytes: Array[Byte]) = {
-    val inputStream: ByteArrayInputStream = new ByteArrayInputStream(bytes)
-    val objectInputStream: ObjectInputStream = new ObjectInputStream(inputStream)
-    objectInputStream.readObject().asInstanceOf[T]
-  }
 }
