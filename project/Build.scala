@@ -21,7 +21,7 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-actor" % Versions.akka,
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
-    lazy val bitcoinj = "com.google" % "bitcoinj" % "0.10.3"
+    lazy val bitcoinj = "com.google" % "bitcoinj" % "0.11"
     lazy val commonsConfig = "commons-configuration" % "commons-configuration" % "1.8"
     lazy val guava = "com.google.guava" % "guava" % "11.0.1"
     lazy val hamcrest = "org.hamcrest" % "hamcrest-all" % "1.3" % "test"
