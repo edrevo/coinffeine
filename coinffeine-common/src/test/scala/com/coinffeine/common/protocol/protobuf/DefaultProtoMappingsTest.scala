@@ -1,10 +1,10 @@
 package com.coinffeine.common.protocol.protobuf
 
-import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import java.math.BigInteger
 
-import com.google.bitcoin.core.{NetworkParameters, Transaction, Sha256Hash}
+import com.google.bitcoin.core.{Transaction, Sha256Hash}
 import com.google.bitcoin.crypto.TransactionSignature
+import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
@@ -75,7 +75,7 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
 
-  val commitmentTransaction = new Transaction(new NetworkParameters {})
+  val commitmentTransaction = new Transaction(UnitTestParams.get())
   val enterExchange = EnterExchange(
     exchangeId = "1234",
     commitmentTransaction.bitcoinSerialize()
@@ -148,7 +148,7 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val refundTx = new Transaction(new NetworkParameters {})
+  val refundTx = new Transaction(UnitTestParams.get())
   val refundTxSignatureRequest = RefundTxSignatureRequest(
     exchangeId = "1234",
     refundTx = refundTx.bitcoinSerialize()
