@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Success
 
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
+import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeResult
@@ -38,11 +38,6 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "and requesting refund transaction signature" in {
-    shouldForwardRefundSignatureRequest()
-  }
-
-  it should "re-request refund transaction signature after a timeout" in {
-    gateway.expectNoMsg(50 millis)
     shouldForwardRefundSignatureRequest()
   }
 
