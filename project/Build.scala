@@ -1,32 +1,28 @@
 import sbt._
-import sbtaxis.Plugin.{SbtAxisKeys, sbtAxisSettings}
+import sbt.Keys._
 import sbtprotobuf.{ProtobufPlugin => PB}
+import sbtscalaxb.Plugin.scalaxbSettings
+import sbtscalaxb.Plugin.ScalaxbKeys._
 
 object Build extends sbt.Build {
 
   object Versions {
-    val axis2 = "1.6.2"
     val akka = "2.2.3"
   }
 
   object Dependencies {
-    lazy val axis2 = Seq(
-      "org.apache.axis2" % "axis2-kernel" % Versions.axis2,
-      "org.apache.axis2" % "axis2-adb" % Versions.axis2,
-      "org.apache.axis2" % "axis2-transport-http" % Versions.axis2,
-      "org.apache.axis2" % "axis2-transport-local" % Versions.axis2,
-      "org.apache.axis2" % "axis2-xmlbeans" % Versions.axis2
-    )
     lazy val akka = Seq(
       "com.typesafe.akka" %% "akka-actor" % Versions.akka,
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.10.3"
     lazy val commonsConfig = "commons-configuration" % "commons-configuration" % "1.8"
+    lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.10.1"
     lazy val guava = "com.google.guava" % "guava" % "11.0.1"
     lazy val hamcrest = "org.hamcrest" % "hamcrest-all" % "1.3" % "test"
     lazy val jcommander = "com.beust" % "jcommander" % "1.32"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
+    lazy val jodaConvert = "org.joda" % "joda-convert" % "1.2"
     lazy val junit = "junit" % "junit" % "4.11" % "test"
     lazy val junitInterface = "com.novocode" % "junit-interface" % "0.9" % "test"
     lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.0.13"
@@ -50,10 +46,9 @@ object Build extends sbt.Build {
   lazy val common = (Project(
     id = "common",
     base = file("coinffeine-common"),
-    settings = Defaults.defaultSettings ++ PB.protobufSettings ++ sbtAxisSettings ++ Seq(
-      SbtAxisKeys.wsdlFiles += file("coinffeine-common/src/main/resources/wsdl/okpay.wsdl"),
-      SbtAxisKeys.packageSpace := Some("com.coinffeine.common.paymentprocessor.okpay"),
-      SbtAxisKeys.dataBindingName := Some("adb")
+      settings = Defaults.defaultSettings ++ PB.protobufSettings ++ scalaxbSettings ++ Seq(
+      sourceGenerators in Compile <+= scalaxb in Compile,
+      packageName in scalaxb in Compile := "com.coinffeine.common.paymentprocessor.okpay"
     ))
       dependsOn(commonTest % "test->compile")
     )

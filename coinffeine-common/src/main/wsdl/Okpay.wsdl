@@ -1,0 +1,1064 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions name="OkPayAPIImplementation" targetNamespace="https://api.okpay.com"
+                  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata"
+                  xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex"
+                  xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy"
+                  xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:i0="http://tempuri.org/"
+                  xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+                  xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+                  xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="https://api.okpay.com"
+                  xmlns:wsa10="http://www.w3.org/2005/08/addressing"
+                  xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
+                  xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+    <wsp:Policy wsu:Id="BasicHttpBinding_I_OkPayAPI_policy">
+        <wsp:ExactlyOne>
+            <wsp:All>
+                <sp:TransportBinding xmlns:sp="http://schemas.xmlsoap.org/ws/2005/07/securitypolicy">
+                    <wsp:Policy>
+                        <sp:TransportToken>
+                            <wsp:Policy>
+                                <sp:HttpsToken RequireClientCertificate="false"/>
+                            </wsp:Policy>
+                        </sp:TransportToken>
+                        <sp:AlgorithmSuite>
+                            <wsp:Policy>
+                                <sp:Basic256/>
+                            </wsp:Policy>
+                        </sp:AlgorithmSuite>
+                        <sp:Layout>
+                            <wsp:Policy>
+                                <sp:Strict/>
+                            </wsp:Policy>
+                        </sp:Layout>
+                    </wsp:Policy>
+                </sp:TransportBinding>
+            </wsp:All>
+        </wsp:ExactlyOne>
+    </wsp:Policy>
+    <wsdl:types>
+        <xs:schema elementFormDefault="qualified" targetNamespace="https://api.okpay.com"
+                   xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:import namespace="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+            <xs:import namespace="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService"/>
+            <xs:import namespace="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"/>
+            <xs:element name="Get_Date_Time">
+                <xs:complexType>
+                    <xs:sequence/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Get_Date_TimeResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Get_Date_TimeResult" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Wallet_Get_Balance">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Wallet_Get_BalanceResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Wallet_Get_BalanceResult" nillable="true"
+                                    type="q1:ArrayOfBalance"
+                                    xmlns:q1="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Wallet_Get_Currency_Balance">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Wallet_Get_Currency_BalanceResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Wallet_Get_Currency_BalanceResult" nillable="true"
+                                    type="q2:Balance" xmlns:q2="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Send_Money">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Receiver" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                        <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="IsReceiverPaysFees" type="xs:boolean"/>
+                        <xs:element minOccurs="0" name="Invoice" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Send_MoneyResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Send_MoneyResult" nillable="true" type="q3:TransactionInfo"
+                                    xmlns:q3="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Transaction_Get">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="TxnID" type="xs:long"/>
+                        <xs:element minOccurs="0" name="Invoice" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Transaction_GetResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Transaction_GetResult" nillable="true" type="q4:TransactionInfo"
+                                    xmlns:q4="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Transaction_History">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="From" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Till" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PageSize" type="xs:int"/>
+                        <xs:element minOccurs="0" name="PageNumber" type="xs:int"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Transaction_HistoryResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Transaction_HistoryResult" nillable="true" type="q5:HistoryInfo"
+                                    xmlns:q5="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="DebitCard_Prepay">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Email" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="IsCourierDelivery" type="xs:boolean"/>
+                        <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="DebitCard_PrepayResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="DebitCard_PrepayResult" type="xs:long"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Account_Check">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Account" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Account_CheckResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Account_CheckResult" type="xs:long"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_Ecurrency_Calculate">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaymentMethod" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="FeesFromAmount" type="xs:boolean"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_Ecurrency_CalculateResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Withdraw_To_Ecurrency_CalculateResult" nillable="true"
+                                    type="q6:Withdrawal_Info"
+                                    xmlns:q6="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_Ecurrency">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaymentMethod" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaySystemAccount" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="FeesFromAmount" type="xs:boolean"/>
+                        <xs:element minOccurs="0" name="Invoice" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_EcurrencyResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Withdraw_To_EcurrencyResult" nillable="true"
+                                    type="q7:Withdrawal_Info"
+                                    xmlns:q7="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_CryptoCurrency_Calculate">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaymentMethod" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_CryptoCurrency_CalculateResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Withdraw_To_CryptoCurrency_CalculateResult" nillable="true"
+                                    type="q8:Withdrawal_Info"
+                                    xmlns:q8="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_CryptoCurrency">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaymentMethod" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="PaySystemAccount" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                        <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Invoice" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Withdraw_To_CryptoCurrencyResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Withdraw_To_CryptoCurrencyResult" nillable="true"
+                                    type="q9:Withdrawal_Info"
+                                    xmlns:q9="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="EX_Account_Check">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Account" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="EX_Account_CheckResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="EX_Account_CheckResult" type="xs:long"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="EX_Client_Check_Status">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Email" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="EX_Client_Check_StatusResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="EX_Client_Check_StatusResult" type="q10:ClientStatus"
+                                    xmlns:q10="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_Get">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SubscriptionID" type="xs:long"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_GetResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Subscription_GetResult" nillable="true" type="q11:Subscription"
+                                    xmlns:q11="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscriptions_Filter">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Title" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="From" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Till" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Statuses" nillable="true" type="q12:ArrayOfSubscriptionStatuses"
+                                    xmlns:q12="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscriptions_FilterResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Subscriptions_FilterResult" nillable="true"
+                                    type="q13:ArrayOfSubscription"
+                                    xmlns:q13="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_Update">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="Sub" nillable="true" type="q14:Subscription"
+                                    xmlns:q14="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"/>
+                        <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_UpdateResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Subscription_UpdateResult" nillable="true"
+                                    type="q15:Subscription"
+                                    xmlns:q15="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_Get_Operations">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SecurityToken" nillable="true" type="xs:string"/>
+                        <xs:element minOccurs="0" name="SubscriptionID" type="xs:long"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Subscription_Get_OperationsResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="Subscription_Get_OperationsResult" nillable="true"
+                                    type="q16:ArrayOfTransactionInfo"
+                                    xmlns:q16="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:schema>
+        <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified"
+                   targetNamespace="http://schemas.microsoft.com/2003/10/Serialization/"
+                   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:tns="http://schemas.microsoft.com/2003/10/Serialization/">
+            <xs:element name="anyType" nillable="true" type="xs:anyType"/>
+            <xs:element name="anyURI" nillable="true" type="xs:anyURI"/>
+            <xs:element name="base64Binary" nillable="true" type="xs:base64Binary"/>
+            <xs:element name="boolean" nillable="true" type="xs:boolean"/>
+            <xs:element name="byte" nillable="true" type="xs:byte"/>
+            <xs:element name="dateTime" nillable="true" type="xs:dateTime"/>
+            <xs:element name="decimal" nillable="true" type="xs:decimal"/>
+            <xs:element name="double" nillable="true" type="xs:double"/>
+            <xs:element name="float" nillable="true" type="xs:float"/>
+            <xs:element name="int" nillable="true" type="xs:int"/>
+            <xs:element name="long" nillable="true" type="xs:long"/>
+            <xs:element name="QName" nillable="true" type="xs:QName"/>
+            <xs:element name="short" nillable="true" type="xs:short"/>
+            <xs:element name="string" nillable="true" type="xs:string"/>
+            <xs:element name="unsignedByte" nillable="true" type="xs:unsignedByte"/>
+            <xs:element name="unsignedInt" nillable="true" type="xs:unsignedInt"/>
+            <xs:element name="unsignedLong" nillable="true" type="xs:unsignedLong"/>
+            <xs:element name="unsignedShort" nillable="true" type="xs:unsignedShort"/>
+            <xs:element name="char" nillable="true" type="tns:char"/>
+            <xs:simpleType name="char">
+                <xs:restriction base="xs:int"/>
+            </xs:simpleType>
+            <xs:element name="duration" nillable="true" type="tns:duration"/>
+            <xs:simpleType name="duration">
+                <xs:restriction base="xs:duration">
+                    <xs:pattern value="\-?P(\d*D)?(T(\d*H)?(\d*M)?(\d*(\.\d*)?S)?)?"/>
+                    <xs:minInclusive value="-P10675199DT2H48M5.4775808S"/>
+                    <xs:maxInclusive value="P10675199DT2H48M5.4775807S"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="guid" nillable="true" type="tns:guid"/>
+            <xs:simpleType name="guid">
+                <xs:restriction base="xs:string">
+                    <xs:pattern value="[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:attribute name="FactoryType" type="xs:QName"/>
+            <xs:attribute name="Id" type="xs:ID"/>
+            <xs:attribute name="Ref" type="xs:IDREF"/>
+        </xs:schema>
+        <xs:schema elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/OkPayAPI"
+                   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:tns="http://schemas.datacontract.org/2004/07/OkPayAPI">
+            <xs:import namespace="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService"/>
+            <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/"/>
+            <xs:complexType name="ArrayOfBalance">
+                <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="Balance" nillable="true" type="tns:Balance"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="ArrayOfBalance" nillable="true" type="tns:ArrayOfBalance"/>
+            <xs:complexType name="Balance">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Balance" nillable="true" type="tns:Balance"/>
+            <xs:complexType name="TransactionInfo">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Date" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Fees" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="ID" type="xs:long"/>
+                    <xs:element minOccurs="0" name="Invoice" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Net" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="OperationName" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Receiver" nillable="true" type="tns:AccountInfo"/>
+                    <xs:element minOccurs="0" name="Sender" nillable="true" type="tns:AccountInfo"/>
+                    <xs:element minOccurs="0" name="Status" type="tns:OperationStatus"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="TransactionInfo" nillable="true" type="tns:TransactionInfo"/>
+            <xs:complexType name="AccountInfo">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="AccountID" type="xs:long"/>
+                    <xs:element minOccurs="0" name="Country_ISO" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Email" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="VerificationStatus" type="q1:VerificationStatuses"
+                                xmlns:q1="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService"/>
+                    <xs:element minOccurs="0" name="WalletID" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="AccountInfo" nillable="true" type="tns:AccountInfo"/>
+            <xs:simpleType name="OperationStatus">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="None"/>
+                    <xs:enumeration value="Error"/>
+                    <xs:enumeration value="Canceled"/>
+                    <xs:enumeration value="Pending">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">4
+                                </EnumerationValue>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="Reversed">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">8
+                                </EnumerationValue>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="Hold">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">16
+                                </EnumerationValue>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="Completed">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">32
+                                </EnumerationValue>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="OperationStatus" nillable="true" type="tns:OperationStatus"/>
+            <xs:complexType name="HistoryInfo">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="PageCount" type="xs:int"/>
+                    <xs:element minOccurs="0" name="PageNumber" type="xs:int"/>
+                    <xs:element minOccurs="0" name="PageSize" type="xs:int"/>
+                    <xs:element minOccurs="0" name="TotalCount" type="xs:int"/>
+                    <xs:element minOccurs="0" name="Transactions" nillable="true" type="tns:ArrayOfTransactionInfo"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="HistoryInfo" nillable="true" type="tns:HistoryInfo"/>
+            <xs:complexType name="ArrayOfTransactionInfo">
+                <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="TransactionInfo" nillable="true"
+                                type="tns:TransactionInfo"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="ArrayOfTransactionInfo" nillable="true" type="tns:ArrayOfTransactionInfo"/>
+            <xs:complexType name="Withdrawal_Info">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="Amount" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="ExchangeRate" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Fee" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Gross" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="OperationID" type="xs:long"/>
+                    <xs:element minOccurs="0" name="PaySystemTransactionID" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="PaymentMethod" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="PaymentMethodAmount" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="Status" type="tns:OperationStatus"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Withdrawal_Info" nillable="true" type="tns:Withdrawal_Info"/>
+            <xs:simpleType name="SubscriptionCycleIntervals">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Days"/>
+                    <xs:enumeration value="Weeks"/>
+                    <xs:enumeration value="Months"/>
+                    <xs:enumeration value="Years"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="SubscriptionCycleIntervals" nillable="true" type="tns:SubscriptionCycleIntervals"/>
+            <xs:simpleType name="AddressTypes">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Unset"/>
+                    <xs:enumeration value="Legal"/>
+                    <xs:enumeration value="Actual"/>
+                    <xs:enumeration value="Postal"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="AddressTypes" nillable="true" type="tns:AddressTypes"/>
+            <xs:simpleType name="SubscriptionStatuses">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Active"/>
+                    <xs:enumeration value="Canceled"/>
+                    <xs:enumeration value="Failed"/>
+                    <xs:enumeration value="Expired"/>
+                    <xs:enumeration value="Modified"/>
+                    <xs:enumeration value="Suspended"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="SubscriptionStatuses" nillable="true" type="tns:SubscriptionStatuses"/>
+            <xs:complexType name="ArrayOfSubscriptionStatuses">
+                <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="SubscriptionStatuses"
+                                type="tns:SubscriptionStatuses"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="ArrayOfSubscriptionStatuses" nillable="true" type="tns:ArrayOfSubscriptionStatuses"/>
+        </xs:schema>
+        <xs:schema elementFormDefault="qualified"
+                   targetNamespace="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService"
+                   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:tns="http://schemas.datacontract.org/2004/07/OkPayLink.OkPayService">
+            <xs:simpleType name="VerificationStatuses">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Unverified"/>
+                    <xs:enumeration value="Formal"/>
+                    <xs:enumeration value="Verified"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="VerificationStatuses" nillable="true" type="tns:VerificationStatuses"/>
+            <xs:simpleType name="ClientStatus">
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Unregistered"/>
+                    <xs:enumeration value="Registration"/>
+                    <xs:enumeration value="Unverified"/>
+                    <xs:enumeration value="Formal"/>
+                    <xs:enumeration value="Verified"/>
+                    <xs:enumeration value="Blocked"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:element name="ClientStatus" nillable="true" type="tns:ClientStatus"/>
+        </xs:schema>
+        <xs:schema elementFormDefault="qualified"
+                   targetNamespace="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract"
+                   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:tns="http://schemas.datacontract.org/2004/07/OkPayAPI.DataContract">
+            <xs:import namespace="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+            <xs:complexType name="Subscription">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="Client" nillable="true" type="q1:AccountInfo"
+                                xmlns:q1="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    <xs:element minOccurs="0" name="Currency" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="ID" type="xs:long"/>
+                    <xs:element minOccurs="0" name="IsActive" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="LastPaymentDateTime" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="MerchantWalletID" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="NextPaymentDateTime" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="OutstandingBalance" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="ReattemptAcum" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="ReattemptDays" type="xs:int"/>
+                    <xs:element minOccurs="0" name="RegularCount" type="xs:int"/>
+                    <xs:element minOccurs="0" name="RegularCycle" type="xs:int"/>
+                    <xs:element minOccurs="0" name="RegularInterval" type="q2:SubscriptionCycleIntervals"
+                                xmlns:q2="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    <xs:element minOccurs="0" name="RegularPaymentsDone" type="xs:int"/>
+                    <xs:element minOccurs="0" name="RegularPrice" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="RetryAt" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="SetupPrice" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="ShippingAddress" nillable="true" type="tns:Address"/>
+                    <xs:element minOccurs="0" name="ShippingNeeded" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="StartDateTime" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Status" type="q3:SubscriptionStatuses"
+                                xmlns:q3="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    <xs:element minOccurs="0" name="Title" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="TrialCount" type="xs:int"/>
+                    <xs:element minOccurs="0" name="TrialCycle" type="xs:int"/>
+                    <xs:element minOccurs="0" name="TrialInterval" type="q4:SubscriptionCycleIntervals"
+                                xmlns:q4="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    <xs:element minOccurs="0" name="TrialPaymentsDone" type="xs:int"/>
+                    <xs:element minOccurs="0" name="TrialPrice" type="xs:decimal"/>
+                    <xs:element minOccurs="0" name="ValidUntil" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Subscription" nillable="true" type="tns:Subscription"/>
+            <xs:complexType name="Address">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="AddressLine" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="City" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Country" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="IsVerified" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="Region" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="Type" type="q5:AddressTypes"
+                                xmlns:q5="http://schemas.datacontract.org/2004/07/OkPayAPI"/>
+                    <xs:element minOccurs="0" name="ZipCode" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="Address" nillable="true" type="tns:Address"/>
+            <xs:complexType name="ArrayOfSubscription">
+                <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="Subscription" nillable="true"
+                                type="tns:Subscription"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="ArrayOfSubscription" nillable="true" type="tns:ArrayOfSubscription"/>
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name="I_OkPayAPI_Get_Date_Time_InputMessage">
+        <wsdl:part name="parameters" element="tns:Get_Date_Time"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Get_Date_Time_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Get_Date_TimeResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Wallet_Get_Balance_InputMessage">
+        <wsdl:part name="parameters" element="tns:Wallet_Get_Balance"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Wallet_Get_Balance_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Wallet_Get_BalanceResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Wallet_Get_Currency_Balance_InputMessage">
+        <wsdl:part name="parameters" element="tns:Wallet_Get_Currency_Balance"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Wallet_Get_Currency_Balance_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Wallet_Get_Currency_BalanceResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Send_Money_InputMessage">
+        <wsdl:part name="parameters" element="tns:Send_Money"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Send_Money_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Send_MoneyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Transaction_Get_InputMessage">
+        <wsdl:part name="parameters" element="tns:Transaction_Get"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Transaction_Get_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Transaction_GetResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Transaction_History_InputMessage">
+        <wsdl:part name="parameters" element="tns:Transaction_History"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Transaction_History_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Transaction_HistoryResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_DebitCard_Prepay_InputMessage">
+        <wsdl:part name="parameters" element="tns:DebitCard_Prepay"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_DebitCard_Prepay_OutputMessage">
+        <wsdl:part name="parameters" element="tns:DebitCard_PrepayResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Account_Check_InputMessage">
+        <wsdl:part name="parameters" element="tns:Account_Check"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Account_Check_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Account_CheckResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_Ecurrency_Calculate_InputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_Ecurrency_Calculate"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_Ecurrency_Calculate_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_Ecurrency_CalculateResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_Ecurrency_InputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_Ecurrency"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_Ecurrency_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_EcurrencyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_CryptoCurrency_Calculate_InputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_CryptoCurrency_Calculate"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_CryptoCurrency_Calculate_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_CryptoCurrency_CalculateResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_CryptoCurrency_InputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_CryptoCurrency"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Withdraw_To_CryptoCurrency_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Withdraw_To_CryptoCurrencyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_EX_Account_Check_InputMessage">
+        <wsdl:part name="parameters" element="tns:EX_Account_Check"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_EX_Account_Check_OutputMessage">
+        <wsdl:part name="parameters" element="tns:EX_Account_CheckResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_EX_Client_Check_Status_InputMessage">
+        <wsdl:part name="parameters" element="tns:EX_Client_Check_Status"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_EX_Client_Check_Status_OutputMessage">
+        <wsdl:part name="parameters" element="tns:EX_Client_Check_StatusResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Get_InputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_Get"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Get_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_GetResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscriptions_Filter_InputMessage">
+        <wsdl:part name="parameters" element="tns:Subscriptions_Filter"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscriptions_Filter_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Subscriptions_FilterResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Update_InputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_Update"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Update_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_UpdateResponse"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Get_Operations_InputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_Get_Operations"/>
+    </wsdl:message>
+    <wsdl:message name="I_OkPayAPI_Subscription_Get_Operations_OutputMessage">
+        <wsdl:part name="parameters" element="tns:Subscription_Get_OperationsResponse"/>
+    </wsdl:message>
+    <wsdl:portType name="I_OkPayAPI">
+        <wsdl:operation name="Get_Date_Time">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Get_Date_Time"
+                        message="tns:I_OkPayAPI_Get_Date_Time_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Get_Date_TimeResponse"
+                         message="tns:I_OkPayAPI_Get_Date_Time_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Wallet_Get_Balance">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Wallet_Get_Balance"
+                        message="tns:I_OkPayAPI_Wallet_Get_Balance_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Wallet_Get_BalanceResponse"
+                         message="tns:I_OkPayAPI_Wallet_Get_Balance_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Wallet_Get_Currency_Balance">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Wallet_Get_Currency_Balance"
+                        message="tns:I_OkPayAPI_Wallet_Get_Currency_Balance_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Wallet_Get_Currency_BalanceResponse"
+                         message="tns:I_OkPayAPI_Wallet_Get_Currency_Balance_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Send_Money">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Send_Money"
+                        message="tns:I_OkPayAPI_Send_Money_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Send_MoneyResponse"
+                         message="tns:I_OkPayAPI_Send_Money_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Transaction_Get">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Transaction_Get"
+                        message="tns:I_OkPayAPI_Transaction_Get_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Transaction_GetResponse"
+                         message="tns:I_OkPayAPI_Transaction_Get_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Transaction_History">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Transaction_History"
+                        message="tns:I_OkPayAPI_Transaction_History_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Transaction_HistoryResponse"
+                         message="tns:I_OkPayAPI_Transaction_History_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="DebitCard_Prepay">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/DebitCard_Prepay"
+                        message="tns:I_OkPayAPI_DebitCard_Prepay_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/DebitCard_PrepayResponse"
+                         message="tns:I_OkPayAPI_DebitCard_Prepay_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Account_Check">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Account_Check"
+                        message="tns:I_OkPayAPI_Account_Check_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Account_CheckResponse"
+                         message="tns:I_OkPayAPI_Account_Check_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_Ecurrency_Calculate">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_Ecurrency_Calculate"
+                        message="tns:I_OkPayAPI_Withdraw_To_Ecurrency_Calculate_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_Ecurrency_CalculateResponse"
+                         message="tns:I_OkPayAPI_Withdraw_To_Ecurrency_Calculate_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_Ecurrency">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_Ecurrency"
+                        message="tns:I_OkPayAPI_Withdraw_To_Ecurrency_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_EcurrencyResponse"
+                         message="tns:I_OkPayAPI_Withdraw_To_Ecurrency_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_CryptoCurrency_Calculate">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrency_Calculate"
+                        message="tns:I_OkPayAPI_Withdraw_To_CryptoCurrency_Calculate_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrency_CalculateResponse"
+                         message="tns:I_OkPayAPI_Withdraw_To_CryptoCurrency_Calculate_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_CryptoCurrency">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrency"
+                        message="tns:I_OkPayAPI_Withdraw_To_CryptoCurrency_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrencyResponse"
+                         message="tns:I_OkPayAPI_Withdraw_To_CryptoCurrency_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="EX_Account_Check">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/EX_Account_Check"
+                        message="tns:I_OkPayAPI_EX_Account_Check_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/EX_Account_CheckResponse"
+                         message="tns:I_OkPayAPI_EX_Account_Check_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="EX_Client_Check_Status">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/EX_Client_Check_Status"
+                        message="tns:I_OkPayAPI_EX_Client_Check_Status_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/EX_Client_Check_StatusResponse"
+                         message="tns:I_OkPayAPI_EX_Client_Check_Status_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Get">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_Get"
+                        message="tns:I_OkPayAPI_Subscription_Get_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_GetResponse"
+                         message="tns:I_OkPayAPI_Subscription_Get_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Subscriptions_Filter">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscriptions_Filter"
+                        message="tns:I_OkPayAPI_Subscriptions_Filter_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscriptions_FilterResponse"
+                         message="tns:I_OkPayAPI_Subscriptions_Filter_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Update">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_Update"
+                        message="tns:I_OkPayAPI_Subscription_Update_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_UpdateResponse"
+                         message="tns:I_OkPayAPI_Subscription_Update_OutputMessage"/>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Get_Operations">
+            <wsdl:input wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_Get_Operations"
+                        message="tns:I_OkPayAPI_Subscription_Get_Operations_InputMessage"/>
+            <wsdl:output wsaw:Action="https://api.okpay.com/I_OkPayAPI/Subscription_Get_OperationsResponse"
+                         message="tns:I_OkPayAPI_Subscription_Get_Operations_OutputMessage"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="BasicHttpBinding_I_OkPayAPI" type="tns:I_OkPayAPI">
+        <wsp:PolicyReference URI="#BasicHttpBinding_I_OkPayAPI_policy"/>
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="Get_Date_Time">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Get_Date_Time" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Wallet_Get_Balance">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Wallet_Get_Balance" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Wallet_Get_Currency_Balance">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Wallet_Get_Currency_Balance" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Send_Money">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Send_Money" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Transaction_Get">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Transaction_Get" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Transaction_History">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Transaction_History" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="DebitCard_Prepay">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/DebitCard_Prepay" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Account_Check">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Account_Check" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_Ecurrency_Calculate">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Withdraw_To_Ecurrency_Calculate"
+                            style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_Ecurrency">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Withdraw_To_Ecurrency" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_CryptoCurrency_Calculate">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrency_Calculate"
+                            style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Withdraw_To_CryptoCurrency">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Withdraw_To_CryptoCurrency" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="EX_Account_Check">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/EX_Account_Check" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="EX_Client_Check_Status">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/EX_Client_Check_Status" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Get">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Subscription_Get" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Subscriptions_Filter">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Subscriptions_Filter" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Update">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Subscription_Update" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="Subscription_Get_Operations">
+            <soap:operation soapAction="https://api.okpay.com/I_OkPayAPI/Subscription_Get_Operations" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="OkPayAPIImplementation">
+        <wsdl:port name="BasicHttpBinding_I_OkPayAPI" binding="tns:BasicHttpBinding_I_OkPayAPI">
+            <soap:address location="https://api.okpay.com/OkPayAPI"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

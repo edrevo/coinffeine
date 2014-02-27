@@ -1,8 +1,9 @@
 name := "Coinffeine Common"
 
-// TODO: evaluate scalaxb as a Scalaish replacement of Axis2
-libraryDependencies ++= Dependencies.axis2 ++ Dependencies.akka ++ Seq(
+libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.bitcoinj,
+  Dependencies.dispatch,
+  Dependencies.jodaConvert,
   Dependencies.netty,
   Dependencies.protobufRpc
 )
