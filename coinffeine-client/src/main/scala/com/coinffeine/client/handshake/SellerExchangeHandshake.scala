@@ -7,5 +7,5 @@ import com.coinffeine.client.Exchange
 class SellerExchangeHandshake(exchange: Exchange, userWallet: Wallet)
   extends DefaultExchangeHandshake(
     exchange,
-    amountToCommit = exchange.exchangeAmount, // TODO: Did the seller need a deposit?
+    amountToCommit = exchange.exchangeAmount * (1 + 1 / exchange.steps),
     userWallet)
