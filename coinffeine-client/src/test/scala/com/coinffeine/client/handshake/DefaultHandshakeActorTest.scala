@@ -70,13 +70,15 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   listener.watch(actor)
 
   def shouldForwardRefundSignatureRequest() {
-    shouldForwardToCounterpart(RefundTxSignatureRequest("id", handshake.refundTransaction.bitcoinSerialize()))
+    shouldForwardToCounterpart(
+      RefundTxSignatureRequest("id", handshake.refundTransaction.bitcoinSerialize()))
   }
 
   def shouldSignCounterpartRefund() {
     val request = RefundTxSignatureRequest("id", handshake.counterpartRefund.bitcoinSerialize())
     gateway.send(actor, ReceiveMessage(request, handshake.exchange.counterpart))
-    shouldForwardToCounterpart(RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
+    shouldForwardToCounterpart(
+      RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
   }
 
   def shouldForwardToCounterpart[T : MessageSend](message: T) {
