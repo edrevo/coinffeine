@@ -1,8 +1,6 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
-import com.coinffeine.common.paymentprocessor.okpay._
 import java.util.Currency
-import java.lang.{ Long => JLong }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -24,20 +22,21 @@ class OKPayProcessor(
     * @param amount amount to send.
     * @return a Payment Object.
     */
-  override def sendPayment(receiverId: String, amount: FiatAmount, comment: String): Future[Payment] = Future {
-    val response = getResponse(service.send_Money(
-      walletID = Some(Some(this.account)),
-      securityToken = Some(Some(buildCurrentToken())),
-      receiver = Some(Some(receiverId)),
-      currency = Some(Some(amount.currency.getSymbol)),
-      amount = Some(amount.amount),
-      comment = Some(Some(comment)),
-      isReceiverPaysFees = Some(false),
-      invoice = None
-    ))
-    response.Send_MoneyResult.flatten.flatMap(parseTransactionInfo)
-      .getOrElse(throw new PaymentProcessorException("Cannot parse the sent payment: " + response))
-  }
+  override def sendPayment(receiverId: String, amount: FiatAmount, comment: String): Future[Payment] =
+    Future {
+      val response = getResponse(service.send_Money(
+        walletID = Some(Some(account)),
+        securityToken = Some(Some(buildCurrentToken())),
+        receiver = Some(Some(receiverId)),
+        currency = Some(Some(amount.currency.getCurrencyCode)),
+        amount = Some(amount.amount),
+        comment = Some(Some(comment)),
+        isReceiverPaysFees = Some(false),
+        invoice = None
+      ))
+      response.Send_MoneyResult.flatten.flatMap(parseTransactionInfo)
+        .getOrElse(throw new PaymentProcessorException("Cannot parse the sent payment: " + response))
+    }
 
   /** Find an specific payment by id.
     *
@@ -51,7 +50,7 @@ class OKPayProcessor(
     getResponse(service.transaction_Get(
       walletID = Some(Some(this.account)),
       securityToken = Some(Some(buildCurrentToken())),
-      txnID = Some(JLong.parseLong(paymentId)),
+      txnID = Some(paymentId.toLong),
       invoice = None)
     ).Transaction_GetResult.flatten.flatMap(parseTransactionInfo)
   }
@@ -111,12 +110,10 @@ class OKPayProcessor(
     identity
   )
 
-  private def parseArrayOfBalance(balances : ArrayOfBalance) : Seq[FiatAmount] = {
-    balances.Balance.map(
-      balance => FiatAmount(
-        balance.get.Amount.get,
-        Currency.getInstance(balance.get.Currency.get.get)))
-  }
+  private def parseArrayOfBalance(balances: ArrayOfBalance): Seq[FiatAmount] =
+    balances.Balance.map(balance =>
+      FiatAmount(balance.get.Amount.get, Currency.getInstance(balance.get.Currency.get.get))
+    )
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
 }
