@@ -18,7 +18,8 @@ abstract class DefaultExchangeHandshake(
     val exchange: Exchange,
     amountToCommit: BtcAmount,
     userWallet: Wallet) extends ExchangeHandshake {
-  require(userWallet.hasKey(exchange.userKey), "User wallet does not contain the user's private key")
+  require(userWallet.hasKey(exchange.userKey),
+    "User wallet does not contain the user's private key")
   require(amountToCommit > (0 bitcoins), "Amount to commit must be greater than zero")
 
   private val inputFunds = {
@@ -30,7 +31,8 @@ abstract class DefaultExchangeHandshake(
     inputFundCandidates.take(necessaryInputCount)
   }
   private val totalInputFunds = inputFunds.map(funds => BtcAmount(funds.getValue)).sum
-  require(totalInputFunds >= amountToCommit, "Input funds must cover the amount of funds to commit")
+  require(totalInputFunds >= amountToCommit,
+    "Input funds must cover the amount of funds to commit")
 
   override val commitmentTransaction: Transaction = {
     val tx = new Transaction(exchange.network)
