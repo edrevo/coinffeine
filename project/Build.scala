@@ -16,15 +16,11 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.11"
-    lazy val commonsConfig = "commons-configuration" % "commons-configuration" % "1.8"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % "0.10.1"
-    lazy val guava = "com.google.guava" % "guava" % "11.0.1"
     lazy val hamcrest = "org.hamcrest" % "hamcrest-all" % "1.3" % "test"
     lazy val jcommander = "com.beust" % "jcommander" % "1.32"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
     lazy val jodaConvert = "org.joda" % "joda-convert" % "1.2"
-    lazy val junit = "junit" % "junit" % "4.11" % "test"
-    lazy val junitInterface = "com.novocode" % "junit-interface" % "0.9" % "test"
     lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.0.13"
     lazy val logbackCore = "ch.qos.logback" % "logback-core" % "1.0.13"
     lazy val mockito = "org.mockito" % "mockito-all" % "1.9.5" % "test"
@@ -60,7 +56,7 @@ object Build extends sbt.Build {
   )
 
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
-    dependsOn(client)
+    dependsOn client
   )
 
   lazy val server = (Project(id = "server", base = file("coinffeine-server"))

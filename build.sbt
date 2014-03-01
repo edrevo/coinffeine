@@ -18,12 +18,8 @@ resolvers in ThisBuild ++= Seq(
 )
 
 libraryDependencies in ThisBuild ++= Seq(
-  Dependencies.commonsConfig,
-  Dependencies.guava,
   Dependencies.hamcrest,
   Dependencies.jodaTime,
-  Dependencies.junit,
-  Dependencies.junitInterface,
   Dependencies.logbackClassic,
   Dependencies.logbackCore,
   Dependencies.mockito,
