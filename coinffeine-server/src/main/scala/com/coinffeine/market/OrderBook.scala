@@ -3,8 +3,9 @@ package com.coinffeine.market
 import java.util.Currency
 import scala.annotation.tailrec
 
-import com.coinffeine.common.protocol._
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol._
+import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(

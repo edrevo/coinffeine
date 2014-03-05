@@ -3,10 +3,9 @@ package com.coinffeine.client.handshake
 import scala.util.Try
 
 import akka.actor.{ActorRef, Props}
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
+import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.TransactionSerialization
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
@@ -33,7 +32,7 @@ object HandshakeActor {
   trait Component {
     /** Create the properties of a handshake actor.
       *
-      * @param exchangeHandshake        Handshake to perform
+      * @param exchangeHandshake        Class that contains the logic to perform the handshake
       * @param messageGateway           Communications gateway
       * @param blockchain               Actor to ask for TX confirmations for
       * @param transactionSerialization Serialization method for transactions

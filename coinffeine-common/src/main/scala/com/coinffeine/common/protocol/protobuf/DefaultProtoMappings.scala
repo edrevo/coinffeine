@@ -1,16 +1,18 @@
 package com.coinffeine.common.protocol.protobuf
 
-import java.io._
 import java.math.BigDecimal
 import java.util.Currency
 
-import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
-import com.google.bitcoin.core.{Transaction, Sha256Hash}
+import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.protobuf.ByteString
+
+import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
+import com.coinffeine.common.protocol._
+import com.coinffeine.common.protocol.messages.handshake._
+import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
 /** Implicit conversion mappings for the protocol messages */
 object DefaultProtoMappings {

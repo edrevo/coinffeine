@@ -8,10 +8,12 @@ import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeResult
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
+import com.coinffeine.common.protocol.messages.handshake._
 
 class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
 

@@ -10,10 +10,12 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
-import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.protocol._
+import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.brokerage.{CommitmentNotification, OrderMatch}
+import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, ExchangeAborted, EnterExchange}
 
 class HandshakeArbiterActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("HandshakeArbiterSystem"))

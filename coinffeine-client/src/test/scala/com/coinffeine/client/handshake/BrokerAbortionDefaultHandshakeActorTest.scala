@@ -3,8 +3,9 @@ package com.coinffeine.client.handshake
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.coinffeine.common.protocol.{ExchangeAborted, ProtocolConstants}
 import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.common.protocol.ProtocolConstants
+import com.coinffeine.common.protocol.messages.handshake.ExchangeAborted
 
 class BrokerAbortionDefaultHandshakeActorTest
   extends DefaultHandshakeActorTest("broker-aborts") {
