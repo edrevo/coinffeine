@@ -1,7 +1,8 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.handshake
 
 import com.google.bitcoin.crypto.TransactionSignature
 
+import com.coinffeine.common.protocol.messages.MessageSend
 import com.coinffeine.common.protorpc.PeerSession
 
 case class RefundTxSignatureResponse(

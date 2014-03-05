@@ -10,8 +10,9 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 
 import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
-import com.coinffeine.common.protocol.{TestClient, OrderMatch}
+import com.coinffeine.common.protocol.TestClient
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.protobuf.DefaultProtoMappings._
 import com.coinffeine.common.protocol.protobuf.ProtoMapping
 import com.coinffeine.common.protocol.protobuf.ProtoMapping.toProtobuf

@@ -15,6 +15,8 @@ import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, ForwardMessage}
+import com.coinffeine.common.protocol.messages.MessageSend
+import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)

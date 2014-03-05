@@ -1,6 +1,8 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.currency.FiatAmount
+import com.coinffeine.common.protocol.Spread
+import com.coinffeine.common.protocol.messages.MessageSend
 import com.coinffeine.common.protorpc.PeerSession
 
 case class Quote(spread: Spread = (None, None), lastPrice: Option[FiatAmount] = None) {

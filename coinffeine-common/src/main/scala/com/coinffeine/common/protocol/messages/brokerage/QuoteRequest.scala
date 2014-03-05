@@ -1,4 +1,4 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.brokerage
 
 import java.util.Currency
 

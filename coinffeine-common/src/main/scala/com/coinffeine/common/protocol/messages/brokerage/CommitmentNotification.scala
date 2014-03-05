@@ -1,7 +1,8 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.brokerage
 
 import com.google.bitcoin.core.Sha256Hash
 
+import com.coinffeine.common.protocol.messages.MessageSend
 import com.coinffeine.common.protorpc.PeerSession
 
 case class CommitmentNotification(

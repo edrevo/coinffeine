@@ -12,6 +12,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.brokerage.{OrderCancellation, QuoteRequest, Quote, OrderMatch}
 import com.coinffeine.market._
 
 /** A broker actor maintains the order book of BTC trading on a given fiat currency. */

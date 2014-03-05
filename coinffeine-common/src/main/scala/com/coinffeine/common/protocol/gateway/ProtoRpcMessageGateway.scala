@@ -10,6 +10,7 @@ import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.MessageSend
 import com.coinffeine.common.protocol.protobuf.ProtoMapping.fromProtobuf
 import com.coinffeine.common.protocol.protobuf.DefaultProtoMappings._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto, ProtoMapping}

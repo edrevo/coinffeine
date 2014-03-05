@@ -4,7 +4,7 @@ import akka.actor.Props
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.protocol.MessageSend
+import com.coinffeine.common.protocol.messages.MessageSend
 
 object MessageGateway {
 

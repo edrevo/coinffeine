@@ -1,5 +1,6 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.handshake
 
+import com.coinffeine.common.protocol.messages.MessageSend
 import com.coinffeine.common.protorpc.PeerSession
 
 case class ExchangeRejection (

@@ -1,4 +1,4 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages
 
 import com.coinffeine.common.protorpc.PeerSession
 

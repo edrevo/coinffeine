@@ -11,6 +11,7 @@ import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.brokerage.{QuoteRequest, Quote, OrderMatch, OrderCancellation}
 
 class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
