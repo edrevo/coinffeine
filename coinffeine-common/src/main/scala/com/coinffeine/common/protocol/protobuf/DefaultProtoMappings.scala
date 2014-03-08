@@ -120,16 +120,17 @@ object DefaultProtoMappings {
       .build
   }
 
-  implicit val orderCancellationMapping = new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
+  implicit val orderCancellationMapping =
+    new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
 
-    override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
-      currency = Currency.getInstance(message.getCurrency)
-    )
+      override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
+        currency = Currency.getInstance(message.getCurrency)
+      )
 
-    override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
-      .setCurrency(obj.currency.getCurrencyCode)
-      .build
-  }
+      override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
+        .setCurrency(obj.currency.getCurrencyCode)
+        .build
+    }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 
@@ -159,12 +160,13 @@ object DefaultProtoMappings {
         if (quote.hasLowestAsk) Some(ProtoMapping.fromProtobuf(quote.getLowestAsk)) else None
       val lastPriceOption =
         if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
-      Quote(bidOption -> askOption, lastPriceOption)
+      Quote(Currency.getInstance(quote.getCurrency), bidOption -> askOption, lastPriceOption)
     }
 
     override def toProtobuf(quote: Quote): msg.Quote = {
+      val Quote(currency, (bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder
-      val Quote((bidOption, askOption), lastPriceOption) = quote
+        .setCurrency(currency.getCurrencyCode)
       bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid)))
       askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask)))
       lastPriceOption.foreach(lastPrice => builder.setLastPrice(ProtoMapping.toProtobuf(lastPrice)))

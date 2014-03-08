@@ -131,17 +131,17 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 
-  val quoteMessage = msg.Quote.newBuilder
+  val emptyQuoteMessage = msg.Quote.newBuilder.setCurrency(EUR.currency.getCurrencyCode).build
+  val emptyQuote = Quote.empty(EUR.currency)
+  "Empty quota" must behave like thereIsAMappingBetween(emptyQuote, emptyQuoteMessage)
+
+  val quoteMessage = emptyQuoteMessage.toBuilder
     .setHighestBid(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(20)))
     .setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(30)))
     .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(22)))
     .build
-  val emptyQuoteMessage = msg.Quote.newBuilder.build
   val quote = Quote(EUR(20) -> EUR(30), EUR(22))
-  val emptyQuote = Quote(None -> None, None)
-
   "Quota" must behave like thereIsAMappingBetween(quote, quoteMessage)
-  "Empty quota" must behave like thereIsAMappingBetween(emptyQuote, emptyQuoteMessage)
 
   val quoteRequest = QuoteRequest(EUR.currency)
   val quoteRequestMessage = msg.QuoteRequest.newBuilder

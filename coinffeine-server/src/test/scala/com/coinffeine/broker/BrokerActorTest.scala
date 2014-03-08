@@ -11,7 +11,7 @@ import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.brokerage.{QuoteRequest, Quote, OrderMatch, OrderCancellation}
+import com.coinffeine.common.protocol.messages.brokerage._
 
 class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -73,11 +73,11 @@ class BrokerActorTest
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
     gateway.expectMsgClass(classOf[Subscribe])
-    shouldHaveQuote(Quote())
+    shouldHaveQuote(Quote.empty(EUR.currency))
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
-    shouldHaveQuote(Quote(Some(EUR(900)) -> None))
+    shouldHaveQuote(Quote(EUR.currency, Some(EUR(900)) -> None))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
-    shouldHaveQuote(Quote(Some(EUR(900)) -> Some(EUR(950))))
+    shouldHaveQuote(Quote(EUR.currency, Some(EUR(900)) -> Some(EUR(950))))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
@@ -86,7 +86,7 @@ class BrokerActorTest
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(800)), PeerConnection("client2")))
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
-    shouldHaveQuote(Quote(lastPrice = Some(EUR(850))))
+    shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(EUR(850))))
   }
 
   it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
@@ -102,14 +102,14 @@ class BrokerActorTest
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
     gateway.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
-    shouldHaveQuote(Quote(None -> Some(EUR(950))))
+    shouldHaveQuote(Quote(EUR.currency, None -> Some(EUR(950))))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
     gateway.expectMsgClass(classOf[Subscribe])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client")))
     gateway.expectNoMsg(2 seconds)
-    shouldHaveQuote(Quote())
+    shouldHaveQuote(Quote.empty(EUR.currency))
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {
