@@ -2,6 +2,7 @@ package com.coinffeine.common.protocol.gateway
 
 import java.util.Currency
 import scala.util.Random
+import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
@@ -19,6 +20,8 @@ import com.coinffeine.common.protocol.protobuf.ProtoMapping.toProtobuf
 
 class ProtoRpcMessageGatewayTest
     extends AkkaSpec("MessageGatewaySystem") with Eventually with IntegrationPatience {
+
+  val receiveTimeout = 10.seconds
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in new FreshGateway {
     val msg = makeMessage
@@ -69,7 +72,7 @@ class ProtoRpcMessageGatewayTest
     val msg = makeMessage
     gateway ! subscribeToOrderMatches
     remotePeer.notifyOrderMatch(ProtoMapping.toProtobuf(msg))
-    expectMsg(ReceiveMessage(msg, remotePeer.connection))
+    expectMsg(receiveTimeout, ReceiveMessage(msg, remotePeer.connection))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in new FreshGateway {
@@ -84,7 +87,7 @@ class ProtoRpcMessageGatewayTest
     val subs = for (i <- 1 to 5) yield TestProbe()
     subs.foreach(_.send(gateway, subscribeToOrderMatches))
     remotePeer.notifyOrderMatch(ProtoMapping.toProtobuf(msg))
-    subs.foreach(_.expectMsg(ReceiveMessage(msg, remotePeer.connection)))
+    subs.foreach(_.expectMsg(receiveTimeout, ReceiveMessage(msg, remotePeer.connection)))
   }
 
   trait MessageUtils {
