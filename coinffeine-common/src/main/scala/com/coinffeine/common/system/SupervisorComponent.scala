@@ -1,4 +1,4 @@
-package com.coinffeine.system
+package com.coinffeine.common.system
 
 import akka.actor.Props
 

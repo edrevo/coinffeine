@@ -1,4 +1,4 @@
-package com.coinffeine.system
+package com.coinffeine.common.system
 
 import scala.util.control.NonFatal
 
@@ -12,8 +12,8 @@ trait ActorSystemBootstrap { this: SupervisorComponent =>
   def main(args: Array[String]) {
     val system = ActorSystem("Main")
     try {
-      val supervisor = system.actorOf(this.supervisorProps(args))
-      system.actorOf(Props(classOf[akka.Main.Terminator], supervisor))
+      val supervisor = system.actorOf(this.supervisorProps(args), "supervisor")
+      system.actorOf(Props(classOf[akka.Main.Terminator], supervisor), "terminator")
     } catch {
       case NonFatal(ex) =>
         system.shutdown()
