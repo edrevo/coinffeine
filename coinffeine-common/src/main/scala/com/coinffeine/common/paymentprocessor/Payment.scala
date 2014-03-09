@@ -4,7 +4,7 @@ import com.coinffeine.common.currency.FiatAmount
 import org.joda.time.DateTime
 
 case class Payment(
-  paymentId: String,
+  id: String,
   senderId: String,
   receiverId: String,
   amount: FiatAmount,

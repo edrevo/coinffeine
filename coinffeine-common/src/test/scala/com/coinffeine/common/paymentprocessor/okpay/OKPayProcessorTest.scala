@@ -61,7 +61,7 @@ class OKPayProcessorTest extends FlatSpec with ShouldMatchers with MockitoSugar 
       isReceiverPaysFees = the(Some(false)),
       invoice = the(None))).willReturn(Right(Send_MoneyResponse(Some(Some(txInfo)))))
     val response = Await.result(instance.sendPayment(receiverAccount, USD(100), "comment"), futureTimeout)
-    response.paymentId should be ("250092")
+    response.id should be ("250092")
   }
 
   it must "be able to retrieve a existing payment" in new WithOkPayProcessor {
@@ -71,7 +71,7 @@ class OKPayProcessorTest extends FlatSpec with ShouldMatchers with MockitoSugar 
       txnID = the(Some(250092L)),
       invoice = the(None))).willReturn(Right(Transaction_GetResponse(Some(Some(txInfo)))))
     val response = Await.result(instance.findPayment("250092"), futureTimeout)
-    response.get.paymentId should be ("250092")
+    response.get.id should be ("250092")
   }
 
   def buildAccountInfo(walletId: String) =
