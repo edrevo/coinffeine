@@ -64,6 +64,6 @@ object Build extends sbt.Build {
   )
 
   lazy val test = (Project(id = "test", base = file("coinffeine-test"))
-    dependsOn(client, server, common, commonTest % "test->compile")
+    dependsOn(client, server, common, commonTest % "compile->compile;test->compile")
   )
 }

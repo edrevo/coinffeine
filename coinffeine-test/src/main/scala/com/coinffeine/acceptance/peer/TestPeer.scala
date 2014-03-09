@@ -2,7 +2,7 @@ package com.coinffeine.acceptance.peer
 
 import java.io.Closeable
 import java.util.Currency
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -13,10 +13,13 @@ import com.coinffeine.common.protocol.Order
 import com.coinffeine.common.protocol.messages.brokerage.{QuoteRequest, Quote}
 
 /** Testing façade for a Coinffeine peer. */
-class TestPeer(peerActorProps: Props) extends Closeable {
-  implicit private val timeout = Timeout(1.minute)
+class TestPeer(peerSupervisorProps: Props) extends Closeable {
+  implicit private val timeout = Timeout(3.seconds)
   private val system = ActorSystem()
-  private val peerRef = system.actorOf(peerActorProps)
+  private val supervisorRef = system.actorOf(peerSupervisorProps, "supervisor")
+  private val peerRef: ActorRef = Await.result(
+    system.actorSelection("/user/supervisor/peer").resolveOne(), timeout.duration
+  )
 
   def askForQuote(currency: Currency): Future[Quote] =
     (peerRef ? QuoteRequest(currency)).mapTo[Quote]
