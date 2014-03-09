@@ -12,7 +12,7 @@ import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.Exchange
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.BtcAmount.Implicits._
+import com.coinffeine.common.currency.Implicits._
 
 abstract class DefaultHandshake(
     val exchange: Exchange,
@@ -20,12 +20,12 @@ abstract class DefaultHandshake(
     userWallet: Wallet) extends Handshake {
   require(userWallet.hasKey(exchange.userKey),
     "User wallet does not contain the user's private key")
-  require(amountToCommit > (0 bitcoins), "Amount to commit must be greater than zero")
+  require(amountToCommit > (0 BTC), "Amount to commit must be greater than zero")
 
   private val inputFunds = {
     val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
     val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(0 bitcoins)((accum, output) => accum + BtcAmount(output.getValue))
+      .scanLeft(0 BTC)((accum, output) => accum + BtcAmount(output.getValue))
       .takeWhile(_ < amountToCommit)
       .length
     inputFundCandidates.take(necessaryInputCount)
@@ -38,11 +38,11 @@ abstract class DefaultHandshake(
     val tx = new Transaction(exchange.network)
     inputFunds.foreach(tx.addInput)
     val changeAmount = totalInputFunds - amountToCommit
-    require(changeAmount >= (0 bitcoins))
+    require(changeAmount >= (0 BTC))
     tx.addOutput(
       amountToCommit.asSatoshi,
       ScriptBuilder.createMultiSigOutputScript(2, List(exchange.counterpartKey, exchange.userKey)))
-    if (changeAmount > (0 bitcoins)) {
+    if (changeAmount > (0 BTC)) {
       tx.addOutput(
         (totalInputFunds - amountToCommit).asSatoshi,
         userWallet.getChangeAddress)

@@ -10,7 +10,7 @@ import com.google.bitcoin.script.ScriptBuilder
 import com.coinffeine.client.{BitcoinjTest, Exchange}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.BtcAmount.Implicits._
+import com.coinffeine.common.currency.Implicits._
 
 class DefaultHandshakeTest extends BitcoinjTest {
   val exchange = Exchange(
@@ -20,7 +20,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
     network = network,
     userKey = new ECKey(),
     counterpartKey = new ECKey(),
-    exchangeAmount = 10 bitcoins,
+    exchangeAmount = 10 BTC,
     steps = 10,
     lockTime = 25)
 
@@ -29,26 +29,26 @@ class DefaultHandshakeTest extends BitcoinjTest {
       evaluating {
         new DefaultHandshake(
           exchange = exchange,
-          amountToCommit = 2 bitcoins,
+          amountToCommit = 2 BTC,
           userWallet = createWallet()) {}
       } should produce [IllegalArgumentException]
     }
 
   it should "fail if the amount to commit is less or equal to zero" in {
-    val userWallet = createWallet(exchange.userKey, 5 bitcoins)
+    val userWallet = createWallet(exchange.userKey, 5 BTC)
     evaluating {
       new DefaultHandshake(
         exchange = exchange,
-        amountToCommit = 0 bitcoins,
+        amountToCommit = 0 BTC,
         userWallet = userWallet) {}
     } should produce [IllegalArgumentException]
   }
 
   "The commitment transaction" should
     "commit the correct amount when the input exceeds the amount needed" in {
-      val userWallet = createWallet(exchange.userKey, 1 bitcoin)
-      sendMoneyToWallet(userWallet, 4 bitcoins)
-      val commitmentAmount = 2 bitcoins
+      val userWallet = createWallet(exchange.userKey, 1 BTC)
+      sendMoneyToWallet(userWallet, 4 BTC)
+      val commitmentAmount = 2 BTC
       val handshake = new DefaultHandshake(
         exchange,
         commitmentAmount,
@@ -57,8 +57,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
     }
 
   it should "commit the correct amount when the input matches the amount needed" in {
-    val userWallet = createWallet(exchange.userKey, 2 bitcoins)
-    val commitmentAmount = 2 bitcoins
+    val userWallet = createWallet(exchange.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
@@ -67,19 +67,19 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "be ready for broadcast and insertion into the blockchain" in {
-    val userWallet = createWallet(exchange.userKey, 2 bitcoins)
-    val commitmentAmount = 2 bitcoins
+    val userWallet = createWallet(exchange.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    BtcAmount(userWallet.getBalance) should be (0 bitcoins)
+    BtcAmount(userWallet.getBalance) should be (0 BTC)
   }
 
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
-    val userWallet = createWallet(exchange.userKey, 2 bitcoins)
-    val commitmentAmount = 2 bitcoins
+    val userWallet = createWallet(exchange.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
@@ -90,8 +90,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "not be broadcastable if the timelock hasn't expired yet" in {
-    val userWallet = createWallet(exchange.userKey, 2 bitcoins)
-    val commitmentAmount = 2 bitcoins
+    val userWallet = createWallet(exchange.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
@@ -103,8 +103,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
-    val userWallet = createWallet(exchange.userKey, 2 bitcoins)
-    val commitmentAmount = 2 bitcoins
+    val userWallet = createWallet(exchange.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
@@ -117,9 +117,9 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "be broadcastable after the timelock expired if is has been signed" in {
-    val initialAmount = 3 bitcoins
+    val initialAmount = 3 BTC
     val userWallet = createWallet(exchange.userKey, initialAmount)
-    val commitmentAmount = 2 bitcoins
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
@@ -140,19 +140,19 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   "The happy path" should "just work!" in {
-    val userWallet = createWallet(exchange.userKey, 3 bitcoins)
+    val userWallet = createWallet(exchange.userKey, 3 BTC)
     val userHandshake = new DefaultHandshake(
       exchange,
-      amountToCommit = 2 bitcoins,
+      amountToCommit = 2 BTC,
       userWallet) {}
 
-    val counterpartWallet = createWallet(exchange.counterpartKey, 5 bitcoins)
+    val counterpartWallet = createWallet(exchange.counterpartKey, 5 BTC)
     val counterpartExchange = exchange.copy(
       userKey = exchange.counterpartKey,
       counterpartKey = exchange.userKey)
     val counterpartHandshake = new DefaultHandshake(
       counterpartExchange,
-      3 bitcoins,
+      3 BTC,
       counterpartWallet) {}
 
     def signRefund(

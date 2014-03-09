@@ -14,7 +14,7 @@ import org.scalatest.{FlatSpec, BeforeAndAfter}
 import org.scalatest.matchers.ShouldMatchers
 
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.BtcAmount.Implicits._
+import com.coinffeine.common.currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
 abstract class BitcoinjTest extends FlatSpec with ShouldMatchers with BeforeAndAfter {
@@ -86,7 +86,7 @@ abstract class BitcoinjTest extends FlatSpec with ShouldMatchers with BeforeAndA
   def sendToBlockChain(miner: ECKey, txs: Transaction*) {
     val lastBlock = blockStore.getChainHead
     val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
-      miner.getPubKey, (50 bitcoins).asSatoshi)
+      miner.getPubKey, (50 BTC).asSatoshi)
     txs.foreach(newBlock.addTransaction)
     newBlock.solve()
     chain.add(newBlock)

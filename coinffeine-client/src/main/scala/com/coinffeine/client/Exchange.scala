@@ -6,7 +6,7 @@ import scala.language.postfixOps
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.BtcAmount.Implicits._
+import com.coinffeine.common.currency.Implicits._
 
 case class Exchange(
     id: String,
@@ -19,6 +19,6 @@ case class Exchange(
     steps: Int,
     lockTime: Long) {
   require(steps > 0, "Steps must be greater than zero")
-  require(exchangeAmount > (0 bitcoins), "Exchange amount must be greater than zero")
+  require(exchangeAmount > (0 BTC), "Exchange amount must be greater than zero")
   require(userKey.getPrivKeyBytes != null, "Credentials do not contain private key")
 }

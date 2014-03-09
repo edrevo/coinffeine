@@ -42,14 +42,4 @@ object BtcAmount {
 
     def compare(x: BtcAmount, y: BtcAmount): Int = x.amount.compare(y.amount)
   }
-
-  object Implicits {
-    import scala.language.implicitConversions
-
-    class IntImplicits(i: Int) {
-      def bitcoins = BtcAmount(i)
-      def bitcoin = BtcAmount(i)
-    }
-    implicit def pimpMyInt(i: Int) = new IntImplicits(i)
-  }
 }
