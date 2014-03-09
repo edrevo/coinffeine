@@ -32,7 +32,7 @@ object HandshakeActor {
   trait Component {
     /** Create the properties of a handshake actor.
       *
-      * @param exchangeHandshake        Class that contains the logic to perform the handshake
+      * @param handshake        Class that contains the logic to perform the handshake
       * @param messageGateway           Communications gateway
       * @param blockchain               Actor to ask for TX confirmations for
       * @param transactionSerialization Serialization method for transactions
@@ -40,7 +40,7 @@ object HandshakeActor {
       * @return                         Actor properties
       */
     def handshakeActorProps(
-        exchangeHandshake: ExchangeHandshake,
+        handshake: Handshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
         transactionSerialization: TransactionSerialization,

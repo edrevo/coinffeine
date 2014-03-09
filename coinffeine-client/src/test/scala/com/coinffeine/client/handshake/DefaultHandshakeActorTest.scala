@@ -22,7 +22,7 @@ import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRespo
 abstract class DefaultHandshakeActorTest(systemName: String)
   extends AkkaSpec(systemName) with MockitoSugar {
 
-  class MockExchangeHandshake extends ExchangeHandshake {
+  class MockExchangeHandshake extends Handshake {
     override val exchange = Exchange(
       "id",
       PeerConnection("counterpart"),

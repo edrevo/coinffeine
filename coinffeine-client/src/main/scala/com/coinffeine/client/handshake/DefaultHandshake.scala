@@ -6,18 +6,18 @@ import scala.util.Try
 
 import com.google.bitcoin.core.{Transaction, Wallet}
 import com.google.bitcoin.core.Transaction.SigHash
+import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.Exchange
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.BtcAmount.Implicits._
-import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 
-abstract class DefaultExchangeHandshake(
+abstract class DefaultHandshake(
     val exchange: Exchange,
     amountToCommit: BtcAmount,
-    userWallet: Wallet) extends ExchangeHandshake {
+    userWallet: Wallet) extends Handshake {
   require(userWallet.hasKey(exchange.userKey),
     "User wallet does not contain the user's private key")
   require(amountToCommit > (0 bitcoins), "Amount to commit must be greater than zero")

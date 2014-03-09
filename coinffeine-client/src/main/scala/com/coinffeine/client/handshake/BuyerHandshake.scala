@@ -4,8 +4,8 @@ import com.google.bitcoin.core._
 
 import com.coinffeine.client.Exchange
 
-class BuyerExchangeHandshake(exchange: Exchange, userWallet: Wallet)
-  extends DefaultExchangeHandshake(
+class BuyerHandshake(exchange: Exchange, userWallet: Wallet)
+  extends DefaultHandshake(
     exchange,
     amountToCommit = exchange.exchangeAmount * 2 / exchange.steps,
     userWallet)

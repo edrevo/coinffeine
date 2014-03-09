@@ -12,7 +12,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.BtcAmount.Implicits._
 
-class DefaultExchangeHandshakeTest extends BitcoinjTest {
+class DefaultHandshakeTest extends BitcoinjTest {
   val exchange = Exchange(
     id = "dummy",
     counterpart = PeerConnection("localhost", 1234),
@@ -27,7 +27,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   "The DefaultExchangeHandshake constructor" should
     "fail if the wallet does not contain the private key" in {
       evaluating {
-        new DefaultExchangeHandshake(
+        new DefaultHandshake(
           exchange = exchange,
           amountToCommit = 2 bitcoins,
           userWallet = createWallet()) {}
@@ -37,7 +37,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   it should "fail if the amount to commit is less or equal to zero" in {
     val userWallet = createWallet(exchange.userKey, 5 bitcoins)
     evaluating {
-      new DefaultExchangeHandshake(
+      new DefaultHandshake(
         exchange = exchange,
         amountToCommit = 0 bitcoins,
         userWallet = userWallet) {}
@@ -49,7 +49,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
       val userWallet = createWallet(exchange.userKey, 1 bitcoin)
       sendMoneyToWallet(userWallet, 4 bitcoins)
       val commitmentAmount = 2 bitcoins
-      val handshake = new DefaultExchangeHandshake(
+      val handshake = new DefaultHandshake(
         exchange,
         commitmentAmount,
         userWallet) {}
@@ -59,7 +59,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   it should "commit the correct amount when the input matches the amount needed" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -69,7 +69,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   it should "be ready for broadcast and insertion into the blockchain" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -80,7 +80,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -92,7 +92,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   it should "not be broadcastable if the timelock hasn't expired yet" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -105,7 +105,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
     val userWallet = createWallet(exchange.userKey, 2 bitcoins)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -120,7 +120,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
     val initialAmount = 3 bitcoins
     val userWallet = createWallet(exchange.userKey, initialAmount)
     val commitmentAmount = 2 bitcoins
-    val handshake = new DefaultExchangeHandshake(
+    val handshake = new DefaultHandshake(
       exchange,
       commitmentAmount,
       userWallet) {}
@@ -141,7 +141,7 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
 
   "The happy path" should "just work!" in {
     val userWallet = createWallet(exchange.userKey, 3 bitcoins)
-    val userHandshake = new DefaultExchangeHandshake(
+    val userHandshake = new DefaultHandshake(
       exchange,
       amountToCommit = 2 bitcoins,
       userWallet) {}
@@ -150,15 +150,15 @@ class DefaultExchangeHandshakeTest extends BitcoinjTest {
     val counterpartExchange = exchange.copy(
       userKey = exchange.counterpartKey,
       counterpartKey = exchange.userKey)
-    val counterpartHandshake = new DefaultExchangeHandshake(
+    val counterpartHandshake = new DefaultHandshake(
       counterpartExchange,
       3 bitcoins,
       counterpartWallet) {}
 
     def signRefund(
         exchange: Exchange,
-        userHandshake: ExchangeHandshake,
-        counterpartHandshake: ExchangeHandshake) {
+        userHandshake: Handshake,
+        counterpartHandshake: Handshake) {
       val signatures = List(
         throughWire(counterpartHandshake.signCounterpartRefundTransaction(
           throughWire(userHandshake.refundTransaction)).get),

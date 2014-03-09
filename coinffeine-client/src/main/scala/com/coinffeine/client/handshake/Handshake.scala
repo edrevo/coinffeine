@@ -7,7 +7,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.Exchange
 
-trait ExchangeHandshake {
+trait Handshake {
   val exchange: Exchange
   val commitmentTransaction: Transaction
   val refundTransaction: Transaction

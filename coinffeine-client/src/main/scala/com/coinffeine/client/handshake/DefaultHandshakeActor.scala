@@ -16,7 +16,7 @@ import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
 
 private[handshake] class DefaultHandshakeActor(
-    handshake: ExchangeHandshake,
+    handshake: Handshake,
     override protected val messageGateway: ActorRef,
     blockchain: ActorRef,
     transactionSerialization: TransactionSerialization,
@@ -153,12 +153,12 @@ private[handshake] class DefaultHandshakeActor(
 object DefaultHandshakeActor {
   trait Component extends HandshakeActor.Component { this: ProtocolConstants.Component =>
     override def handshakeActorProps(
-        exchangeHandshake: ExchangeHandshake,
+        handshake: Handshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
         transactionSerialization: TransactionSerialization,
         listeners: Seq[ActorRef]): Props = Props(new DefaultHandshakeActor(
-          exchangeHandshake, messageGateway, blockchain,
+          handshake, messageGateway, blockchain,
           transactionSerialization, protocolConstants, listeners))
   }
 
