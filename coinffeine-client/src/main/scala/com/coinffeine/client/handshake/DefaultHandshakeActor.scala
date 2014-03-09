@@ -6,29 +6,28 @@ import akka.actor._
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
+import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.DefaultHandshakeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.{ProtocolConstants, TransactionSerialization}
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
-import com.coinffeine.common.protocol.messages.MessageSend
 
 private[handshake] class DefaultHandshakeActor(
-    handshake: ExchangeHandshake,
-    messageGateway: ActorRef,
+    handshake: Handshake,
+    override protected val messageGateway: ActorRef,
     blockchain: ActorRef,
     transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants,
-    listeners: Seq[ActorRef]) extends Actor with ActorLogging {
+    listeners: Seq[ActorRef]) extends Actor with ActorLogging with MessageForwarding {
 
   import constants._
   import context.dispatcher
 
   private var timers = Seq.empty[Cancellable]
-  private val exchange = handshake.exchange
+  override protected val exchange = handshake.exchange
 
   override def preStart() {
     messageGateway ! Subscribe {
@@ -149,29 +148,17 @@ private[handshake] class DefaultHandshakeActor(
     listeners.foreach(_ ! HandshakeResult(result))
     self ! PoisonPill
   }
-
-  private def forwardToCounterpart[T : MessageSend](message: T) {
-    forwardMessage(message, exchange.counterpart)
-  }
-
-  private def forwardToBroker[T : MessageSend](message: T) {
-    forwardMessage(message, exchange.broker)
-  }
-
-  private def forwardMessage[T : MessageSend](message: T, address: PeerConnection) {
-    messageGateway ! ForwardMessage(message, address)
-  }
 }
 
 object DefaultHandshakeActor {
   trait Component extends HandshakeActor.Component { this: ProtocolConstants.Component =>
     override def handshakeActorProps(
-        exchangeHandshake: ExchangeHandshake,
+        handshake: Handshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
         transactionSerialization: TransactionSerialization,
         listeners: Seq[ActorRef]): Props = Props(new DefaultHandshakeActor(
-          exchangeHandshake, messageGateway, blockchain,
+          handshake, messageGateway, blockchain,
           transactionSerialization, protocolConstants, listeners))
   }
 
