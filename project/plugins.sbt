@@ -4,8 +4,6 @@ resolvers in ThisBuild ++= Seq(
   Resolver.sonatypeRepo("public")
 )
 
-addSbtPlugin("com.github.sortega" %% "sbt-axis" % "0.0.2")
-
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.3.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")
