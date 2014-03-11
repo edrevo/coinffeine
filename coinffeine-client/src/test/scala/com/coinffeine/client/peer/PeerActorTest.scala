@@ -6,6 +6,7 @@ import akka.testkit._
 import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.currency.CurrencyCode._
 import com.coinffeine.common.protocol.messages.brokerage.{Quote, QuoteRequest}
+import com.coinffeine.common.protocol.gateway.GatewayProbe
 
 class PeerActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("PeerTests")) {
 

@@ -1,4 +1,4 @@
-package com.coinffeine.client.peer
+package com.coinffeine.common.protocol.gateway
 
 import akka.testkit.TestProbe
 import akka.actor.{ActorSystem, ActorRef}
