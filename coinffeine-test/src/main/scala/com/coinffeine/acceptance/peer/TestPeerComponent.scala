@@ -7,14 +7,14 @@ import com.coinffeine.common.DefaultTcpPortAllocator
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 
 /** Cake-pattern factory of peers configured for gui-less testing. */
-trait TestPeerComponent extends PeerSupervisorActor.Component
-  with PeerActor.Component with ProtoRpcMessageGateway.Component {
-  this: TestBrokerComponent with MockPayComponent =>
+trait TestPeerComponent { this: TestBrokerComponent with MockPayComponent =>
 
   def buildPeer(): TestPeer = {
+    val peerComponent = new PeerSupervisorActor.Component with PeerActor.Component
+      with ProtoRpcMessageGateway.Component
     val port = DefaultTcpPortAllocator.allocatePort()
     val args = Array("--port", port.toString, "--broker", broker.address.toString)
-    new TestPeer(this.supervisorProps(args))
+    new TestPeer(peerComponent.supervisorProps(args), s"peer$port")
   }
 
   /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
