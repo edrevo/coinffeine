@@ -46,9 +46,10 @@ message QuoteRequest {
 }
 
 message Quote {
-    optional FiatAmount highestBid = 1;
-    optional FiatAmount lowestAsk = 2;
-    optional FiatAmount lastPrice = 3;
+    required string currency = 1;
+    optional FiatAmount highestBid = 2;
+    optional FiatAmount lowestAsk = 3;
+    optional FiatAmount lastPrice = 4;
 }
 
 message QuoteResponse {

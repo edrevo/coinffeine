@@ -8,10 +8,14 @@ import org.scalatest.matchers.ShouldMatchers
 import com.coinffeine.acceptance.broker.TestBrokerComponent
 import com.coinffeine.acceptance.mockpay.MockPayComponent
 import com.coinffeine.acceptance.peer.TestPeerComponent
+import com.coinffeine.common.matchers.FutureMatchers
 
 /** Base trait for acceptance testing that includes a test fixture */
-trait AcceptanceTest
-  extends fixture.FeatureSpec with GivenWhenThen with Eventually with ShouldMatchers {
+trait AcceptanceTest extends fixture.FeatureSpec
+  with GivenWhenThen
+  with Eventually
+  with FutureMatchers
+  with ShouldMatchers {
 
   class TestComponent extends TestPeerComponent with MockPayComponent with TestBrokerComponent
 

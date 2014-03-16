@@ -14,12 +14,10 @@ class QuoteTest extends AcceptanceTest {
         Given("that no peer has placed any order")
 
         When("a peer asks for the current quote on a currency")
-        peer.askForQuote(EUR)
+        val quote = peer.askForQuote(EUR.currency)
 
         Then("he should get an empty quote")
-        eventually {
-          peer.lastQuote should be (Some(Quote.empty))
-        }
+        quote should eventually(be(Quote.empty(EUR.currency)))
       }
     }
 
@@ -30,12 +28,10 @@ class QuoteTest extends AcceptanceTest {
         sam.placeOrder(Order(Ask, BtcAmount(0.3), EUR(600)))
 
         When("Bob asks for the current quote on a currency")
-        bob.askForQuote(EUR)
+        val quote = bob.askForQuote(EUR.currency)
 
         Then("he should get the current spread")
-        eventually {
-          sam.lastQuote should be (Some(Quote(Some(EUR(500)) -> Some(EUR(600)))))
-        }
+        quote should eventually(be(Quote(EUR.currency, Some(EUR(500)) -> Some(EUR(600)))))
       }
     }
   }

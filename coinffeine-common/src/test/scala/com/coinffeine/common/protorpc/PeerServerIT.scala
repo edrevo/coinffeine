@@ -3,13 +3,14 @@ package com.coinffeine.common.protorpc
 import java.util.concurrent.{LinkedBlockingDeque, BlockingQueue, TimeUnit}
 import scala.collection.JavaConversions._
 
-import com.coinffeine.common.NetworkTestUtils
-import com.coinffeine.common.protocol.protobuf.TestProtocol
-import com.coinffeine.common.protocol.protobuf.TestProtocol.{Response, SimpleService, Request}
 import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.{RpcClientChannel, PeerInfo}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
+
+import com.coinffeine.common.DefaultTcpPortAllocator
+import com.coinffeine.common.protocol.protobuf.TestProtocol
+import com.coinffeine.common.protocol.protobuf.TestProtocol.{Response, SimpleService, Request}
 
 class PeerServerIT extends FlatSpec with ShouldMatchers {
 
@@ -51,7 +52,7 @@ class PeerServerIT extends FlatSpec with ShouldMatchers {
 
     def withPeers(action: Seq[TestPeer] => Unit) {
       val peers: Seq[TestPeer] =
-        NetworkTestUtils.findAvailableTcpPorts(peerNumbers).map(new TestPeer(_))
+        DefaultTcpPortAllocator.allocatePorts(peerNumbers).map(new TestPeer(_))
       action(peers)
       peers.foreach(_.shutdown())
     }

@@ -6,13 +6,13 @@ import scala.language.postfixOps
 
 import akka.actor._
 import akka.actor.SupervisorStrategy.{Restart, Stop}
+import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.CommandLine
 import com.coinffeine.broker.BrokerActor
 import com.coinffeine.common.currency.CurrencyCode._
 import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.system.SupervisorComponent
-import com.googlecode.protobuf.pro.duplex.PeerInfo
+import com.coinffeine.common.system.SupervisorComponent
 
 class ServerActor(gatewayProps: Props, brokerProps: ActorRef => Seq[Props]) extends Actor {
 

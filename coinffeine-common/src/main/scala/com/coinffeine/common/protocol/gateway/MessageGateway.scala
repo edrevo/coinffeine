@@ -14,6 +14,8 @@ object MessageGateway {
     val send = implicitly[MessageSend[T]]
   }
 
+  type Filter = ReceiveMessage => Boolean
+
   /** A message sent in order to subscribe for incoming messages.
     *
     * Each actor can only have one active subscription at a time. A second Subscribe message
@@ -21,7 +23,7 @@ object MessageGateway {
     *
     * @param filter A filter function that indicates what messages are forwarded to the sender actor
     */
-  case class Subscribe(filter: ReceiveMessage => Boolean)
+  case class Subscribe(filter: Filter)
 
   /** A message sent in order to unsubscribe from incoming message reception. */
   case object Unsubscribe

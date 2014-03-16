@@ -2,22 +2,19 @@ package com.coinffeine.acceptance.peer
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
 import com.coinffeine.acceptance.mockpay.MockPayComponent
-import com.coinffeine.common.currency.CurrencyCode
-import com.coinffeine.common.protocol.Order
+import com.coinffeine.client.peer.{PeerSupervisorActor, PeerActor}
+import com.coinffeine.common.DefaultTcpPortAllocator
+import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 
-/** Cake-pattern factory of peers configured for gui-less testing
-  *
-  * @constructor
-  */
-trait TestPeerComponent { this: TestBrokerComponent with MockPayComponent =>
+/** Cake-pattern factory of peers configured for gui-less testing. */
+trait TestPeerComponent extends PeerSupervisorActor.Component
+  with PeerActor.Component with ProtoRpcMessageGateway.Component {
+  this: TestBrokerComponent with MockPayComponent =>
 
-  // TODO: create actual peers
-
-  def buildPeer(): TestPeer = new TestPeer {
-    override def askForQuote(currency: CurrencyCode) {}
-    override def placeOrder(order: Order) {}
-    override def lastQuote = None
-    override def shutdown() {}
+  def buildPeer(): TestPeer = {
+    val port = DefaultTcpPortAllocator.allocatePort()
+    val args = Array("--port", port.toString, "--broker", broker.address.toString)
+    new TestPeer(this.supervisorProps(args))
   }
 
   /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
@@ -28,7 +25,7 @@ trait TestPeerComponent { this: TestBrokerComponent with MockPayComponent =>
     try {
       block(peer)
     } finally {
-      peer.shutdown()
+      peer.close()
     }
   }
 

@@ -12,7 +12,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.brokerage.{OrderCancellation, QuoteRequest, Quote, OrderMatch}
+import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.market._
 
 /** A broker actor maintains the order book of BTC trading on a given fiat currency. */
@@ -59,7 +59,7 @@ private[broker] class BrokerActor(
       }
 
     case ReceiveMessage(QuoteRequest(_), requester) =>
-      gateway ! ForwardMessage(Quote(book.spread, lastPrice), requester)
+      gateway ! ForwardMessage(Quote(currency, book.spread, lastPrice), requester)
 
     case ReceiveMessage(OrderCancellation(_), requester) =>
       log.info(s"Order of $requester is cancelled")

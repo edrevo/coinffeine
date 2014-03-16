@@ -2,4 +2,8 @@ package com.coinffeine.acceptance.broker
 
 import java.io.Closeable
 
-trait Broker extends Closeable
+import com.coinffeine.common.PeerConnection
+
+trait Broker extends Closeable {
+  def address: PeerConnection
+}
