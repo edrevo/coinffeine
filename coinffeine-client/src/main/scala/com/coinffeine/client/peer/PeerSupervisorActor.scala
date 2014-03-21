@@ -3,8 +3,9 @@ package com.coinffeine.client.peer
 import akka.actor._
 
 import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.common.system.SupervisorComponent
 import com.googlecode.protobuf.pro.duplex.PeerInfo
+
+import com.coinffeine.common.PeerConnection
 
 /** Topmost actor on a peer node. It starts all the relevant actors like the peer actor and
   * the message gateway and supervise them.
@@ -23,15 +24,13 @@ class PeerSupervisorActor(
 }
 
 object PeerSupervisorActor {
-  trait Component extends SupervisorComponent {
+  trait Component {
     this: PeerActor.Component with MessageGateway.Component =>
 
-    override def supervisorProps(args: Array[String]): Props = {
-      val cli = PeerCommandLine.fromArgList(args)
+    def peerSupervisorProps(port: Int, brokerAddress: PeerConnection): Props =
       Props(new PeerSupervisorActor(
-        gatewayProps = messageGatewayProps(new PeerInfo("localhost", cli.port)),
-        peerProps = gateway => peerActorProps(gateway, cli.brokerAddress)
+        gatewayProps = messageGatewayProps(new PeerInfo("localhost", port)),
+        peerProps = gateway => peerActorProps(gateway, brokerAddress)
       ))
-    }
   }
 }

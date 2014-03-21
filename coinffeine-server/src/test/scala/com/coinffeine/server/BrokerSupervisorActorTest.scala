@@ -8,14 +8,14 @@ import akka.testkit.TestProbe
 import com.coinffeine.common.{AkkaSpec, MockActor}
 import com.coinffeine.common.MockActor._
 
-class ServerActorTest extends AkkaSpec {
+class BrokerSupervisorActorTest extends AkkaSpec {
 
   val gatewayProbe = TestProbe()
   val gatewayProps = MockActor.props(gatewayProbe)
   val brokerProbe = TestProbe()
   val brokerProps = Seq(MockActor.props(brokerProbe))
 
-  val server = system.actorOf(Props(new ServerActor(gatewayProps, _ => brokerProps)))
+  val server = system.actorOf(Props(new BrokerSupervisorActor(gatewayProps, _ => brokerProps)))
   val MockStarted(brokerRef) = brokerProbe.expectMsgClass(classOf[MockStarted])
   val MockStarted(gatewayRef) = gatewayProbe.expectMsgClass(classOf[MockStarted])
 
