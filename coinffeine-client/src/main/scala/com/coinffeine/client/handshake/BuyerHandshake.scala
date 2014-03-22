@@ -2,10 +2,10 @@ package com.coinffeine.client.handshake
 
 import com.google.bitcoin.core._
 
-import com.coinffeine.client.Exchange
+import com.coinffeine.client.ExchangeInfo
 
-class BuyerHandshake(exchange: Exchange, userWallet: Wallet)
+class BuyerHandshake(exchange: ExchangeInfo, userWallet: Wallet)
   extends DefaultHandshake(
     exchange,
-    amountToCommit = exchange.exchangeAmount * 2 / exchange.steps,
+    amountToCommit = exchange.btcExchangeAmount * 2 / exchange.steps,
     userWallet)

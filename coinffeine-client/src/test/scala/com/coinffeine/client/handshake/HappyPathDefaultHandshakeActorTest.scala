@@ -12,7 +12,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
+import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
 
 class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
@@ -46,7 +46,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "reject signature of invalid counterpart refund transactions" in {
     val invalidRequest = RefundTxSignatureRequest(
       "id", handshake.invalidRefundTransaction.bitcoinSerialize())
-    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchange.counterpart))
+    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart))
     gateway.expectNoMsg(100 millis)
   }
 
@@ -61,7 +61,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForwardToBroker(EnterExchange("id", handshake.commitmentTransaction.bitcoinSerialize()))
+    shouldForward (EnterExchange("id", handshake.commitmentTransaction.bitcoinSerialize())) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {

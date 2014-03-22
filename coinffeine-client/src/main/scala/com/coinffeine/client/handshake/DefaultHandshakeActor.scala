@@ -12,7 +12,7 @@ import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.{ProtocolConstants, TransactionSerialization}
 import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
+import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
 
 private[handshake] class DefaultHandshakeActor(
@@ -27,14 +27,14 @@ private[handshake] class DefaultHandshakeActor(
   import context.dispatcher
 
   private var timers = Seq.empty[Cancellable]
-  override protected val exchange = handshake.exchange
+  override protected val exchangeInfo = handshake.exchangeInfo
 
   override def preStart() {
     messageGateway ! Subscribe {
-      case ReceiveMessage(RefundTxSignatureRequest(exchange.`id`, _), exchange.`counterpart`) => true
-      case ReceiveMessage(RefundTxSignatureResponse(exchange.`id`, _), exchange.`counterpart`) => true
-      case ReceiveMessage(CommitmentNotification(exchange.`id`, _, _), exchange.`broker`) => true
-      case ReceiveMessage(ExchangeAborted(exchange.`id`, _), exchange.`broker`) => true
+      case ReceiveMessage(RefundTxSignatureRequest(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(RefundTxSignatureResponse(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(CommitmentNotification(exchangeInfo.`id`, _, _), exchangeInfo.`broker`) => true
+      case ReceiveMessage(ExchangeAborted(exchangeInfo.`id`, _), exchangeInfo.`broker`) => true
       case _ => false
     }
     requestRefundSignature()
@@ -51,7 +51,7 @@ private[handshake] class DefaultHandshakeActor(
         message = RequestSignatureTimeout
       )
     )
-    log.info("Handshake {}: Handshake started", exchange.id)
+    log.info("Handshake {}: Handshake started", exchangeInfo.id)
   }
 
   override def postStop() {
@@ -65,11 +65,11 @@ private[handshake] class DefaultHandshakeActor(
       val refundTransaction = transactionSerialization.deserializeTransaction(refundTransactionBytes)
       handshake.signCounterpartRefundTransaction(refundTransaction) match {
         case Success(refundSignature) =>
-          forwardToCounterpart(RefundTxSignatureResponse(exchange.id, refundSignature))
-          log.info("Handshake {}: Signing refund TX {}", exchange.id,
+          forwardToCounterpart(RefundTxSignatureResponse(exchangeInfo.id, refundSignature))
+          log.info("Handshake {}: Signing refund TX {}", exchangeInfo.id,
             refundTransaction.getHashAsString)
         case Failure(cause) =>
-          log.warning("Handshake {}: Dropping invalid refund: {}", exchange.id, cause)
+          log.warning("Handshake {}: Dropping invalid refund: {}", exchangeInfo.id, cause)
       }
   }
 
@@ -77,23 +77,23 @@ private[handshake] class DefaultHandshakeActor(
     case ReceiveMessage(RefundTxSignatureResponse(_, refundSignature), _) =>
       handshake.validateRefundSignature(refundSignature) match {
         case Success(_) =>
-          forwardToBroker(EnterExchange(exchange.id,
+          forwardToBroker(EnterExchange(exchangeInfo.id,
             transactionSerialization.serializeTransaction(handshake.commitmentTransaction)))
-          log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
+          log.info("Handshake {}: Got a valid refund TX signature", exchangeInfo.id)
           context.become(waitForPublication(refundSignature))
 
         case Failure(cause) =>
           requestRefundSignature()
-          log.warning("Handshake {}: Rejecting invalid refund signature: {}", exchange.id, cause)
+          log.warning("Handshake {}: Rejecting invalid refund signature: {}", exchangeInfo.id, cause)
       }
 
     case ResubmitRequestSignature =>
       requestRefundSignature()
-      log.info("Handshake {}: Re-requesting refund signature: {}", exchange.id)
+      log.info("Handshake {}: Re-requesting refund signature: {}", exchangeInfo.id)
 
     case RequestSignatureTimeout =>
-      val cause = RefundSignatureTimeoutException(exchange.id)
-      forwardToBroker(ExchangeRejection(exchange.id, cause.toString))
+      val cause = RefundSignatureTimeoutException(exchangeInfo.id)
+      forwardToBroker(ExchangeRejection(exchangeInfo.id, cause.toString))
       finishWithResult(Failure(cause))
   }
 
@@ -104,14 +104,14 @@ private[handshake] class DefaultHandshakeActor(
         blockchain ! NotifyWhenConfirmed(tx, commitmentConfirmations)
       }
       log.info("Handshake {}: The broker published {} and {}, waiting for confirmations",
-        exchange.id, buyerTx, sellerTx)
+        exchangeInfo.id, buyerTx, sellerTx)
       context.become(waitForConfirmations(transactions, refundSig))
   }
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-      log.info("Handshake {}: Aborted by the broker: {}", exchange.id, reason)
-      finishWithResult(Failure(HandshakeAbortedException(exchange.id, reason)))
+      log.info("Handshake {}: Aborted by the broker: {}", exchangeInfo.id, reason)
+      finishWithResult(Failure(HandshakeAbortedException(exchangeInfo.id, reason)))
   }
 
   private val waitForRefundSignature =
@@ -133,18 +133,18 @@ private[handshake] class DefaultHandshakeActor(
 
     case TransactionRejected(tx) =>
       val isOwn = tx == handshake.commitmentTransaction.getHash
-      val cause = CommitmentTransactionRejectedException(exchange.id, tx, isOwn)
-      log.error("Handshake {}: {}", exchange.id, cause.getMessage)
+      val cause = CommitmentTransactionRejectedException(exchangeInfo.id, tx, isOwn)
+      log.error("Handshake {}: {}", exchangeInfo.id, cause.getMessage)
       finishWithResult(Failure(cause))
   }
 
   private def requestRefundSignature() {
     forwardToCounterpart(RefundTxSignatureRequest(
-      exchange.id, transactionSerialization.serializeTransaction(handshake.refundTransaction)))
+      exchangeInfo.id, transactionSerialization.serializeTransaction(handshake.refundTransaction)))
   }
 
   private def finishWithResult(result: Try[TransactionSignature]) {
-    log.info("Handshake {}: handshake finished with result {}", exchange.id, result)
+    log.info("Handshake {}: handshake finished with result {}", exchangeInfo.id, result)
     listeners.foreach(_ ! HandshakeResult(result))
     self ! PoisonPill
   }

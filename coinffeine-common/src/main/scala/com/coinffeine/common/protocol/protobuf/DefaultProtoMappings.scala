@@ -10,8 +10,9 @@ import com.google.protobuf.ByteString
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
 import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.messages.handshake._
+import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
 /** Implicit conversion mappings for the protocol messages */

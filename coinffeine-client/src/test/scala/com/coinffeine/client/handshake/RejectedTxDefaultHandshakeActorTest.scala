@@ -6,7 +6,7 @@ import scala.language.postfixOps
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.blockchain.BlockchainActor.TransactionRejected
 import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.messages.brokerage.CommitmentNotification
+import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake.RefundTxSignatureResponse
 
 class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rejected-tx") {

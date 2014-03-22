@@ -15,9 +15,23 @@ abstract class CoinffeineClientTest(systemName: String) extends AkkaSpec(systemN
 
   def fromBroker(message: Any) = ReceiveMessage(message, broker)
 
-  def shouldForwardToCounterpart[T : MessageSend](message: T): Unit =
-    gateway.expectMsg(ForwardMessage(message, counterpart))
+  protected class ValidateWithPeer(validation: PeerConnection => Unit) {
+    def to(receiver: PeerConnection): Unit = validation(receiver)
+  }
 
-  def shouldForwardToBroker[T : MessageSend](message: T): Unit =
-    gateway.expectMsg(ForwardMessage(message, broker))
+  def shouldForward[T: MessageSend](message: T) =
+    new ValidateWithPeer(receiver => gateway.expectMsg(ForwardMessage(message, receiver)))
+
+  protected class ValidateAllMessagesWithPeer {
+    private var messages: List[PeerConnection => Any] = List.empty
+    def message[T : MessageSend](msg: T): ValidateAllMessagesWithPeer = {
+      messages = ((receiver: PeerConnection) => ForwardMessage(msg, receiver)) :: messages
+      this
+    }
+    def to(receiver: PeerConnection): Unit = {
+      gateway.expectMsgAllOf(messages.map(_(receiver)): _*)
+    }
+  }
+
+  def shouldForwardAll = new ValidateAllMessagesWithPeer
 }

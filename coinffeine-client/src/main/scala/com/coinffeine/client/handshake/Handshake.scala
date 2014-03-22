@@ -5,10 +5,10 @@ import scala.util.Try
 import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.client.Exchange
+import com.coinffeine.client.ExchangeInfo
 
 trait Handshake {
-  val exchange: Exchange
+  val exchangeInfo: ExchangeInfo
   val commitmentTransaction: Transaction
   val refundTransaction: Transaction
 

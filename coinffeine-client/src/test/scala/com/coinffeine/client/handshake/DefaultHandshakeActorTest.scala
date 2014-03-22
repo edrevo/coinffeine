@@ -10,7 +10,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.TestNet3Params
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.client.{CoinffeineClientTest, Exchange}
+import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol._
@@ -22,14 +22,17 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with MockitoSugar {
 
   class MockHandshake extends Handshake {
-    override val exchange = Exchange(
+    override val exchangeInfo = ExchangeInfo(
       "id",
       PeerConnection("counterpart"),
       PeerConnection("broker"),
       network = TestNet3Params.get(),
       userKey = new ECKey(),
+      userFiatAddress = null,
       counterpartKey = null,
-      exchangeAmount = 10 BTC,
+      counterpartFiatAddress = "",
+      btcExchangeAmount = 10 BTC,
+      fiatExchangeAmount = 10 EUR,
       steps = 10,
       lockTime = 10)
     override val commitmentTransaction = MockTransaction()
@@ -52,8 +55,8 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   def protocolConstants: ProtocolConstants
 
   val handshake = new MockHandshake
-  override val counterpart = handshake.exchange.counterpart
-  override val broker = handshake.exchange.broker
+  override val counterpart = handshake.exchangeInfo.counterpart
+  override val broker = handshake.exchangeInfo.broker
   val listener = TestProbe()
   val blockchain = TestProbe()
   val transactionSerialization = new FakeTransactionSerialization(
@@ -71,15 +74,16 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   ), "handshake-actor")
   listener.watch(actor)
 
-  def shouldForwardRefundSignatureRequest() {
-    shouldForwardToCounterpart(
-      RefundTxSignatureRequest("id", handshake.refundTransaction.bitcoinSerialize()))
+  def shouldForwardRefundSignatureRequest(): Unit = {
+    val refundSignatureRequest = RefundTxSignatureRequest(
+      "id", handshake.refundTransaction.bitcoinSerialize())
+    shouldForward (refundSignatureRequest) to counterpart
   }
 
   def shouldSignCounterpartRefund() {
     val request = RefundTxSignatureRequest("id", handshake.counterpartRefund.bitcoinSerialize())
-    gateway.send(actor, ReceiveMessage(request, handshake.exchange.counterpart))
-    shouldForwardToCounterpart(
-      RefundTxSignatureResponse("id", handshake.counterpartRefundSignature))
+    gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart))
+    val refundSignatureRequest = RefundTxSignatureResponse("id", handshake.counterpartRefundSignature)
+    shouldForward (refundSignatureRequest) to counterpart
   }
 }
