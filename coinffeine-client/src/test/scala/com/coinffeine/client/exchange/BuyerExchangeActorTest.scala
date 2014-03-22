@@ -19,6 +19,8 @@ import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.protocol.{FakeTransactionSerialization, ProtocolConstants}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, NewOffer, OfferAccepted}
+import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
+import com.coinffeine.common.currency.CurrencyCode
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -62,7 +64,8 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
-    filter(ReceiveMessage("Some random message", exchangeInfo.counterpart)) should be (false)
+    val randomMessage = OrderCancellation(CurrencyCode.EUR.currency)
+    filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 
   it should "send the first offer as soon as it gets created" in {

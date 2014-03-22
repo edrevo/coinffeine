@@ -1,5 +1,7 @@
 package com.coinffeine.client
 
+import scala.language.postfixOps
+
 import com.google.bitcoin.core.ECKey
 
 import com.coinffeine.common.PeerConnection

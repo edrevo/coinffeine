@@ -9,7 +9,6 @@ import akka.testkit._
 import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
-import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
 
@@ -34,7 +33,7 @@ class BrokerActorTest
       orderExpirationInterval = 1 second
     )), name)
 
-    def shouldHaveQuote(expectedQuote: Quote) {
+    def shouldHaveQuote(expectedQuote: Quote): Unit = {
       val quoteRequester = PeerConnection("quoteRequester")
       gateway.send(broker, ReceiveMessage(QuoteRequest(EUR.currency), quoteRequester))
       gateway.expectMsg(ForwardMessage(expectedQuote, quoteRequester))
@@ -128,11 +127,11 @@ class BrokerActorTest
     gateway.expectMsgClass(classOf[Subscribe])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.exchangeId
+    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).message.exchangeId
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).msg.exchangeId
+    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).message.exchangeId
     gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
     id1 should not (equal (id2))
   }

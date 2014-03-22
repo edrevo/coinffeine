@@ -9,8 +9,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.acceptance.TestActorSystem
-import com.coinffeine.common.protocol.Order
-import com.coinffeine.common.protocol.messages.brokerage.{QuoteRequest, Quote}
+import com.coinffeine.common.protocol.messages.brokerage.{Order, QuoteRequest, Quote}
 
 /** Testing façade for a Coinffeine peer. */
 class TestPeer(peerSupervisorProps: Props, name: String)

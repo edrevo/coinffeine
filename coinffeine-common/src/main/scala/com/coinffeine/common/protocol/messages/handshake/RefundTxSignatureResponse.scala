@@ -2,13 +2,12 @@ package com.coinffeine.common.protocol.messages.handshake
 
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.protocol.messages.MessageSend
-import com.coinffeine.common.protorpc.PeerSession
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class RefundTxSignatureResponse(
   exchangeId: String,
   refundSignature: TransactionSignature
-) {
+) extends PublicMessage {
 
   override def equals(that: Any) = that match {
     case rep: RefundTxSignatureResponse =>
@@ -24,12 +23,3 @@ case class RefundTxSignatureResponse(
       case (b1: Array[Byte], b2: Array[Byte]) => b1.deep == b2.deep
     }
 }
-
-object RefundTxSignatureResponse {
-
-  implicit val Write = new MessageSend[RefundTxSignatureResponse] {
-
-    def sendAsProto(msg: RefundTxSignatureResponse, session: PeerSession) = ???
-  }
-}
-

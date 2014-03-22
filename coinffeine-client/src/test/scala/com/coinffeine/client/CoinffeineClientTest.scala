@@ -4,7 +4,7 @@ import akka.testkit.TestProbe
 
 import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
-import com.coinffeine.common.protocol.messages.MessageSend
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with WithSampleExchangeInfo
@@ -14,20 +14,20 @@ abstract class CoinffeineClientTest(systemName: String)
   val counterpart: PeerConnection
   val broker: PeerConnection
 
-  def fromCounterpart(message: Any) = ReceiveMessage(message, counterpart)
+  def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpart)
 
-  def fromBroker(message: Any) = ReceiveMessage(message, broker)
+  def fromBroker(message: PublicMessage) = ReceiveMessage(message, broker)
 
   protected class ValidateWithPeer(validation: PeerConnection => Unit) {
     def to(receiver: PeerConnection): Unit = validation(receiver)
   }
 
-  def shouldForward[T: MessageSend](message: T) =
+  def shouldForward(message: PublicMessage) =
     new ValidateWithPeer(receiver => gateway.expectMsg(ForwardMessage(message, receiver)))
 
   protected class ValidateAllMessagesWithPeer {
     private var messages: List[PeerConnection => Any] = List.empty
-    def message[T : MessageSend](msg: T): ValidateAllMessagesWithPeer = {
+    def message(msg: PublicMessage): ValidateAllMessagesWithPeer = {
       messages = ((receiver: PeerConnection) => ForwardMessage(msg, receiver)) :: messages
       this
     }

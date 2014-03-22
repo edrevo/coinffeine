@@ -2,4 +2,6 @@ package com.coinffeine.common.protocol.messages.brokerage
 
 import java.util.Currency
 
-case class OrderCancellation(currency: Currency)
+import com.coinffeine.common.protocol.messages.PublicMessage
+
+case class OrderCancellation(currency: Currency) extends PublicMessage

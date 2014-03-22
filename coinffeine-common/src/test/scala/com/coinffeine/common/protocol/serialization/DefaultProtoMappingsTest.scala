@@ -1,4 +1,4 @@
-package com.coinffeine.common.protocol.protobuf
+package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger
 
@@ -17,7 +17,7 @@ import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
-import com.coinffeine.common.protocol.protobuf.DefaultProtoMappings._
+import DefaultProtoMappings._
 
 class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 

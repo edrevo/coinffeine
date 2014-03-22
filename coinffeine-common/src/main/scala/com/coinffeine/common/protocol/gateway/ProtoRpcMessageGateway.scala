@@ -8,79 +8,28 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.MessageSend
-import com.coinffeine.common.protocol.protobuf.ProtoMapping.fromProtobuf
-import com.coinffeine.common.protocol.protobuf.DefaultProtoMappings._
-import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto, ProtoMapping}
-import com.coinffeine.common.protorpc.{PeerSession, PeerServer}
+import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protorpc.{Callbacks, PeerSession, PeerServer}
+import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
 
-private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Actor {
+private[gateway] class ProtoRpcMessageGateway(
+   serverInfo: PeerInfo, serialization: ProtocolSerialization) extends Actor {
 
   import ProtoRpcMessageGateway._
 
   /** Metadata on message subscription requested by an actor. */
-  private case class MessageSubscription(filter: ReceiveMessage => Boolean)
+  private case class MessageSubscription(filter: Filter)
 
   private class PeerServiceImpl extends proto.PeerService.Interface {
 
-    override def submitTxRefundSignature(
+    override def sendMessage(
         controller: RpcController,
-        request: proto.RefundTxSignatureResponse,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def requestTxRefundSignature(
-        controller: RpcController,
-        request: proto.RefundTxSignatureRequest,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def rejectExchange(
-        controller: RpcController,
-        request: proto.ExchangeRejection,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def notifyMatch(
-        controller: RpcController,
-        request: proto.OrderMatch,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def notifyCommitment(
-        controller: RpcController,
-        request: proto.CommitmentNotification,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def beginExchange(
-        controller: RpcController,
-        request: proto.EnterExchange,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    override def abortExchange(
-        controller: RpcController,
-        request: proto.ExchangeAborted,
-        done: RpcCallback[proto.Void]): Unit = dispatch(controller, done) {
-      ProtoMapping.fromProtobuf(request)
-    }
-
-    private def dispatch[T](
-        controller: RpcController,
-        done: RpcCallback[proto.Void])(msg: => T) {
-      dispatchToSubscriptions(msg, clientPeerConnection(controller))
+        message: proto.CoinffeineMessage,
+        done: RpcCallback[proto.Void]): Unit = {
+      dispatchToSubscriptions(serialization.fromProtobuf(message), clientPeerConnection(controller))
       done.run(VoidResponse)
-      Callbacks.noop[proto.Void]
     }
 
     private def clientPeerConnection(controller: RpcController) = {
@@ -95,7 +44,7 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
   private var subscriptions = Map.empty[ActorRef, MessageSubscription]
   private var sessions = Map.empty[PeerConnection, PeerSession]
 
-  override def preStart() {
+  override def preStart(): Unit = {
     val starting = server.start()
     starting.await()
     if (!starting.isSuccess) {
@@ -104,13 +53,11 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
     }
   }
 
-  override def postStop() {
-    server.shutdown()
-  }
+  override def postStop(): Unit = server.shutdown()
 
   override def receive = {
     case m @ ForwardMessage(msg, dest) =>
-      forward(sender, dest, msg, m.send)
+      forward(sender, dest, msg)
     case Subscribe(filter) =>
       subscriptions += sender -> MessageSubscription(filter)
     case Unsubscribe =>
@@ -119,39 +66,39 @@ private[gateway] class ProtoRpcMessageGateway(serverInfo: PeerInfo) extends Acto
       subscriptions -= actor
   }
 
-  private def forward[T](
-      from: ActorRef, to: PeerConnection, msg: T, send: MessageSend[T]) {
+  private def forward(from: ActorRef, to: PeerConnection, message: PublicMessage): Unit =
     try {
-      val sess = session(to)
-      send.sendAsProto(msg, sess)
+      val s = session(to)
+      proto.PeerService.newStub(s.channel).sendMessage(
+        s.controller,
+        serialization.toProtobuf(message),
+        Callbacks.noop[proto.Void]
+      )
     } catch {
       case e: IOException =>
-        throw ForwardException(s"cannot forward message $msg to $to: ${e.getMessage}", e)
+        throw ForwardException(s"cannot forward message $message to $to: ${e.getMessage}", e)
     }
-  }
 
-  private def dispatchToSubscriptions(msg: Any, sender: PeerConnection) {
+  private def dispatchToSubscriptions(msg: PublicMessage, sender: PeerConnection): Unit = {
     val notification = ReceiveMessage(msg, sender)
     for ((actor, MessageSubscription(filter)) <- subscriptions if filter(notification)) {
       actor ! notification
     }
   }
 
-  private def session(connection: PeerConnection): PeerSession = {
-    sessions.getOrElse(connection, {
-      val sess = server.peerWith(new PeerInfo(connection.hostname, connection.port)).get
-      sessions += connection -> sess
-      sess
-    })
-  }
+  private def session(connection: PeerConnection): PeerSession = sessions.getOrElse(connection, {
+    val s = server.peerWith(new PeerInfo(connection.hostname, connection.port)).get
+    sessions += connection -> s
+    s
+  })
 }
 
 object ProtoRpcMessageGateway {
 
   private[protocol] val VoidResponse = proto.Void.newBuilder().build()
 
-  trait Component extends MessageGateway.Component {
+  trait Component extends MessageGateway.Component { this: ProtocolSerializationComponent =>
     override def messageGatewayProps(serverInfo: PeerInfo): Props =
-      Props(new ProtoRpcMessageGateway(serverInfo))
+      Props(new ProtoRpcMessageGateway(serverInfo, protocolSerialization))
   }
 }

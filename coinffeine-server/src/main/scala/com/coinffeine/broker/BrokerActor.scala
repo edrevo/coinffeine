@@ -26,14 +26,12 @@ private[broker] class BrokerActor(
   private var expirationTimes = Map[PeerConnection, FiniteDuration]()
   private var lastPrice: Option[FiatAmount] = None
 
-  override def preStart() {
-    gateway ! Subscribe {
-      case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
-      case ReceiveMessage(quoteRequest: QuoteRequest, _)
-        if quoteRequest.currency == currency => true
-      case ReceiveMessage(OrderCancellation(`currency`), _) => true
-      case _ => false
-    }
+  override def preStart(): Unit = gateway ! Subscribe {
+    case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
+    case ReceiveMessage(quoteRequest: QuoteRequest, _)
+      if quoteRequest.currency == currency => true
+    case ReceiveMessage(OrderCancellation(`currency`), _) => true
+    case _ => false
   }
 
   override def receive: Receive = processMessage.andThen(_ => scheduleNextExpiration())
@@ -68,12 +66,12 @@ private[broker] class BrokerActor(
     case ReceiveTimeout => expireOrders()
   }
 
-  private def notifyOrderMatch(orderMatch: OrderMatch) {
+  private def notifyOrderMatch(orderMatch: OrderMatch): Unit = {
     gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
     gateway ! ForwardMessage(orderMatch, orderMatch.seller)
   }
 
-  private def setExpirationFor(requester: PeerConnection) {
+  private def setExpirationFor(requester: PeerConnection): Unit = {
     if (orderExpirationInterval.isFinite()) {
       val expiration =
         (System.currentTimeMillis() millis) + orderExpirationInterval.asInstanceOf[FiniteDuration]
@@ -81,14 +79,14 @@ private[broker] class BrokerActor(
     }
   }
 
-  private def scheduleNextExpiration() {
+  private def scheduleNextExpiration(): Unit = {
     val timeout =
       if (expirationTimes.isEmpty || !orderExpirationInterval.isFinite) Duration.Inf
       else max(0, expirationTimes.values.min.toMillis - System.currentTimeMillis).millis
     context.setReceiveTimeout(timeout)
   }
 
-  private def expireOrders() {
+  private def expireOrders(): Unit = {
     val currentTime = System.currentTimeMillis() millis
     val expired = expirationTimes.collect {
       case (requester, expirationTime) if expirationTime <= currentTime => requester
