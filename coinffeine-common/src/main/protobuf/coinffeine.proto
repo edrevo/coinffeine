@@ -106,10 +106,12 @@ message CoinffeineMessage {
     optional CommitmentNotification commitmentNotification = 3;
     optional OrderMatch orderMatch = 4;
     optional Order order = 5;
-    optional QuoteRequest quoteRequest = 6;
-    optional ExchangeRejection exchangeRejection = 7;
-    optional RefundTxSignatureRequest refundTxSignatureRequest = 8;
-    optional RefundTxSignatureResponse refundTxSignatureResponse = 9;
+    optional OrderCancellation orderCancellation = 6;
+    optional QuoteRequest quoteRequest = 7;
+    optional Quote quote = 8;
+    optional ExchangeRejection exchangeRejection = 9;
+    optional RefundTxSignatureRequest refundTxSignatureRequest = 10;
+    optional RefundTxSignatureResponse refundTxSignatureResponse = 11;
 }
 
 service PeerService {

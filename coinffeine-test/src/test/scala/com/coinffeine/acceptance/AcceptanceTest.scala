@@ -1,13 +1,14 @@
 package com.coinffeine.acceptance
 
-import org.scalatest.GivenWhenThen
-import org.scalatest.fixture
+import com.google.bitcoin.params.TestNet3Params
+import org.scalatest.{GivenWhenThen, fixture}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.ShouldMatchers
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
 import com.coinffeine.acceptance.peer.TestPeerComponent
 import com.coinffeine.common.matchers.FutureMatchers
+import com.coinffeine.common.network.NetworkComponent
 
 /** Base trait for acceptance testing that includes a test fixture */
 trait AcceptanceTest extends fixture.FeatureSpec
@@ -16,7 +17,9 @@ trait AcceptanceTest extends fixture.FeatureSpec
   with FutureMatchers
   with ShouldMatchers {
 
-  class TestComponent extends TestPeerComponent with TestBrokerComponent
+  class TestComponent extends TestPeerComponent with TestBrokerComponent with NetworkComponent {
+    override lazy val network = TestNet3Params.get()
+  }
 
   override type FixtureParam = TestComponent
 

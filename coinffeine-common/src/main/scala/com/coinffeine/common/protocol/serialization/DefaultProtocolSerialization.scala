@@ -9,6 +9,7 @@ import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage._
 import com.coinffeine.common.protocol.serialization.DefaultProtoMappings._
+import java.util
 
 private[serialization] object DefaultProtocolSerialization extends ProtocolSerialization {
 
@@ -21,7 +22,9 @@ private[serialization] object DefaultProtocolSerialization extends ProtocolSeria
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: OrderMatch => builder.setOrderMatch(ProtoMapping.toProtobuf(m))
       case m: Order => builder.setOrder(ProtoMapping.toProtobuf(m))
+      case m: OrderCancellation => builder.setOrderCancellation(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest => builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
+      case m: Quote => builder.setQuote(ProtoMapping.toProtobuf(m))
       case m: ExchangeRejection => builder.setExchangeRejection(ProtoMapping.toProtobuf(m))
       case m: RefundTxSignatureRequest =>
         builder.setRefundTxSignatureRequest(ProtoMapping.toProtobuf(m))
@@ -33,8 +36,11 @@ private[serialization] object DefaultProtocolSerialization extends ProtocolSeria
   }
 
   override def fromProtobuf(message: proto.CoinffeineMessage): PublicMessage = {
-    require(message.getAllFields.size() == 1)
-    val descriptor: FieldDescriptor = message.getAllFields.keySet().iterator().next()
+    val messageFields = message.getAllFields
+    val fieldNumber: Int = messageFields.size()
+    require(fieldNumber >= 1, "Message has no content")
+    require(fieldNumber <= 1, s"Malformed message with $fieldNumber fields: $message")
+    val descriptor: FieldDescriptor = messageFields.keySet().iterator().next()
     descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getExchangeAborted)
       case ENTEREXCHANGE_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getEnterExchange)
@@ -42,7 +48,9 @@ private[serialization] object DefaultProtocolSerialization extends ProtocolSeria
         ProtoMapping.fromProtobuf(message.getCommitmentNotification)
       case ORDERMATCH_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getOrderMatch)
       case ORDER_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getOrder)
+      case ORDERCANCELLATION_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getOrderCancellation)
       case QUOTEREQUEST_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getQuoteRequest)
+      case QUOTE_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getQuote)
       case EXCHANGEREJECTION_FIELD_NUMBER => ProtoMapping.fromProtobuf(message.getExchangeRejection)
       case REFUNDTXSIGNATUREREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(message.getRefundTxSignatureRequest)

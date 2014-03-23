@@ -5,5 +5,6 @@ libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.dispatch,
   Dependencies.jodaConvert,
   Dependencies.netty,
-  Dependencies.protobufRpc
+  Dependencies.protobufRpc,
+  Dependencies.reflections % "test"
 )

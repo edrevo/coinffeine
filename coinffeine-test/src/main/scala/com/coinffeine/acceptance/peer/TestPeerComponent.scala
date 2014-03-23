@@ -1,15 +1,16 @@
 package com.coinffeine.acceptance.peer
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
-import com.coinffeine.client.peer.{PeerSupervisorActor, PeerActor}
+import com.coinffeine.client.peer.{PeerActor, PeerSupervisorActor}
 import com.coinffeine.common.DefaultTcpPortAllocator
+import com.coinffeine.common.network.NetworkComponent
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 
 /** Cake-pattern factory of peers configured for GUI-less testing. */
 trait TestPeerComponent
   extends PeerSupervisorActor.Component
   with PeerActor.Component
-  with ProtoRpcMessageGateway.Component { this: TestBrokerComponent =>
+  with ProtoRpcMessageGateway.Component { this: TestBrokerComponent with NetworkComponent =>
 
   def buildPeer(): TestPeer = {
     val port = DefaultTcpPortAllocator.allocatePort()
