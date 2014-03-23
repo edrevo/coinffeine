@@ -6,7 +6,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.ShouldMatchers
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
-import com.coinffeine.acceptance.mockpay.MockPayComponent
 import com.coinffeine.acceptance.peer.TestPeerComponent
 import com.coinffeine.common.matchers.FutureMatchers
 
@@ -17,20 +16,16 @@ trait AcceptanceTest extends fixture.FeatureSpec
   with FutureMatchers
   with ShouldMatchers {
 
-  class TestComponent extends TestPeerComponent with MockPayComponent with TestBrokerComponent
+  class TestComponent extends TestPeerComponent with TestBrokerComponent
 
   override type FixtureParam = TestComponent
 
   override def withFixture(test: OneArgTest) {
     val component = new TestComponent
     try {
-      try {
-        withFixture(test.toNoArgTest(component))
-      } finally {
-        component.broker.close()
-      }
+      withFixture(test.toNoArgTest(component))
     } finally {
-      component.mockPay.close()
+      component.broker.close()
     }
   }
 }
