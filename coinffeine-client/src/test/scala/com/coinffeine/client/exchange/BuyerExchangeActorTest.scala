@@ -23,19 +23,7 @@ import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, NewOffer,
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
-  val exchangeInfo = ExchangeInfo(
-    "id",
-    PeerConnection("counterpart"),
-    PeerConnection("broker"),
-    network = TestNet3Params.get(),
-    userKey = new ECKey(),
-    userFiatAddress = "",
-    counterpartKey = null,
-    counterpartFiatAddress = "",
-    btcExchangeAmount = 10 BTC,
-    fiatExchangeAmount = 10 EUR,
-    steps = 10,
-    lockTime = 10)
+  val exchangeInfo = sampleExchangeInfo
   val transactionSerialization = new FakeTransactionSerialization(Seq.empty, Seq.empty)
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

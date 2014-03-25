@@ -22,19 +22,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with MockitoSugar {
 
   class MockHandshake extends Handshake {
-    override val exchangeInfo = ExchangeInfo(
-      "id",
-      PeerConnection("counterpart"),
-      PeerConnection("broker"),
-      network = TestNet3Params.get(),
-      userKey = new ECKey(),
-      userFiatAddress = null,
-      counterpartKey = null,
-      counterpartFiatAddress = "",
-      btcExchangeAmount = 10 BTC,
-      fiatExchangeAmount = 10 EUR,
-      steps = 10,
-      lockTime = 10)
+    override val exchangeInfo = sampleExchangeInfo
     override val commitmentTransaction = MockTransaction()
     override val refundTransaction = MockTransaction()
     val counterpartCommitmentTransaction = MockTransaction()

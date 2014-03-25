@@ -13,19 +13,7 @@ import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
 
 class DefaultHandshakeTest extends BitcoinjTest {
-  val exchangeInfo = ExchangeInfo(
-    id = "dummy",
-    counterpart = PeerConnection("localhost", 1234),
-    broker = PeerConnection("localhost", 1235),
-    network = network,
-    userKey = new ECKey(),
-    userFiatAddress = "",
-    counterpartKey = new ECKey(),
-    counterpartFiatAddress = "",
-    btcExchangeAmount = 10 BTC,
-    fiatExchangeAmount = 10 EUR,
-    steps = 10,
-    lockTime = 25)
+  val exchangeInfo = sampleExchangeInfo
 
   "The DefaultExchangeHandshake constructor" should
     "fail if the wallet does not contain the private key" in {
