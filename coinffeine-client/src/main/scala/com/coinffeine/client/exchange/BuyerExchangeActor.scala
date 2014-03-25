@@ -9,6 +9,9 @@ import com.coinffeine.common.protocol.{ProtocolConstants, TransactionSerializati
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{NewOffer, OfferAccepted, PaymentProof}
 
+/** This actor implements the buyer's side of the exchange. You can find more information about
+  * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
+  */
 class BuyerExchangeActor(
     override protected val exchangeInfo: ExchangeInfo,
     exchange: Exchange,
