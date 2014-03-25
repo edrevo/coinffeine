@@ -3,12 +3,11 @@ package com.coinffeine.client.handshake
 import scala.language.postfixOps
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.{ECKey, VerificationException}
+import com.google.bitcoin.core.VerificationException
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
 

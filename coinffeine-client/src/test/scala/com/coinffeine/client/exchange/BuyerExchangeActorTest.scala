@@ -6,13 +6,12 @@ import scala.language.postfixOps
 
 import akka.testkit.TestProbe
 import akka.actor.Props
-import com.google.bitcoin.core.{Transaction, ECKey}
+import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.params.TestNet3Params
 import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
+import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.Implicits._

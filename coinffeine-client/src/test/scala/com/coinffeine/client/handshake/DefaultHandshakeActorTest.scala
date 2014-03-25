@@ -5,14 +5,11 @@ import scala.util.{Failure, Success}
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.{ECKey, Transaction}
+import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.params.TestNet3Params
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
