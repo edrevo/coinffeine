@@ -11,4 +11,8 @@ object CoinffeineUnitTestParams extends UnitTestParams {
 
   // Ensures that the miner's reward for each block is constant
   subsidyDecreaseBlockCount = Int.MaxValue
+
+  trait Component extends NetworkComponent {
+    override val network = CoinffeineUnitTestParams
+  }
 }

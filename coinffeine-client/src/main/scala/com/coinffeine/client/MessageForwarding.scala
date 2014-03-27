@@ -13,23 +13,23 @@ import com.coinffeine.common.protocol.messages.MessageSend
 trait MessageForwarding {
   this: Actor =>
 
-  protected val exchange: Exchange
+  protected val exchangeInfo: ExchangeInfo
   protected val messageGateway: ActorRef
 
   protected def forwardToCounterpart[T : MessageSend](message: T) {
-    forwardMessage(message, exchange.counterpart)
+    forwardMessage(message, exchangeInfo.counterpart)
   }
 
   protected def forwardToCounterpart[T : MessageSend](message: Future[T]) {
-    forwardMessage(message, exchange.counterpart)
+    forwardMessage(message, exchangeInfo.counterpart)
   }
 
   protected def forwardToBroker[T : MessageSend](message: T) {
-    forwardMessage(message, exchange.broker)
+    forwardMessage(message, exchangeInfo.broker)
   }
 
   protected def forwardToBroker[T : MessageSend](message: Future[T]) {
-    forwardMessage(message, exchange.broker)
+    forwardMessage(message, exchangeInfo.broker)
   }
 
   protected def forwardMessage[T : MessageSend](message: T, address: PeerConnection) {

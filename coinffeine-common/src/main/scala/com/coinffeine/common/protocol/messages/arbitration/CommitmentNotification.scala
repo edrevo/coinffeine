@@ -1,4 +1,4 @@
-package com.coinffeine.common.protocol.messages.brokerage
+package com.coinffeine.common.protocol.messages.arbitration
 
 import com.google.bitcoin.core.Sha256Hash
 

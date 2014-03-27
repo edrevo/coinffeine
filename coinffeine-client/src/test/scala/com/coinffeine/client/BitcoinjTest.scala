@@ -17,8 +17,10 @@ import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-abstract class BitcoinjTest extends FlatSpec with ShouldMatchers with BeforeAndAfter {
-  val network = CoinffeineUnitTestParams
+abstract class BitcoinjTest extends FlatSpec
+  with ShouldMatchers with BeforeAndAfter with WithSampleExchangeInfo
+  with CoinffeineUnitTestParams.Component {
+
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
   var chain: FullPrunedBlockChain = _

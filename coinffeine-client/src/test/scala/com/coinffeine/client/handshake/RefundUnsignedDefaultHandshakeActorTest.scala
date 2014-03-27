@@ -26,7 +26,7 @@ class RefundUnsignedDefaultHandshakeActorTest
 
   it must "notify the broker that the exchange is rejected" in {
     gateway.fishForMessage() {
-      case ForwardMessage(ExchangeRejection("id", _), handshake.exchange.`broker`) => true
+      case ForwardMessage(ExchangeRejection("id", _), handshake.exchangeInfo.`broker`) => true
       case _ => false
     }
   }
