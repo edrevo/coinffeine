@@ -14,13 +14,11 @@ import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
-import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 private[handshake] class DefaultHandshakeActor(
     handshake: Handshake,
     override protected val messageGateway: ActorRef,
     blockchain: ActorRef,
-    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants,
     listeners: Seq[ActorRef]) extends Actor with ActorLogging with MessageForwarding {
 
@@ -154,10 +152,9 @@ object DefaultHandshakeActor {
         handshake: Handshake,
         messageGateway: ActorRef,
         blockchain: ActorRef,
-        transactionSerialization: TransactionSerialization,
-        listeners: Seq[ActorRef]): Props = Props(new DefaultHandshakeActor(
-          handshake, messageGateway, blockchain,
-          transactionSerialization, protocolConstants, listeners))
+        listeners: Seq[ActorRef]): Props = Props(
+      new DefaultHandshakeActor(handshake, messageGateway, blockchain, protocolConstants, listeners)
+    )
   }
 
   /** Internal message to remind about resubmitting refund signature requests. */

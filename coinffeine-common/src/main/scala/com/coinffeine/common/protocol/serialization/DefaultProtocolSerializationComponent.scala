@@ -6,5 +6,5 @@ trait DefaultProtocolSerializationComponent extends ProtocolSerializationCompone
   this: NetworkComponent =>
 
   override def protocolSerialization: ProtocolSerialization =
-    new DefaultProtocolSerialization(new DefaultTransactionSerialization(network))
+    new DefaultProtocolSerialization(new TransactionSerialization(network))
 }

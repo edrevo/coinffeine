@@ -12,7 +12,6 @@ import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, EnterExchange, ExchangeAborted}
-import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** A handshake arbiter is an actor able to mediate between buyer and seller to publish
   * commitment transactions at the same time.
@@ -21,7 +20,6 @@ private[arbiter] class HandshakeArbiterActor(
     arbiter: CommitmentValidation,
     gateway: ActorRef,
     blockchain: ActorRef,
-    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -115,12 +113,13 @@ private[arbiter] class HandshakeArbiterActor(
 }
 
 object HandshakeArbiterActor {
-  trait Component { this: ProtocolConstants.Component with TransactionSerialization.Component =>
+  trait Component { this: ProtocolConstants.Component =>
     def handshakeArbiterActor(
         arbiter: CommitmentValidation,
         gateway: ActorRef,
         blockchain: ActorRef) = Props(new HandshakeArbiterActor(
-      arbiter, gateway, blockchain, transactionSerialization, protocolConstants))
+      arbiter, gateway, blockchain, protocolConstants
+    ))
   }
 
   private case object AbortTimeout

@@ -46,7 +46,7 @@ class DefaultProtocolSerializationTest
     OfferSignature(exchangeId, transactionSignature),
     PaymentProof(exchangeId, "paymentId")
   )
-  val instance = new DefaultProtocolSerialization(new DefaultTransactionSerialization(network))
+  val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))
 
   requireSampleInstancesForAllPublicMessages()
 

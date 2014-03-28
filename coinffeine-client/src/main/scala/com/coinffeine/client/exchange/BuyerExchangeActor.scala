@@ -8,7 +8,6 @@ import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{OfferTransaction, OfferSignature, PaymentProof}
-import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -17,7 +16,6 @@ class BuyerExchangeActor(
     override protected val exchangeInfo: ExchangeInfo,
     exchange: Exchange,
     override protected val messageGateway: ActorRef,
-    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants,
     listeners: Seq[ActorRef]) extends Actor with ActorLogging with MessageForwarding {
 
@@ -66,10 +64,8 @@ object BuyerExchangeActor {
         exchangeInfo: ExchangeInfo,
         exchange: Exchange,
         messageGateway: ActorRef,
-        transactionSerialization: TransactionSerialization,
         resultListeners: Seq[ActorRef]): Props = Props(new BuyerExchangeActor(
-      exchangeInfo, exchange, messageGateway, transactionSerialization,
-      protocolConstants, resultListeners))
+      exchangeInfo, exchange, messageGateway, protocolConstants, resultListeners))
   }
 
   private case class ReadyForNextOffer(index: Int)

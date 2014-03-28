@@ -1,22 +1,24 @@
 package com.coinffeine.common.protocol.serialization
 
-import com.google.bitcoin.core.Transaction
+import com.google.bitcoin.core.{Transaction, NetworkParameters}
 import com.google.bitcoin.crypto.TransactionSignature
+import com.google.protobuf.ByteString
 
-/** An object able to serialize and deserialize bitcoin transactions. */
-trait TransactionSerialization {
+private[serialization] class TransactionSerialization(network: NetworkParameters) {
 
-  def serializeTransaction(tx: Transaction): Array[Byte]
+  def deserializeSignature(byteString: ByteString): TransactionSignature =
+    TransactionSignature.decodeFromBitcoin(byteString.toByteArray,
+      TransactionSerialization.RequireCanonical)
 
-  def serializeTransactionSignature(sig: TransactionSignature): Array[Byte]
+  def deserializeTransaction(byteString: ByteString): Transaction =
+    new Transaction(network, byteString.toByteArray)
 
-  def deserializeTransaction(bytes: Array[Byte]): Transaction
+  def serialize(sig: TransactionSignature): ByteString = ByteString.copyFrom(sig.encodeToBitcoin())
 
-  def deserializeTransactionSignature(bytes: Array[Byte]): TransactionSignature
+  def serialize(tx: Transaction): ByteString = ByteString.copyFrom(tx.bitcoinSerialize())
 }
 
-object TransactionSerialization {
-  trait Component {
-    def transactionSerialization: TransactionSerialization
-  }
+private object TransactionSerialization {
+  /** Reject deserialization of non-canonical signatures */
+  private val RequireCanonical = true
 }

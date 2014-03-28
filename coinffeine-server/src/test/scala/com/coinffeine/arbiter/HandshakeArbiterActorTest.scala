@@ -11,13 +11,12 @@ import com.coinffeine.common.{PeerConnection, AkkaSpec}
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.network.CoinffeineUnitTestParams
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, ExchangeAborted, EnterExchange}
-import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
-import com.coinffeine.common.network.CoinffeineUnitTestParams
 
 class HandshakeArbiterActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("HandshakeArbiterSystem"))
@@ -37,11 +36,6 @@ class HandshakeArbiterActorTest
         Set(buyer -> buyerTx, seller -> sellerTx).contains(committer -> tx)
     }
 
-    val txSerialization = new FakeTransactionSerialization(
-      transactions = Seq(buyerTx, sellerTx, invalidCommitmentTx),
-      signatures = Seq.empty
-    )
-
     val listener = TestProbe()
     val gateway = TestProbe()
     val blockchain = TestProbe()
@@ -49,7 +43,6 @@ class HandshakeArbiterActorTest
       arbiter = TestCommitmentValidation,
       gateway = gateway.ref,
       blockchain = blockchain.ref,
-      transactionSerialization = txSerialization,
       constants = ProtocolConstants(commitmentAbortTimeout = timeout)
     )))
     listener.watch(arbiter)

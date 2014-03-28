@@ -12,18 +12,16 @@ import org.scalatest.matchers.ShouldMatchers
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
-class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
+class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers with UnitTestNetworkComponent {
 
-  val commitmentTransaction = new Transaction(UnitTestParams.get())
-  val txSerialization = new FakeTransactionSerialization(
-    transactions = Seq(commitmentTransaction),
-    signatures = Seq.empty
-  )
+  val commitmentTransaction = new Transaction(network)
+  val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
 
@@ -88,9 +86,8 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   val enterExchange = EnterExchange(exchangeId = "1234", commitmentTransaction)
   val enterExchangeMessage = msg.EnterExchange.newBuilder()
     .setExchangeId("1234")
-    .setCommitmentTransaction(
-      ByteString.copyFrom(txSerialization.serializeTransaction(commitmentTransaction))
-    ).build()
+    .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
+    .build()
 
   "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchangeMessage)
 

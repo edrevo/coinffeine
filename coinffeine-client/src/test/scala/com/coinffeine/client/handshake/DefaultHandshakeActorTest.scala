@@ -12,7 +12,6 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
-import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -44,18 +43,8 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   override val broker = handshake.exchangeInfo.broker
   val listener = TestProbe()
   val blockchain = TestProbe()
-  val transactionSerialization = new FakeTransactionSerialization(
-    transactions = Seq(
-      handshake.commitmentTransaction,
-      handshake.refundTransaction,
-      handshake.counterpartCommitmentTransaction,
-      handshake.counterpartRefund,
-      handshake.invalidRefundTransaction
-    ),
-    signatures = Seq.empty
-  )
   val actor = system.actorOf(Props(new DefaultHandshakeActor(handshake,
-    gateway.ref, blockchain.ref, transactionSerialization, protocolConstants, Seq(listener.ref))
+    gateway.ref, blockchain.ref, protocolConstants, Seq(listener.ref))
   ), "handshake-actor")
   listener.watch(actor)
 

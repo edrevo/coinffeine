@@ -20,12 +20,10 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Su
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, OfferTransaction, OfferSignature}
 import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
 import com.coinffeine.common.currency.CurrencyCode
-import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
-  val transactionSerialization = new FakeTransactionSerialization(Seq.empty, Seq.empty)
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
@@ -50,7 +48,6 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
       exchangeInfo,
       exchange,
       gateway.ref,
-      transactionSerialization,
       protocolConstants,
       Seq(listener.ref))),
     "buyer-exchange-actor")
