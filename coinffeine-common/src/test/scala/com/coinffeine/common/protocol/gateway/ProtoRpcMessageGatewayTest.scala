@@ -12,6 +12,7 @@ import com.coinffeine.common.protocol.TestClient
 import com.coinffeine.common.protocol.serialization._
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.coinffeine.common.network.UnitTestNetworkComponent
 
 class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   with Eventually with IntegrationPatience {
@@ -88,7 +89,7 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   }
 
   trait FreshGateway extends ProtoRpcMessageGateway.Component
-      with TestProtocolSerializationComponent {
+      with TestProtocolSerializationComponent with UnitTestNetworkComponent {
     val (localPeerAddress, gateway) = createGateway()
     val (remotePeerAddress, remotePeer) = createRemotePeer(localPeerAddress)
     val remotePeerConnection = new PeerConnection(

@@ -2,7 +2,6 @@ package com.coinffeine.client.exchange
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.testkit.TestProbe
 import akka.actor.Props
@@ -16,11 +15,12 @@ import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.paymentprocessor.Payment
-import com.coinffeine.common.protocol.{FakeTransactionSerialization, ProtocolConstants}
+import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, NewOffer, OfferAccepted}
+import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, OfferTransaction, OfferSignature}
 import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
 import com.coinffeine.common.currency.CurrencyCode
+import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -58,8 +58,8 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
 
   "The buyer exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOfferAccepted = OfferAccepted("id", null)
-    val irrelevantOfferAccepted = OfferAccepted("another-id", null)
+    val relevantOfferAccepted = OfferSignature("id", null)
+    val irrelevantOfferAccepted = OfferSignature("another-id", null)
     val anotherPeer = PeerConnection("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
@@ -69,17 +69,17 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
   }
 
   it should "send the first offer as soon as it gets created" in {
-    shouldForward (NewOffer(exchangeInfo.id, exchange.getOffer(1))) to counterpart
+    shouldForward (OfferTransaction(exchangeInfo.id, exchange.getOffer(1))) to counterpart
     gateway.expectNoMsg(100 milliseconds)
   }
 
   it should "respond to offer accepted messages by sending a payment and a new offer until all " +
     "steps have are done" in {
       for (i <- 1 to exchangeInfo.steps) {
-        actor ! fromCounterpart(OfferAccepted(exchangeInfo.id, TransactionSignature.dummy))
+        actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
         if (exchange.mustPay(i)) {
           val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId")
-          val newOfferMsg = NewOffer(exchangeInfo.id, exchange.getOffer(i + 1))
+          val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.getOffer(i + 1))
           shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
         }
         gateway.expectNoMsg(100 milliseconds)

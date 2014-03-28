@@ -112,6 +112,9 @@ message CoinffeineMessage {
     optional ExchangeRejection exchangeRejection = 9;
     optional RefundTxSignatureRequest refundTxSignatureRequest = 10;
     optional RefundTxSignatureResponse refundTxSignatureResponse = 11;
+    optional OfferTransaction offerTransaction = 12;
+    optional OfferSignature offerSignature = 13;
+    optional PaymentProof paymentProof = 14;
 }
 
 service PeerService {

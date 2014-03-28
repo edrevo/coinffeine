@@ -1,4 +1,4 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.serialization
 
 import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature

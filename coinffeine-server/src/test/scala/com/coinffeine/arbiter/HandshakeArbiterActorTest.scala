@@ -1,7 +1,6 @@
 package com.coinffeine.arbiter
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor.Props
 import akka.testkit.TestProbe
@@ -17,12 +16,14 @@ import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, ExchangeAborted, EnterExchange}
+import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
+import com.coinffeine.common.network.CoinffeineUnitTestParams
 
 class HandshakeArbiterActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("HandshakeArbiterSystem"))
   with MockitoSugar {
 
-  class WithTestArbiter(timeout: FiniteDuration = 1 minute) {
+  class WithTestArbiter(timeout: FiniteDuration = 1.minute) {
     val exchangeId: String = "1234"
     val buyer: PeerConnection = PeerConnection("buyer")
     val seller: PeerConnection = PeerConnection("seller")
@@ -70,13 +71,14 @@ class HandshakeArbiterActorTest
 
   "An arbiter" must "subscribe to relevant messages" in new WithTestArbiter {
     val Subscribe(filter) = shouldSubscribeForMessages()
-    val commitmentTransaction = new Array[Byte](0)
+    val commitmentTransaction = new Transaction(CoinffeineUnitTestParams)
     val unknownPeer = PeerConnection("unknownPeer")
 
     val relevantEntrance = EnterExchange(exchangeId, commitmentTransaction)
     filter(ReceiveMessage(relevantEntrance, buyer)) should be (true)
     filter(ReceiveMessage(relevantEntrance, seller)) should be (true)
-    filter(ReceiveMessage(EnterExchange("other exchange", commitmentTransaction), buyer)) should be (false)
+    filter(ReceiveMessage(EnterExchange("other exchange", commitmentTransaction), buyer)) should
+      be (false)
     filter(ReceiveMessage(relevantEntrance, unknownPeer)) should be (false)
 
     filter(ReceiveMessage(ExchangeRejection(exchangeId, "reason"), buyer)) should be (true)
@@ -87,8 +89,8 @@ class HandshakeArbiterActorTest
 
   it must "check TXs, publish them and terminate" in new WithTestArbiter {
     shouldSubscribeForMessages()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx.bitcoinSerialize()), buyer))
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, sellerTx.bitcoinSerialize()), seller))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, sellerTx), seller))
     blockchain.expectMsgAllOf(PublishTransaction(buyerTx), PublishTransaction(sellerTx))
     val notification = CommitmentNotification(exchangeId, buyerTx.getHash, sellerTx.getHash)
     gateway.expectMsgAllOf(
@@ -100,7 +102,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel exchange if a TX is not valid" in new WithTestArbiter {
     shouldSubscribeForMessages()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, invalidCommitmentTx.bitcoinSerialize()), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, invalidCommitmentTx), buyer))
     shouldAbort(s"Invalid commitment from $buyer")
   }
 
@@ -115,7 +117,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel handshake on timeout" in new WithTestArbiter(timeout = 1 second) {
     shouldSubscribeForMessages()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx.bitcoinSerialize()), buyer))
+    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
     gateway.expectNoMsg(100 millis)
     shouldAbort("Timeout waiting for commitments")
   }

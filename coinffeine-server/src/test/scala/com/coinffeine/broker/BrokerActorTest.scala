@@ -1,7 +1,6 @@
 package com.coinffeine.broker
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor._
 import akka.testkit._

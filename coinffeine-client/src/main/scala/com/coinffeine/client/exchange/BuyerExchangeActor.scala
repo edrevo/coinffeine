@@ -5,9 +5,10 @@ import akka.actor._
 import com.coinffeine.client.{MessageForwarding, ExchangeInfo}
 import com.coinffeine.client.exchange.BuyerExchangeActor.ReadyForNextOffer
 import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
-import com.coinffeine.common.protocol.{ProtocolConstants, TransactionSerialization}
+import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange.{NewOffer, OfferAccepted, PaymentProof}
+import com.coinffeine.common.protocol.messages.exchange.{OfferTransaction, OfferSignature, PaymentProof}
+import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -22,7 +23,7 @@ class BuyerExchangeActor(
 
   override def preStart() {
     messageGateway ! Subscribe {
-      case ReceiveMessage(OfferAccepted(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(OfferSignature(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
       case _ => false
     }
     log.info(s"Exchange ${exchangeInfo.id}: Exchange started")
@@ -34,12 +35,12 @@ class BuyerExchangeActor(
   private val readyToOffer: Receive = {
     case ReadyForNextOffer(step) =>
       assert(step < exchangeInfo.steps)
-      forwardToCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(step)))
+      forwardToCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(step)))
       context.become(waitForSignedOffer(step))
   }
 
   private def waitForSignedOffer(step: Int): Receive = {
-    case ReceiveMessage(OfferAccepted(_, signature), _) if exchange.validateSignature(step, signature) =>
+    case ReceiveMessage(OfferSignature(_, signature), _) if exchange.validateSignature(step, signature) =>
       if (exchange.mustPay(step)) {
         import context.dispatcher
         forwardToCounterpart(
@@ -47,7 +48,7 @@ class BuyerExchangeActor(
         self ! ReadyForNextOffer(step + 1)
         context.become(readyToOffer)
       } else finishExchange()
-    case ReceiveMessage(OfferAccepted(_, signature), _) =>
+    case ReceiveMessage(OfferSignature(_, signature), _) =>
       log.warning("OfferAccepted message received with invaild signature. " +
         s"Step: $step, Signature: ${signature.encodeToBitcoin.toSeq} ")
   }

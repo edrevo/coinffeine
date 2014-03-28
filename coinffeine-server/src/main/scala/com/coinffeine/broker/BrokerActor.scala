@@ -2,7 +2,6 @@ package com.coinffeine.broker
 
 import java.util.Currency
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.math.max
 import scala.util.Random
 

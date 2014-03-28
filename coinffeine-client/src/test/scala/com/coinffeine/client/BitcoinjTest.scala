@@ -3,7 +3,6 @@ package com.coinffeine.client
 import java.io.File
 import java.math.BigInteger
 import scala.collection.JavaConversions._
-import scala.language.postfixOps
 import scala.util.Try
 
 import com.google.bitcoin.core._
@@ -18,8 +17,7 @@ import com.coinffeine.common.currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
 abstract class BitcoinjTest extends FlatSpec
-  with ShouldMatchers with BeforeAndAfter with WithSampleExchangeInfo
-  with CoinffeineUnitTestParams.Component {
+  with ShouldMatchers with BeforeAndAfter with WithSampleExchangeInfo {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _

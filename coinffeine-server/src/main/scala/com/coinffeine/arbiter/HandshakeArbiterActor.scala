@@ -12,6 +12,7 @@ import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, EnterExchange, ExchangeAborted}
+import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** A handshake arbiter is an actor able to mediate between buyer and seller to publish
   * commitment transactions at the same time.
@@ -60,8 +61,7 @@ private[arbiter] class HandshakeArbiterActor(
 
   private val waitForCommitments: Receive = {
 
-    case ReceiveMessage(EnterExchange(_, txBytes), committer) =>
-      val tx = transactionSerialization.deserializeTransaction(txBytes) // TODO: what if deserialization fails?
+    case ReceiveMessage(EnterExchange(_, tx), committer) =>
       if (commitments.contains(committer)) logAlreadyCommitted(committer)
       else if (!arbiter.isValidCommitment(committer, tx)) abortOnInvalidCommitment(committer, tx)
       else acceptCommitment(committer, tx)

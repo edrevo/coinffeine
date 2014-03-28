@@ -1,6 +1,5 @@
 package com.coinffeine.client.handshake
 
-import scala.language.postfixOps
 import scala.collection.JavaConversions._
 
 import com.google.bitcoin.core.VerificationException

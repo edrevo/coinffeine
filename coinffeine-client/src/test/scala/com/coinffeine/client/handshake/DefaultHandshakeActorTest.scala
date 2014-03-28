@@ -1,6 +1,5 @@
 package com.coinffeine.client.handshake
 
-import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 import akka.actor.Props
@@ -13,6 +12,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
+import com.coinffeine.common.protocol.serialization.FakeTransactionSerialization
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -60,13 +60,12 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   listener.watch(actor)
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest = RefundTxSignatureRequest(
-      "id", handshake.refundTransaction.bitcoinSerialize())
+    val refundSignatureRequest = RefundTxSignatureRequest("id", handshake.refundTransaction)
     shouldForward (refundSignatureRequest) to counterpart
   }
 
   def shouldSignCounterpartRefund() {
-    val request = RefundTxSignatureRequest("id", handshake.counterpartRefund.bitcoinSerialize())
+    val request = RefundTxSignatureRequest("id", handshake.counterpartRefund)
     gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart))
     val refundSignatureRequest = RefundTxSignatureResponse("id", handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart

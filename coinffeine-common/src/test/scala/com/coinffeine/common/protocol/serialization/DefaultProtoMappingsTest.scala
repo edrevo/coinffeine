@@ -12,16 +12,23 @@ import org.scalatest.matchers.ShouldMatchers
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
-import DefaultProtoMappings._
 
 class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 
-  def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)(implicit mapping: ProtoMapping[T, M]) {
+  val commitmentTransaction = new Transaction(UnitTestParams.get())
+  val txSerialization = new FakeTransactionSerialization(
+    transactions = Seq(commitmentTransaction),
+    signatures = Seq.empty
+  )
+  val testMappings = new DefaultProtoMappings(txSerialization)
+  import testMappings._
+
+  def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
+                                             (implicit mapping: ProtoMapping[T, M]) {
 
     it should "convert the case class into the protobuf message" in {
       ProtoMapping.toProtobuf(obj) should be (msg)
@@ -78,17 +85,14 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
 
-  val commitmentTransaction = new Transaction(UnitTestParams.get())
-  val enterExchange = EnterExchange(
-    exchangeId = "1234",
-    commitmentTransaction.bitcoinSerialize()
-  )
-  val enterExchageMessage = msg.EnterExchange.newBuilder()
+  val enterExchange = EnterExchange(exchangeId = "1234", commitmentTransaction)
+  val enterExchangeMessage = msg.EnterExchange.newBuilder()
     .setExchangeId("1234")
-    .setCommitmentTransaction(ByteString.copyFrom(commitmentTransaction.bitcoinSerialize()))
-    .build()
+    .setCommitmentTransaction(
+      ByteString.copyFrom(txSerialization.serializeTransaction(commitmentTransaction))
+    ).build()
 
-  "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchageMessage)
+  "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchangeMessage)
 
   val exchangeAborted = ExchangeAborted("1234", "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
@@ -109,7 +113,6 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
 
   "Exchange rejection" should behave like thereIsAMappingBetween(
     exchangeRejection, exchangeRejectionMessage)
-
 
   val cancellation = OrderCancellation(EUR.currency)
   val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
@@ -152,10 +155,7 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers {
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
   val refundTx = new Transaction(UnitTestParams.get())
-  val refundTxSignatureRequest = RefundTxSignatureRequest(
-    exchangeId = "1234",
-    refundTx = refundTx.bitcoinSerialize()
-  )
+  val refundTxSignatureRequest = RefundTxSignatureRequest(exchangeId = "1234", refundTx = refundTx)
   val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
     .setExchangeId("1234")
     .setRefundTx(ByteString.copyFrom(refundTx.bitcoinSerialize()))

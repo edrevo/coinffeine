@@ -1,7 +1,6 @@
 package com.coinffeine.client.handshake
 
 import scala.collection.JavaConversions._
-import scala.language.postfixOps
 import scala.util.Try
 
 import com.google.bitcoin.core.{Transaction, Wallet}

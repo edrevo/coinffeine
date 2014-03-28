@@ -6,7 +6,7 @@ organization in ThisBuild := "com.coinffeine"
 
 scalaVersion in ThisBuild := "2.10.3"
 
-scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
+scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature", "-language:postfixOps")
 
 javacOptions in ThisBuild ++= Seq("-source", "1.7")
 

@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, Props}
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.protocol.TransactionSerialization
+import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
   * transaction signed and relying on the broker to publish the commitment TX.

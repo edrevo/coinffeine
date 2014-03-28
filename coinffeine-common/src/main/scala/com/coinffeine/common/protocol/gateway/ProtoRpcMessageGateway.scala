@@ -13,6 +13,7 @@ import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protorpc.{Callbacks, PeerSession, PeerServer}
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
+import com.coinffeine.common.network.NetworkComponent
 
 private[gateway] class ProtoRpcMessageGateway(
    serverInfo: PeerInfo, serialization: ProtocolSerialization) extends Actor {
@@ -97,7 +98,9 @@ object ProtoRpcMessageGateway {
 
   private[protocol] val VoidResponse = proto.Void.newBuilder().build()
 
-  trait Component extends MessageGateway.Component { this: ProtocolSerializationComponent =>
+  trait Component extends MessageGateway.Component {
+    this: ProtocolSerializationComponent with NetworkComponent=>
+
     override def messageGatewayProps(serverInfo: PeerInfo): Props =
       Props(new ProtoRpcMessageGateway(serverInfo, protocolSerialization))
   }

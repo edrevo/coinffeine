@@ -18,7 +18,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   def randomMessageAndSerialization(): (PublicMessage, CoinffeineMessage) = {
     val message = randomMessage()
-    (message, DefaultProtocolSerialization.toProtobuf(message))
+    (message, protocolSerialization.toProtobuf(message))
   }
 
   def randomMessage(): OrderMatch = OrderMatch(

@@ -5,7 +5,7 @@ import scala.util.Try
 import akka.actor.{Props, ActorRef}
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.protocol.TransactionSerialization
+import com.coinffeine.common.protocol.serialization.TransactionSerialization
 
 /** Am exchange actor is in charge of performing each of the exchange steps by sending/receiving
   * bitcoins and fiat

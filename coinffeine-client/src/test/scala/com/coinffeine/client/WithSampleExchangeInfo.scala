@@ -1,14 +1,12 @@
 package com.coinffeine.client
 
-import scala.language.postfixOps
-
 import com.google.bitcoin.core.ECKey
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.network.UnitTestNetworkComponent
 
-trait WithSampleExchangeInfo {
-  this: NetworkComponent =>
+trait WithSampleExchangeInfo extends UnitTestNetworkComponent {
   val sampleExchangeInfo = ExchangeInfo(
     "id",
     PeerConnection("counterpart"),
