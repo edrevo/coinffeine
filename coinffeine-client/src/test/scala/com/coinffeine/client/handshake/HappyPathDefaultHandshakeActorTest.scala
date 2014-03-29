@@ -18,7 +18,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
+    resubmitRefundSignatureTimeout = 1 minute,
     refundSignatureAbortTimeout = 1 minute
   )
 
