@@ -9,7 +9,6 @@ import akka.actor._
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.FiatAmount
-import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.market._
@@ -47,7 +46,6 @@ private[broker] class BrokerActor(
       val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
       book = clearedBook
       crosses.foreach { orderMatch =>
-        notifyOrderMatch(orderMatch)
         context.actorOf(handshakeArbiterProps) ! orderMatch
       }
       crosses.lastOption.foreach { cross => lastPrice = Some(cross.price) }
@@ -63,11 +61,6 @@ private[broker] class BrokerActor(
       book = book.cancelOrder(requester)
 
     case ReceiveTimeout => expireOrders()
-  }
-
-  private def notifyOrderMatch(orderMatch: OrderMatch): Unit = {
-    gateway ! ForwardMessage(orderMatch, orderMatch.buyer)
-    gateway ! ForwardMessage(orderMatch, orderMatch.seller)
   }
 
   private def setExpirationFor(requester: PeerConnection): Unit = {
