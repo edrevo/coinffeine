@@ -1,4 +1,4 @@
-package com.coinffeine.client
+package com.coinffeine.common.network
 
 import com.google.bitcoin.params.UnitTestParams
 

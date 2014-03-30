@@ -1,16 +1,18 @@
 package com.coinffeine.common.protocol
 
-import java.util.Currency
-import scala.concurrent._
-
 import com.google.protobuf.{Message => ProtoMessage, RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 import com.coinffeine.common.protorpc.{PeerSession, PeerServer}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.protocol.serialization.ProtocolSerialization
 
-class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interface {
+class TestClient(
+    port: Int,
+    serverInfo: PeerInfo,
+    serialization: ProtocolSerialization) extends msg.PeerService.Interface {
   val info = new PeerInfo("localhost", port)
   val connection = PeerConnection(info.getHostName, port)
   var sessionOption: Option[PeerSession] = None
@@ -25,81 +27,31 @@ class TestClient(port: Int, serverInfo: PeerInfo) extends msg.PeerService.Interf
 
   def receivedMessagesNumber: Int = receivedMessages.size
 
-  def shutdown() {
+  def shutdown(): Unit = {
     disconnect()
     server.shutdown()
   }
 
-  def connectToServer() {
+  def connectToServer(): Unit = {
     sessionOption = Some(server.peerWith(serverInfo).get)
   }
 
-  def disconnect() {
+  def disconnect(): Unit = {
     sessionOption.foreach(_.close())
     sessionOption = None
   }
 
-  def placeOrder(order: msg.Order): msg.OrderResponse = {
+  def sendMessage(message: PublicMessage): Unit = {
     val session = sessionOption.get
-    val stub = msg.BrokerService.newBlockingStub(session.channel)
-    stub.placeOrder(session.controller, order)
+    val stub = msg.PeerService.newBlockingStub(session.channel)
+    stub.sendMessage(session.controller, serialization.toProtobuf(message))
   }
 
-  def requestQuote(currency: Currency): Future[msg.QuoteResponse] = {
-    val session = sessionOption.get
-    val stub = msg.BrokerService.newStub(session.channel)
-    val request = msg.QuoteRequest.newBuilder.setCurrency(currency.getCurrencyCode).build()
-    val promise = Promise[msg.QuoteResponse]()
-    stub.requestQuote(session.controller, request, new RpcCallback[msg.QuoteResponse] {
-      override def run(response: msg.QuoteResponse) { promise.success(response) }
-    })
-    promise.future
-  }
-
-  def notifyOrderMatch(request: msg.OrderMatch): Future[msg.Void] = {
-    val session = sessionOption.get
-    val stub = msg.PeerService.newStub(session.channel)
-    val promise = Promise[msg.Void]()
-    stub.notifyMatch(session.controller, request, new RpcCallback[msg.Void] {
-      def run(parameter: msg.Void) { promise.success(msg.Void.newBuilder().build())}
-    })
-    promise.future
-  }
-
-  override def notifyMatch(c: RpcController, request: msg.OrderMatch, done: RpcCallback[msg.Void]) {
+  override def sendMessage(
+      c: RpcController, request: msg.CoinffeineMessage, done: RpcCallback[msg.Void]): Unit = {
     synchronized {
       receivedMessages_ = receivedMessages_ :+ request
     }
     done.run(msg.Void.getDefaultInstance)
   }
-
-  override def submitTxRefundSignature(
-      c: RpcController,
-      request: msg.RefundTxSignatureResponse,
-      done: RpcCallback[msg.Void]): Unit = ???
-
-  override def requestTxRefundSignature(
-      c: RpcController,
-      request: msg.RefundTxSignatureRequest,
-      done: RpcCallback[msg.Void]): Unit = ???
-
-  override def rejectExchange(
-      c: RpcController,
-      request: msg.ExchangeRejection,
-      done: RpcCallback[msg.Void]): Unit = ???
-
-  override def notifyCommitment(
-      c: RpcController,
-      request: msg.CommitmentNotification,
-      done: RpcCallback[msg.Void]): Unit = ???
-
-  override def beginExchange(
-      c: RpcController,
-      request: msg.EnterExchange,
-      done: RpcCallback[msg.Void]): Unit = ???
-
-  override def abortExchange(
-      c: RpcController,
-      request: msg.ExchangeAborted,
-      done: RpcCallback[msg.Void]): Unit = ???
 }

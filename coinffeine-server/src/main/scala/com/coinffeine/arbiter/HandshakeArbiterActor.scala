@@ -8,7 +8,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.MessageSend
+import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, EnterExchange, ExchangeAborted}
@@ -20,7 +20,6 @@ private[arbiter] class HandshakeArbiterActor(
     arbiter: CommitmentValidation,
     gateway: ActorRef,
     blockchain: ActorRef,
-    transactionSerialization: TransactionSerialization,
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -29,7 +28,7 @@ private[arbiter] class HandshakeArbiterActor(
   private var commitments = Map.empty[PeerConnection, Transaction]
   private var orderMatch: OrderMatch = null
 
-  override def postStop() { timeout.foreach(_.cancel()) }
+  override def postStop(): Unit = timeout.foreach(_.cancel())
 
   override def receive: Receive = {
     case initializationMessage: OrderMatch =>
@@ -39,7 +38,7 @@ private[arbiter] class HandshakeArbiterActor(
       context.become(waitForCommitments)
   }
 
-  private def subscribeToMessages() {
+  private def subscribeToMessages(): Unit = {
     val id = orderMatch.exchangeId
     gateway ! Subscribe {
       case ReceiveMessage(EnterExchange(`id`, _), requester)
@@ -50,7 +49,7 @@ private[arbiter] class HandshakeArbiterActor(
     }
   }
 
-  private def scheduleAbortTimeout() {
+  private def scheduleAbortTimeout(): Unit = {
     timeout = Some(context.system.scheduler.scheduleOnce(
       delay = constants.commitmentAbortTimeout,
       receiver = self,
@@ -60,8 +59,7 @@ private[arbiter] class HandshakeArbiterActor(
 
   private val waitForCommitments: Receive = {
 
-    case ReceiveMessage(EnterExchange(_, txBytes), committer) =>
-      val tx = transactionSerialization.deserializeTransaction(txBytes) // TODO: what if deserialization fails?
+    case ReceiveMessage(EnterExchange(_, tx), committer) =>
       if (commitments.contains(committer)) logAlreadyCommitted(committer)
       else if (!arbiter.isValidCommitment(committer, tx)) abortOnInvalidCommitment(committer, tx)
       else acceptCommitment(committer, tx)
@@ -78,19 +76,19 @@ private[arbiter] class HandshakeArbiterActor(
       self ! PoisonPill
   }
 
-  private def logAlreadyCommitted(committer: PeerConnection) {
+  private def logAlreadyCommitted(committer: PeerConnection): Unit = {
     log.warning("Exchange {}: dropping TX from {} as he has already committed one",
       orderMatch.exchangeId, committer)
   }
 
-  private def abortOnInvalidCommitment(committer: PeerConnection, tx: Transaction) {
+  private def abortOnInvalidCommitment(committer: PeerConnection, tx: Transaction): Unit = {
     log.error("Exchange {}: aborting due to invalid TX from {}: {}",
       orderMatch.exchangeId, committer, tx)
     notifyParticipants(ExchangeAborted(orderMatch.exchangeId, s"Invalid commitment from $committer"))
     self ! PoisonPill
   }
 
-  private def acceptCommitment(committer: PeerConnection, tx: Transaction) {
+  private def acceptCommitment(committer: PeerConnection, tx: Transaction): Unit = {
     commitments += committer -> tx
     if (commitments.keySet == orderMatch.participants) {
       publishTransactions()
@@ -99,11 +97,10 @@ private[arbiter] class HandshakeArbiterActor(
     }
   }
 
-  private def publishTransactions() {
+  private def publishTransactions(): Unit =
     commitments.values.foreach(blockchain ! PublishTransaction(_))
-  }
 
-  private def notifyCommitment() {
+  private def notifyCommitment(): Unit = {
     notifyParticipants(CommitmentNotification(
       orderMatch.exchangeId,
       commitments(orderMatch.buyer).getHash,
@@ -111,18 +108,18 @@ private[arbiter] class HandshakeArbiterActor(
     ))
   }
 
-  private def notifyParticipants[T: MessageSend](notification: T) {
+  private def notifyParticipants(notification: PublicMessage): Unit =
     orderMatch.participants.foreach { p => gateway ! ForwardMessage(notification, p) }
-  }
 }
 
 object HandshakeArbiterActor {
-  trait Component { this: ProtocolConstants.Component with TransactionSerialization.Component =>
+  trait Component { this: ProtocolConstants.Component =>
     def handshakeArbiterActor(
         arbiter: CommitmentValidation,
         gateway: ActorRef,
         blockchain: ActorRef) = Props(new HandshakeArbiterActor(
-      arbiter, gateway, blockchain, transactionSerialization, protocolConstants))
+      arbiter, gateway, blockchain, protocolConstants
+    ))
   }
 
   private case object AbortTimeout

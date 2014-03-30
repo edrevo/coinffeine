@@ -1,7 +1,5 @@
 package com.coinffeine.client
 
-import scala.language.postfixOps
-
 import com.google.bitcoin.core.{ECKey, NetworkParameters}
 
 import com.coinffeine.common.PeerConnection
@@ -10,7 +8,7 @@ import com.coinffeine.common.currency.Implicits._
 
 /** A value class that contains all the necessary information relative to an exchange between
   * two peers
-  * 
+  *
   * @param id An identifier for the exchange
   * @param counterpart Connection parameters to the counterpart of the exchange
   * @param broker Connection parameters to one of the Coinffeine brokers

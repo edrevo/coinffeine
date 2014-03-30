@@ -4,17 +4,14 @@ import akka.actor.Props
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.protocol.messages.MessageSend
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 object MessageGateway {
 
   /** A message sent in order to forward another message to a given destination. */
-  case class ForwardMessage[T : MessageSend](msg: T, dest: PeerConnection) {
+  case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerConnection)
 
-    val send = implicitly[MessageSend[T]]
-  }
-
-  type Filter = ReceiveMessage => Boolean
+  type Filter = ReceiveMessage[_ <: PublicMessage] => Boolean
 
   /** A message sent in order to subscribe for incoming messages.
     *
@@ -29,7 +26,7 @@ object MessageGateway {
   case object Unsubscribe
 
   /** A message send back to the subscriber. */
-  case class ReceiveMessage(msg: Any, sender: PeerConnection)
+  case class ReceiveMessage[M <: PublicMessage](msg: M, sender: PeerConnection)
 
   /** An exception thrown when an error is found on message forward. */
   case class ForwardException(message: String, cause: Throwable = null)

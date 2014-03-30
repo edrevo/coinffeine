@@ -5,7 +5,7 @@ import scala.annotation.tailrec
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
+import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid, OrderMatch}
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook(

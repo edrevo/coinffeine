@@ -5,7 +5,7 @@ import org.scalatest.matchers.MustMatchers
 
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.protocol.{Order, Ask, Bid}
+import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid}
 
 class OrderTest extends FlatSpec with MustMatchers {
 

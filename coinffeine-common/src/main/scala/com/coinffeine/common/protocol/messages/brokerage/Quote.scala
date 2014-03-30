@@ -4,13 +4,12 @@ import java.util.Currency
 
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.Spread
-import com.coinffeine.common.protocol.messages.MessageSend
-import com.coinffeine.common.protorpc.PeerSession
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class Quote(
     currency: Currency,
     spread: Spread = (None, None),
-    lastPrice: Option[FiatAmount] = None) {
+    lastPrice: Option[FiatAmount] = None) extends PublicMessage {
   requireCurrency(spread._1)
   requireCurrency(spread._2)
   requireCurrency(lastPrice)
@@ -37,8 +36,4 @@ object Quote {
     spread = Some(spread._1) -> Some(spread._2),
     lastPrice = Some(lastPrice)
   )
-
-  implicit val Write = new MessageSend[Quote] {
-    override def sendAsProto(msg: Quote, session: PeerSession) = ???
-  }
 }

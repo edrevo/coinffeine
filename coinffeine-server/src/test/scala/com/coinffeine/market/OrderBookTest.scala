@@ -7,7 +7,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
+import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid, OrderMatch}
 
 class OrderBookTest extends FlatSpec with MustMatchers {
 

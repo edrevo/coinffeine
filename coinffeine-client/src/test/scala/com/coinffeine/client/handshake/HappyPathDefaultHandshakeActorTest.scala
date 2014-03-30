@@ -1,7 +1,6 @@
 package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.Success
 
 import com.google.bitcoin.core.Sha256Hash
@@ -19,16 +18,15 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
+    resubmitRefundSignatureTimeout = 1 minute,
     refundSignatureAbortTimeout = 1 minute
   )
 
   "Handshake happy path" should "start with a subscription to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantSignatureRequest = RefundTxSignatureRequest(
-      "id", handshake.counterpartRefund.bitcoinSerialize())
+    val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest("other-id", handshake.counterpartRefund.bitcoinSerialize())
+      RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
@@ -44,8 +42,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
-    val invalidRequest = RefundTxSignatureRequest(
-      "id", handshake.invalidRefundTransaction.bitcoinSerialize())
+    val invalidRequest = RefundTxSignatureRequest("id", handshake.invalidRefundTransaction)
     gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart))
     gateway.expectNoMsg(100 millis)
   }
@@ -61,7 +58,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForward (EnterExchange("id", handshake.commitmentTransaction.bitcoinSerialize())) to broker
+    shouldForward (EnterExchange("id", handshake.commitmentTransaction)) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {

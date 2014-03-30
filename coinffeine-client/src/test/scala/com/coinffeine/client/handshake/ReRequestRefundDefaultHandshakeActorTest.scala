@@ -1,7 +1,6 @@
 package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.Subscribe

@@ -1,6 +1,7 @@
-package com.coinffeine.common.protocol
+package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 sealed trait OrderType
 
@@ -11,7 +12,7 @@ case object Bid extends OrderType
 case object Ask extends OrderType
 
 /** Request for an interchange. */
-case class Order(orderType: OrderType, amount: BtcAmount, price: FiatAmount) {
+case class Order(orderType: OrderType, amount: BtcAmount, price: FiatAmount) extends PublicMessage {
   require(amount.amount > 0, "Amount ordered must be strictly positive")
   require(price.amount > 0, "Price must be strictly positive")
 }

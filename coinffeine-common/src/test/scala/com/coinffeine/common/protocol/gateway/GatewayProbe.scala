@@ -6,6 +6,7 @@ import org.scalatest.Assertions
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** Probe specialized on mocking a MessageGateway. */
 class GatewayProbe(implicit system: ActorSystem) extends Assertions {
@@ -33,7 +34,7 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
   }
 
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: Any, origin: PeerConnection): Unit = {
+  def relayMessage(message: PublicMessage, origin: PeerConnection): Unit = {
     val notification = ReceiveMessage(message, origin)
     val targets = for {
       (ref, filters) <- subscriptions.toSet

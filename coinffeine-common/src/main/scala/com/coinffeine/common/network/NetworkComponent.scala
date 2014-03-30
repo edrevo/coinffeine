@@ -1,7 +1,7 @@
-package com.coinffeine.client
+package com.coinffeine.common.network
 
 import com.google.bitcoin.core.NetworkParameters
 
 trait NetworkComponent {
-  val network: NetworkParameters
+  def network: NetworkParameters
 }

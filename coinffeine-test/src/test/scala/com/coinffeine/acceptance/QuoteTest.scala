@@ -2,8 +2,7 @@ package com.coinffeine.acceptance
 
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.protocol.{Ask, Bid, Order}
-import com.coinffeine.common.protocol.messages.brokerage.Quote
+import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid, Quote}
 
 class QuoteTest extends AcceptanceTest {
 

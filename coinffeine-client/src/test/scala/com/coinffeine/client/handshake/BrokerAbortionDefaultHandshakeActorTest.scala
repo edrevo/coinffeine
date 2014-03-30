@@ -1,7 +1,6 @@
 package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.protocol.ProtocolConstants

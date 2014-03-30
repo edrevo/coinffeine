@@ -2,7 +2,6 @@ package com.coinffeine.server
 
 import java.net.BindException
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor._
 import akka.actor.SupervisorStrategy.{Restart, Stop}

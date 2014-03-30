@@ -29,14 +29,6 @@ message Order {
     required FiatAmount price = 3;
 }
 
-message OrderResponse {
-    enum Result {
-        SUCCESS = 0;
-        CURRENCY_NOT_TRADED = 1;
-    }
-    required Result result = 1;
-}
-
 message OrderCancellation {
     required string currency = 1;
 }
@@ -50,17 +42,6 @@ message Quote {
     optional FiatAmount highestBid = 2;
     optional FiatAmount lowestAsk = 3;
     optional FiatAmount lastPrice = 4;
-}
-
-message QuoteResponse {
-    enum Result {
-        FOUND_QUOTE = 1;
-        CURRENCY_NOT_TRADED = 2;
-        UNKNOWN_CURRENCY = 3;
-        TIMEOUT = 4;
-    }
-    required Result result = 1;
-    optional Quote quote = 2;
 }
 
 message OrderMatch {
@@ -102,19 +83,40 @@ message EnterExchange {
     required bytes commitmentTransaction = 2;
 }
 
-service BrokerService {
-    rpc RequestQuote (QuoteRequest) returns (QuoteResponse);
-    rpc PlaceOrder (Order) returns (OrderResponse);
+message OfferTransaction {
+    required string exchangeId = 1;
+    required bytes transaction = 2;
+}
+
+message OfferSignature {
+    required string exchangeId = 1;
+    required bytes transactionSignature = 2;
+}
+
+message PaymentProof {
+    required string exchangeId = 1;
+    required string paymentId = 2;
 }
 
 message Void {}
 
+message CoinffeineMessage {
+    optional ExchangeAborted exchangeAborted = 1;
+    optional EnterExchange enterExchange = 2;
+    optional CommitmentNotification commitmentNotification = 3;
+    optional OrderMatch orderMatch = 4;
+    optional Order order = 5;
+    optional OrderCancellation orderCancellation = 6;
+    optional QuoteRequest quoteRequest = 7;
+    optional Quote quote = 8;
+    optional ExchangeRejection exchangeRejection = 9;
+    optional RefundTxSignatureRequest refundTxSignatureRequest = 10;
+    optional RefundTxSignatureResponse refundTxSignatureResponse = 11;
+    optional OfferTransaction offerTransaction = 12;
+    optional OfferSignature offerSignature = 13;
+    optional PaymentProof paymentProof = 14;
+}
+
 service PeerService {
-    rpc AbortExchange (ExchangeAborted) returns (Void);
-    rpc BeginExchange (EnterExchange) returns (Void);
-    rpc NotifyCommitment (CommitmentNotification) returns (Void);
-    rpc NotifyMatch (OrderMatch) returns (Void);
-    rpc RejectExchange (ExchangeRejection) returns (Void);
-    rpc RequestTxRefundSignature (RefundTxSignatureRequest) returns (Void);
-    rpc SubmitTxRefundSignature (RefundTxSignatureResponse) returns (Void);
+    rpc SendMessage(CoinffeineMessage) returns (Void);
 }
