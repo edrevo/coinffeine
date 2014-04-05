@@ -3,23 +3,23 @@ package com.coinffeine.client.exchange
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.testkit.TestProbe
 import akka.actor.Props
+import akka.testkit.TestProbe
 import com.google.bitcoin.core.{ECKey, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
+import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, OfferTransaction, OfferSignature}
 import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
-import com.coinffeine.common.currency.CurrencyCode
+import com.coinffeine.common.protocol.messages.exchange.{OfferSignature, OfferTransaction, PaymentProof}
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -51,16 +51,14 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(
-    Props(new BuyerExchangeActor(
-      exchangeInfo,
-      exchange,
-      gateway.ref,
-      protocolConstants,
-      Seq(listener.ref))),
-    "buyer-exchange-actor")
-    listener.watch(actor)
+    Props(new BuyerExchangeActor(exchange, protocolConstants)),
+    "buyer-exchange-actor"
+  )
+  listener.watch(actor)
 
-  "The buyer exchange actor" should "subscribe to the relevant messages" in {
+  "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
+    gateway.expectNoMsg()
+    actor ! StartExchange(exchangeInfo, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val relevantOfferAccepted = OfferSignature("id", TransactionSignature.dummy())
     val irrelevantOfferAccepted = OfferSignature("another-id", TransactionSignature.dummy())
@@ -72,7 +70,7 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 
-  it should "send the first offer as soon as it gets created" in {
+  it should "send the first offer as soon as it gets initialized" in {
     shouldForward (OfferTransaction(exchangeInfo.id, exchange.getOffer(1))) to counterpart
     gateway.expectNoMsg(100 milliseconds)
   }

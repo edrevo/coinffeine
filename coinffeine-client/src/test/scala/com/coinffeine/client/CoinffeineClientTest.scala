@@ -1,13 +1,13 @@
 package com.coinffeine.client
 
-import akka.testkit.TestProbe
+import akka.testkit.{ImplicitSender, TestProbe}
 
-import com.coinffeine.common.{PeerConnection, AkkaSpec}
+import com.coinffeine.common.{AkkaSpec, PeerConnection}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with WithSampleExchangeInfo {
+  extends AkkaSpec(systemName) with WithSampleExchangeInfo with ImplicitSender {
 
   val gateway = TestProbe()
   val counterpart: PeerConnection
