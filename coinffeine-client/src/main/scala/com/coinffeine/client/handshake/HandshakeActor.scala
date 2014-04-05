@@ -10,6 +10,19 @@ import com.google.bitcoin.crypto.TransactionSignature
   * transaction signed and relying on the broker to publish the commitment TX.
   */
 object HandshakeActor {
+
+  /** Sent to the actor to start the handshake
+    *
+    * @constructor
+    * @param messageGateway   Communications gateway
+    * @param blockchain       Actor to ask for TX confirmations for
+    * @param resultListeners  Actors to be notified of the handshake result
+    */
+  case class StartHandshake(
+      messageGateway: ActorRef,
+      blockchain: ActorRef,
+      resultListeners: Set[ActorRef])
+
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
@@ -31,15 +44,8 @@ object HandshakeActor {
     /** Create the properties of a handshake actor.
       *
       * @param handshake        Class that contains the logic to perform the handshake
-      * @param messageGateway           Communications gateway
-      * @param blockchain               Actor to ask for TX confirmations for
-      * @param resultListeners          Actors to be notified of the handshake result
-      * @return                         Actor properties
+      * @return                 Actor properties
       */
-    def handshakeActorProps(
-        handshake: Handshake,
-        messageGateway: ActorRef,
-        blockchain: ActorRef,
-        resultListeners: Seq[ActorRef]): Props
+    def handshakeActorProps(handshake: Handshake): Props
   }
 }

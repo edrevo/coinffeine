@@ -12,6 +12,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
+import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -43,17 +44,19 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   override val broker = handshake.exchangeInfo.broker
   val listener = TestProbe()
   val blockchain = TestProbe()
-  val actor = system.actorOf(Props(new DefaultHandshakeActor(handshake,
-    gateway.ref, blockchain.ref, protocolConstants, Seq(listener.ref))
-  ), "handshake-actor")
+  val actor = system.actorOf(
+    Props(new DefaultHandshakeActor(handshake, protocolConstants)), "handshake-actor")
   listener.watch(actor)
+
+  def givenActorIsInitialized(): Unit =
+    actor ! StartHandshake(gateway.ref, blockchain.ref, Set(listener.ref))
 
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest = RefundTxSignatureRequest("id", handshake.refundTransaction)
     shouldForward (refundSignatureRequest) to counterpart
   }
 
-  def shouldSignCounterpartRefund() {
+  def shouldSignCounterpartRefund(): Unit = {
     val request = RefundTxSignatureRequest("id", handshake.counterpartRefund)
     gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart))
     val refundSignatureRequest = RefundTxSignatureResponse("id", handshake.counterpartRefundSignature)

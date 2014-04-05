@@ -18,6 +18,7 @@ class RefundUnsignedDefaultHandshakeActorTest
   )
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
+    givenActorIsInitialized()
     val result = listener.expectMsgClass(classOf[HandshakeResult]).refundSig
     result should be ('failure)
     listener.expectTerminated(actor)
