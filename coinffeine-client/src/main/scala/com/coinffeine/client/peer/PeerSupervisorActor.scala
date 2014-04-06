@@ -1,25 +1,35 @@
 package com.coinffeine.client.peer
 
 import akka.actor._
-
-import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
+import com.coinffeine.client.peer.PeerActor.JoinNetwork
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol.gateway.MessageGateway
+import com.coinffeine.common.protocol.gateway.MessageGateway.{BindingError, Bind}
 
 /** Topmost actor on a peer node. It starts all the relevant actors like the peer actor and
   * the message gateway and supervise them.
   */
 class PeerSupervisorActor(
+    address: PeerInfo,
+    brokerAddress: PeerConnection,
     gatewayProps: Props,
-    peerProps: ActorRef => Props
+    peerProps: Props
   ) extends Actor with ActorLogging {
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
-  val peerRef = context.actorOf(peerProps(gatewayRef), "peer")
+  val peerRef = context.actorOf(peerProps, "peer")
+
+  override def preStart(): Unit = {
+    gatewayRef ! Bind(address)
+    peerRef ! JoinNetwork(gatewayRef, brokerAddress)
+  }
 
   override def receive: Receive = {
-    case _ =>
+    case BindingError(cause) =>
+      log.error(cause, "Cannot start peer")
+      self ! PoisonPill
   }
 }
 
@@ -29,8 +39,10 @@ object PeerSupervisorActor {
 
     def peerSupervisorProps(port: Int, brokerAddress: PeerConnection): Props =
       Props(new PeerSupervisorActor(
-        gatewayProps = messageGatewayProps(new PeerInfo("localhost", port)),
-        peerProps = _ => peerActorProps
+        new PeerInfo("localhost", port),
+        brokerAddress,
+        gatewayProps = messageGatewayProps,
+        peerProps = peerActorProps
       ))
   }
 }

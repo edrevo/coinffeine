@@ -8,6 +8,11 @@ import com.coinffeine.common.protocol.messages.PublicMessage
 
 object MessageGateway {
 
+  /** Initialization message for the gateway. */
+  case class Bind(address: PeerInfo)
+  case class BoundTo(address: PeerInfo)
+  case class BindingError(cause: Throwable)
+
   /** A message sent in order to forward another message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerConnection)
 
@@ -33,6 +38,6 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-    def messageGatewayProps(serverInfo: PeerInfo): Props
+    def messageGatewayProps: Props
   }
 }

@@ -10,8 +10,12 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.coinffeine.broker.BrokerActor
 import com.coinffeine.common.currency.CurrencyCode._
 import com.coinffeine.common.protocol.gateway.MessageGateway
+import com.coinffeine.common.protocol.gateway.MessageGateway.{BindingError, Bind}
 
-class BrokerSupervisorActor(gatewayProps: Props, brokerProps: ActorRef => Seq[Props]) extends Actor {
+class BrokerSupervisorActor(
+    serverInfo: PeerInfo,
+    gatewayProps: Props,
+    brokerProps: ActorRef => Seq[Props]) extends Actor {
 
   private val gateway = context.actorOf(gatewayProps)
   private val brokers = brokerProps(gateway).map(props => context.actorOf(props))
@@ -22,10 +26,13 @@ class BrokerSupervisorActor(gatewayProps: Props, brokerProps: ActorRef => Seq[Pr
       case _ => Restart
     }
 
-  override def preStart(): Unit = context.watch(gateway)
+  override def preStart(): Unit = {
+    context.watch(gateway)
+    gateway ! Bind(serverInfo)
+  }
 
   val receive: Receive = {
-    case Terminated(`gateway`) => self ! PoisonPill
+    case BindingError(_) | Terminated(`gateway`) => self ! PoisonPill
   }
 }
 
@@ -38,7 +45,7 @@ object BrokerSupervisorActor {
 
     def brokerSupervisorProps(port: Int): Props = {
       val serverInfo = new PeerInfo(ListenAddress, port)
-      Props(new BrokerSupervisorActor(messageGatewayProps(serverInfo), brokerProps))
+      Props(new BrokerSupervisorActor(serverInfo, messageGatewayProps, brokerProps))
     }
 
     private def brokerProps(gateway: ActorRef): Seq[Props] = for {

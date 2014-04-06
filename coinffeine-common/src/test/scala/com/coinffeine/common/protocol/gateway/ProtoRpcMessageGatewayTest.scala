@@ -11,7 +11,7 @@ import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection, AkkaSpec}
 import com.coinffeine.common.protocol.TestClient
 import com.coinffeine.common.protocol.serialization._
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.coinffeine.common.protocol.gateway.MessageGateway.{BoundTo, Bind, ReceiveMessage}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 
 class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
@@ -98,16 +98,22 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
 
     private def createGateway(): (PeerInfo, ActorRef) = {
       val peerInfo = allocateLocalPeerInfo()
+      val ref = system.actorOf(messageGatewayProps)
       eventually {
-        (peerInfo, system.actorOf(messageGatewayProps(peerInfo)))
+        ref ! Bind(peerInfo)
+        expectMsg(BoundTo(peerInfo))
       }
+      (peerInfo, ref)
     }
 
     private def createGatewayTestActor: TestActorRef[ProtoRpcMessageGateway] = {
       val peerInfo = allocateLocalPeerInfo()
+      val ref = TestActorRef(new ProtoRpcMessageGateway(protocolSerialization))
       eventually {
-        TestActorRef(new ProtoRpcMessageGateway(peerInfo, protocolSerialization))
+        ref ! Bind(peerInfo)
+        expectMsg(BoundTo(peerInfo))
       }
+      ref
     }
 
     private def createRemotePeer(localPeerAddress: PeerInfo): (PeerInfo, TestClient) = {
