@@ -9,6 +9,7 @@ import com.coinffeine.acceptance.broker.TestBrokerComponent
 import com.coinffeine.acceptance.peer.TestPeerComponent
 import com.coinffeine.common.matchers.FutureMatchers
 import com.coinffeine.common.network.NetworkComponent
+import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Base trait for acceptance testing that includes a test fixture */
 trait AcceptanceTest extends fixture.FeatureSpec
@@ -17,8 +18,11 @@ trait AcceptanceTest extends fixture.FeatureSpec
   with FutureMatchers
   with ShouldMatchers {
 
-  class TestComponent extends TestPeerComponent with TestBrokerComponent with NetworkComponent {
+  class TestComponent extends TestPeerComponent
+    with TestBrokerComponent with NetworkComponent with ProtocolConstants.Component {
+
     override lazy val network = TestNet3Params.get()
+    override val protocolConstants = ProtocolConstants.DefaultConstants
   }
 
   override type FixtureParam = TestComponent
