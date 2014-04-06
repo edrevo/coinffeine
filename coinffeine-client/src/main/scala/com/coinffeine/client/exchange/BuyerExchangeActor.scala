@@ -3,7 +3,7 @@ package com.coinffeine.client.exchange
 import akka.actor._
 
 import com.coinffeine.client.{MessageForwarding, ExchangeInfo}
-import com.coinffeine.client.exchange.BuyerExchangeActor.ReadyForNextOffer
+import com.coinffeine.client.exchange.BuyerExchangeActor.{ReadyForFinalOffer, ReadyForNextOffer}
 import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -30,31 +30,39 @@ class BuyerExchangeActor(
 
   override def receive: Receive = readyToOffer
 
+  private val waitForSignedFinalOffer: Receive = {
+    case ReceiveMessage(OfferSignature(_, signature), _)
+      if exchange.validateFinalSignature(signature) =>
+      log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
+      // TODO: Publish transaction to blockchain
+      listeners.foreach { _ ! ExchangeSuccess }
+      self ! PoisonPill
+  }
+
   private val readyToOffer: Receive = {
     case ReadyForNextOffer(step) =>
-      assert(step < exchangeInfo.steps)
+      assert(step <= exchangeInfo.steps)
       forwardToCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(step)))
       context.become(waitForSignedOffer(step))
+    case ReadyForFinalOffer =>
+      forwardToCounterpart(OfferTransaction(exchangeInfo.id, exchange.finalOffer))
+      context.become(waitForSignedFinalOffer)
   }
 
   private def waitForSignedOffer(step: Int): Receive = {
-    case ReceiveMessage(OfferSignature(_, signature), _) if exchange.validateSignature(step, signature) =>
-      if (exchange.mustPay(step)) {
+    case ReceiveMessage(OfferSignature(_, signature), _)
+      if exchange.validateSignature(step, signature) =>
         import context.dispatcher
         forwardToCounterpart(
           exchange.pay(step).map(payment => PaymentProof(exchangeInfo.id, payment.id)))
-        self ! ReadyForNextOffer(step + 1)
+        if (step == exchangeInfo.steps)
+          self ! ReadyForFinalOffer
+        else
+          self ! ReadyForNextOffer(step + 1)
         context.become(readyToOffer)
-      } else finishExchange()
     case ReceiveMessage(OfferSignature(_, signature), _) =>
-      log.warning("OfferAccepted message received with invaild signature. " +
+      log.warning("OfferAccepted message received with invalid signature. " +
         s"Step: $step, Signature: ${signature.encodeToBitcoin.toSeq} ")
-  }
-
-  private def finishExchange(): Unit = {
-    log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
-    listeners.foreach { _ ! ExchangeSuccess }
-    self ! PoisonPill
   }
 }
 
@@ -69,4 +77,6 @@ object BuyerExchangeActor {
   }
 
   private case class ReadyForNextOffer(index: Int)
+  private case object ReadyForFinalOffer
+
 }
