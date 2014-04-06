@@ -36,7 +36,7 @@ class BuyerExchangeActor(
       log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
       // TODO: Publish transaction to blockchain
       listeners.foreach { _ ! ExchangeSuccess }
-      self ! PoisonPill
+      context.stop(self)
   }
 
   private val readyToOffer: Receive = {

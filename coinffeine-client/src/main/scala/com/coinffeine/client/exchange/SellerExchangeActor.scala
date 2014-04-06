@@ -1,6 +1,6 @@
 package com.coinffeine.client.exchange
 
-import akka.actor.{PoisonPill, ActorRef, ActorLogging, Actor}
+import akka.actor.{ActorRef, ActorLogging, Actor}
 
 import com.coinffeine.client.{ExchangeInfo, MessageForwarding}
 import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
@@ -63,6 +63,6 @@ class SellerExchangeActor(
   private def finishExchange(): Unit = {
     log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
     listeners.foreach { _ ! ExchangeSuccess }
-    self ! PoisonPill
+    context.stop(self)
   }
 }
