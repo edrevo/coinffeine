@@ -33,6 +33,8 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     case message @ ForwardMessage(`payload`, `dest`) => message
   }
 
+  def expectNoMsg(): Unit = probe.expectNoMsg()
+
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
   def relayMessage(message: PublicMessage, origin: PeerConnection): Unit = {
     val notification = ReceiveMessage(message, origin)

@@ -30,7 +30,7 @@ object PeerSupervisorActor {
     def peerSupervisorProps(port: Int, brokerAddress: PeerConnection): Props =
       Props(new PeerSupervisorActor(
         gatewayProps = messageGatewayProps(new PeerInfo("localhost", port)),
-        peerProps = gateway => peerActorProps(gateway, brokerAddress)
+        peerProps = _ => peerActorProps
       ))
   }
 }
