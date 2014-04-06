@@ -37,10 +37,14 @@ class BrokerActorTest
       gateway.send(broker, ReceiveMessage(QuoteRequest(EUR.currency), quoteRequester))
       gateway.expectMsg(ForwardMessage(expectedQuote, quoteRequester))
     }
+
+    def shouldSubscribe() = gateway.expectMsgClass(classOf[Subscribe])
+
+    def shouldSpawnArbiter() = arbiterProbe.expectMsgClass(classOf[OrderMatch])
   }
 
   "A broker" must "subscribe himself to relevant messages" in new WithEurBroker("subscribe") {
-    val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val Subscribe(filter) = shouldSubscribe()
     val client: PeerConnection = PeerConnection("client1")
     val eurBid = Order(Bid, BtcAmount(1), EUR(1000))
     val dollarBid = Order(Bid, BtcAmount(1), USD(1200))
@@ -53,24 +57,21 @@ class BrokerActorTest
 
   it must "keep orders and notify both parts and start an arbiter when they cross" in
     new WithEurBroker("notify-crosses") {
-      gateway.expectMsgClass(classOf[Subscribe])
+      shouldSubscribe()
       gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
       gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
       gateway.expectNoMsg(100 millis)
 
       gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.6), EUR(850)), PeerConnection("client3")))
-      val ForwardMessage(match1, buyer) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
-      val ForwardMessage(match2, seller) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
-      match1 should equal (match2)
-      match1.amount should be (BtcAmount(0.6))
-      match1.price should be (EUR(900))
-      match1.buyer should be (PeerConnection("client2"))
-      match1.seller should be (PeerConnection("client3"))
-      arbiterProbe.expectMsg(match1)
+      val notifiedOrderMatch = arbiterProbe.expectMsgClass(classOf[OrderMatch])
+      notifiedOrderMatch.amount should be (BtcAmount(0.6))
+      notifiedOrderMatch.price should be (EUR(900))
+      notifiedOrderMatch.buyer should be (PeerConnection("client2"))
+      notifiedOrderMatch.seller should be (PeerConnection("client3"))
     }
 
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     shouldHaveQuote(Quote.empty(EUR.currency))
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     shouldHaveQuote(Quote(EUR.currency, Some(EUR(900)) -> None))
@@ -79,16 +80,15 @@ class BrokerActorTest
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(800)), PeerConnection("client2")))
-    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
-    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    shouldSpawnArbiter()
     shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(EUR(850))))
   }
 
   it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     EventFilter.error(pattern = ".*", occurrences = 1) intercept {
       gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), USD(900)), PeerConnection("client")))
       gateway.expectNoMsg()
@@ -96,7 +96,7 @@ class BrokerActorTest
   }
 
   it must "cancel orders" in new WithEurBroker("cancel-orders") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2")))
     gateway.send(broker, ReceiveMessage(OrderCancellation(EUR.currency), PeerConnection("client1")))
@@ -104,34 +104,32 @@ class BrokerActorTest
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client")))
     gateway.expectNoMsg(2 seconds)
     shouldHaveQuote(Quote.empty(EUR.currency))
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     val firstBid = ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("first-bid"))
     val secondBid = ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("second-bid"))
     gateway.send(broker, firstBid)
     gateway.send(broker, secondBid)
     gateway.send(broker, firstBid)
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("ask")))
-    val ForwardMessage(orderMatch, _) = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    val orderMatch = shouldSpawnArbiter()
     orderMatch.buyer should equal (PeerConnection("first-bid"))
   }
 
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
-    gateway.expectMsgClass(classOf[Subscribe])
+    shouldSubscribe()
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id1 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).message.exchangeId
-    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    val id1 = shouldSpawnArbiter().exchangeId
     gateway.send(broker, ReceiveMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer")))
     gateway.send(broker, ReceiveMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller")))
-    val id2 = gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]]).message.exchangeId
-    gateway.expectMsgClass(classOf[ForwardMessage[OrderMatch]])
+    val id2 = shouldSpawnArbiter().exchangeId
     id1 should not (equal (id2))
   }
 }

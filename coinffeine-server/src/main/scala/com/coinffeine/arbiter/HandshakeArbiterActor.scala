@@ -35,6 +35,7 @@ private[arbiter] class HandshakeArbiterActor(
       orderMatch = initializationMessage
       subscribeToMessages()
       scheduleAbortTimeout()
+      notifyOrderMatch()
       context.become(waitForCommitments)
   }
 
@@ -100,13 +101,13 @@ private[arbiter] class HandshakeArbiterActor(
   private def publishTransactions(): Unit =
     commitments.values.foreach(blockchain ! PublishTransaction(_))
 
-  private def notifyCommitment(): Unit = {
-    notifyParticipants(CommitmentNotification(
-      orderMatch.exchangeId,
-      commitments(orderMatch.buyer).getHash,
-      commitments(orderMatch.seller).getHash
-    ))
-  }
+  private def notifyOrderMatch(): Unit = notifyParticipants(orderMatch)
+
+  private def notifyCommitment(): Unit = notifyParticipants(CommitmentNotification(
+    orderMatch.exchangeId,
+    commitments(orderMatch.buyer).getHash,
+    commitments(orderMatch.seller).getHash
+  ))
 
   private def notifyParticipants(notification: PublicMessage): Unit =
     orderMatch.participants.foreach { p => gateway ! ForwardMessage(notification, p) }
