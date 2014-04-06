@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 
 import akka.testkit.TestProbe
 import akka.actor.Props
-import com.google.bitcoin.core.Transaction
+import com.google.bitcoin.core.{ECKey, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
@@ -35,11 +35,18 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
       tx
     })
     offers.map(_.hashCode()).distinct should have (size (exchangeInfo.steps))
-    override def mustPay(step: Int): Boolean = step + 1 < exchangeInfo.steps
     override def validateSignature(step: Int, signature: TransactionSignature): Boolean = true
     override def getOffer(step: Int): Transaction = offers(step - 1)
     override def pay(step: Int): Future[Payment] = Future.successful(Payment(
       "paymentId", "sender", "receiver", 0.1 EUR, DateTime.now(), "description"))
+    override def validatePayment(step: Int, paymentId: String): Boolean = ???
+    override def sign(offer: Transaction, key: ECKey): TransactionSignature = ???
+    override def validateFinalSignature(signature: TransactionSignature): Boolean = true
+    override val finalOffer: Transaction = {
+      val tx = new Transaction(exchangeInfo.network)
+      tx.setLockTime(1500L)
+      tx
+    }
   }
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
@@ -55,8 +62,8 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
 
   "The buyer exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOfferAccepted = OfferSignature("id", null)
-    val irrelevantOfferAccepted = OfferSignature("another-id", null)
+    val relevantOfferAccepted = OfferSignature("id", TransactionSignature.dummy())
+    val irrelevantOfferAccepted = OfferSignature("another-id", TransactionSignature.dummy())
     val anotherPeer = PeerConnection("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
@@ -72,18 +79,25 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
 
   it should "respond to offer accepted messages by sending a payment and a new offer until all " +
     "steps have are done" in {
-      for (i <- 1 to exchangeInfo.steps) {
-        actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
-        if (exchange.mustPay(i)) {
-          val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId")
-          val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.getOffer(i + 1))
-          shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
-        }
+      for (i <- 2 to exchangeInfo.steps) {
+        actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy)) // For step i - 1
+        val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId") // For step i -1
+        val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.getOffer(i))
+        shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
         gateway.expectNoMsg(100 milliseconds)
       }
     }
 
+  it should "respond to the acceptance of the last step offer with the final offer" in {
+    actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
+    val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.finalOffer)
+    val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId") // For the last step
+    shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
+    gateway.expectNoMsg(100 milliseconds)
+  }
+
   it should "send a notification to the listeners once the exchange has finished" in {
+    actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
     listener.expectMsg(ExchangeSuccess)
   }
 }
