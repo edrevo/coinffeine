@@ -1,13 +1,12 @@
 package com.coinffeine.client.exchange
 
-import akka.actor.{ActorRef, ActorLogging, Actor}
+import akka.actor.{Stash, ActorRef, ActorLogging, Actor}
 
 import com.coinffeine.client.{ExchangeInfo, MessageForwarding}
 import com.coinffeine.client.exchange.ExchangeActor.ExchangeSuccess
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
-import com.coinffeine.common.protocol.messages.exchange.{OfferTransaction, PaymentProof}
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -17,7 +16,7 @@ class SellerExchangeActor(
     exchange: Exchange,
     override protected val messageGateway: ActorRef,
     constants: ProtocolConstants,
-    listeners: Seq[ActorRef]) extends Actor with ActorLogging with MessageForwarding  {
+    listeners: Seq[ActorRef]) extends Actor with ActorLogging with MessageForwarding with Stash {
 
   override def preStart(): Unit = {
     messageGateway ! Subscribe {
@@ -32,7 +31,8 @@ class SellerExchangeActor(
 
   private def waitForOffer(step: Int): Receive = {
     case ReceiveMessage(OfferTransaction(_, offer), _) if exchange.getOffer(step) == offer =>
-      assert(step <= exchangeInfo.steps)
+      assert(step <= exchangeInfo.steps,
+        s"Invalid step $step (exchange has ${exchangeInfo.steps} steps)")
       forwardToCounterpart(OfferSignature(exchangeInfo.id, exchange.sign(offer, exchangeInfo.userKey)))
       context.become(waitForPaymentProof(step))
     case ReceiveMessage(OfferTransaction(_, offer), _) =>
@@ -45,19 +45,17 @@ class SellerExchangeActor(
       finishExchange()
   }
 
-  private def waitForPaymentProof(
-        step: Int,
-        pendingOffers: Seq[ReceiveMessage[_]] = Seq.empty): Receive = {
+  private def waitForPaymentProof(step: Int): Receive = {
     case ReceiveMessage(PaymentProof(_, paymentId), _)
       if exchange.validatePayment(step, paymentId) =>
-        pendingOffers.foreach { self ! _ }
+        unstashAll()
         if (step == exchangeInfo.steps) context.become(waitForFinalOffer)
         else context.become(waitForOffer(step + 1))
     case ReceiveMessage(PaymentProof(_, paymentId), _) =>
       log.warning("PaymentProof message received with invalid payment. " +
         s"Step: $step, PaymentId: $paymentId ")
-    case msg @ ReceiveMessage(offer: OfferTransaction, _) =>
-      context.become(waitForPaymentProof(step, pendingOffers :+ msg))
+    case ReceiveMessage(offer: OfferTransaction, _) =>
+      stash()
   }
 
   private def finishExchange(): Unit = {
