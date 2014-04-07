@@ -19,14 +19,15 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
 
   def ref = probe.ref
 
-  def expectSubscription(): Unit = {
-    val Subscribe(filter) = try {
+  def expectSubscription(): Subscribe = {
+    val subscription = try {
       probe.expectMsgClass(classOf[Subscribe])
     } catch {
       case ex: AssertionError => fail("Expected subscription failed", ex)
     }
     val currentSubscription = subscriptions.getOrElse(probe.sender, Set.empty)
-    subscriptions = subscriptions.updated(probe.sender, currentSubscription + filter)
+    subscriptions = subscriptions.updated(probe.sender, currentSubscription + subscription.filter)
+    subscription
   }
 
   def expectForwarding(payload: Any, dest: PeerConnection): Unit = probe.expectMsgPF() {
