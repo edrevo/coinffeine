@@ -14,19 +14,24 @@ class TcpPortAllocator(initialPort: Int) {
   private var nextPort: Int = initialPort
 
   @tailrec
-  final def allocatePort(): Int = synchronized {
-    val currentPort = nextPort
-    nextPort += 1
-    try {
-      new ServerSocket(currentPort).close()
-      return currentPort
-    } catch {
-      case NonFatal(ex) =>
-    }
-    allocatePort()
+  final def allocatePort(): Int = {
+    val currentPort = selectPort()
+    if (canListenOn(currentPort)) currentPort
+    else allocatePort()
   }
 
-  def allocatePorts(amount: Int): Seq[Int] = synchronized {
-    Seq.fill(amount)(allocatePort())
+  def allocatePorts(amount: Int): Seq[Int] = Seq.fill(amount)(allocatePort())
+
+  private def selectPort() = synchronized {
+    val port = nextPort
+    nextPort += 1
+    port
+  }
+
+  private def canListenOn(port: Int): Boolean = try {
+    new ServerSocket(port).close()
+    true
+  } catch {
+    case NonFatal(ex) => false
   }
 }

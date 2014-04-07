@@ -47,7 +47,7 @@ object Build extends sbt.Build {
     base = file("coinffeine-common"),
       settings = Defaults.defaultSettings ++ PB.protobufSettings ++ scalaxbSettings ++ Seq(
       sourceGenerators in Compile <+= scalaxb in Compile,
-      packageName in scalaxb in Compile := "com.coinffeine.common.paymentprocessor.okpay"
+      packageName in scalaxb in Compile := "com.coinffeine.common.paymentprocessor.okpay.generated"
     ))
       settings(ScoverageSbtPlugin.instrumentSettings: _*)
       dependsOn(commonTest % "test->compile")

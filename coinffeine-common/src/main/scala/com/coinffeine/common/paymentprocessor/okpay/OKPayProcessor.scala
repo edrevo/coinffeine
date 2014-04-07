@@ -1,15 +1,16 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
 import java.util.Currency
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import org.joda.time.{DateTimeZone, DateTime}
+import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
-import scalaxb.{Soap11Fault, DispatchHttpClients, Soap11Clients}
+import scalaxb.{DispatchHttpClients, Soap11Clients, Soap11Fault}
 
 import com.coinffeine.common.currency.FiatAmount
-import com.coinffeine.common.paymentprocessor._
+import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor, PaymentProcessorException}
+import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessor(
     tokenGenerator: TokenGenerator,

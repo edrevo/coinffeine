@@ -1,16 +1,17 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
-import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import org.joda.time.DateTime
 import org.mockito.BDDMockito.given
-import org.mockito.Matchers.{eq => the, any}
+import org.mockito.Matchers.{any, eq => the}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.common.currency.CurrencyCode.USD
+import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessorTest extends FlatSpec with ShouldMatchers with MockitoSugar {
 
@@ -60,7 +61,8 @@ class OKPayProcessorTest extends FlatSpec with ShouldMatchers with MockitoSugar 
       comment = the(Some(Some("comment"))),
       isReceiverPaysFees = the(Some(false)),
       invoice = the(None))).willReturn(Right(Send_MoneyResponse(Some(Some(txInfo)))))
-    val response = Await.result(instance.sendPayment(receiverAccount, USD(100), "comment"), futureTimeout)
+    val futureResponse = instance.sendPayment(receiverAccount, USD(100), "comment")
+    val response = Await.result(futureResponse, futureTimeout)
     response.id should be ("250092")
   }
 

@@ -1,5 +1,6 @@
 package com.coinffeine.client.handshake
 
+import java.math.BigInteger
 import scala.util.{Failure, Success}
 
 import akka.actor.Props
@@ -9,10 +10,10 @@ import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
+import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
-import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureResponse, RefundTxSignatureRequest}
-import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
+import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRequest, RefundTxSignatureResponse}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -26,8 +27,8 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     val counterpartRefund = MockTransaction()
     val invalidRefundTransaction = MockTransaction()
 
-    val refundSignature = mock[TransactionSignature]
-    val counterpartRefundSignature = mock[TransactionSignature]
+    val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+    val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
 
     override def signCounterpartRefundTransaction(txToSign: Transaction) =
       if (txToSign == counterpartRefund) Success(counterpartRefundSignature)
