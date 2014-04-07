@@ -1,6 +1,7 @@
 package com.coinffeine.server
 
 import java.net.BindException
+import java.util.Currency
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -8,17 +9,20 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.broker.BrokerActor
-import com.coinffeine.common.currency.CurrencyCode._
+import com.coinffeine.broker.BrokerActor.StartBrokering
 import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.common.protocol.gateway.MessageGateway.{BindingError, Bind}
+import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError}
 
 class BrokerSupervisorActor(
     serverInfo: PeerInfo,
+    tradedCurrencies: Set[Currency],
     gatewayProps: Props,
-    brokerProps: ActorRef => Seq[Props]) extends Actor {
+    brokerProps: Props) extends Actor {
 
   private val gateway = context.actorOf(gatewayProps)
-  private val brokers = brokerProps(gateway).map(props => context.actorOf(props))
+  private val brokers = tradedCurrencies.foreach { currency =>
+    context.actorOf(brokerProps) ! StartBrokering(currency, gateway)
+  }
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 10 seconds) {
@@ -38,18 +42,13 @@ class BrokerSupervisorActor(
 
 object BrokerSupervisorActor {
   val ListenAddress = "localhost"
-  val TradedCurrencies = Set(EUR, USD).map(_.currency)
 
   trait Component {
     this: BrokerActor.Component with MessageGateway.Component =>
 
-    def brokerSupervisorProps(port: Int): Props = {
-      val serverInfo = new PeerInfo(ListenAddress, port)
-      Props(new BrokerSupervisorActor(serverInfo, messageGatewayProps, brokerProps))
-    }
-
-    private def brokerProps(gateway: ActorRef): Seq[Props] = for {
-      currency <- TradedCurrencies.toSeq
-    } yield brokerActorProps(currency, gateway, ???) // FIXME: inject an actual handshake arbiter
+    def brokerSupervisorProps(port: Int, tradedCurrencies: Set[Currency]): Props =
+      Props(new BrokerSupervisorActor(
+        serverInfo = new PeerInfo(ListenAddress, port),
+        tradedCurrencies, messageGatewayProps, brokerActorProps))
   }
 }

@@ -10,6 +10,7 @@ import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.broker.BrokerActor.StartBrokering
 
 class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -26,8 +27,6 @@ class BrokerActorTest
     val arbiterProbe = TestProbe()
     val gateway = TestProbe()
     val broker = system.actorOf(Props(new BrokerActor(
-      currency = EUR.currency,
-      gateway = gateway.ref,
       handshakeArbiterProps = Props(new FakeHandshakeArbiterActor(arbiterProbe.ref)),
       orderExpirationInterval = 1 second
     )), name)
@@ -38,7 +37,10 @@ class BrokerActorTest
       gateway.expectMsg(ForwardMessage(expectedQuote, quoteRequester))
     }
 
-    def shouldSubscribe() = gateway.expectMsgClass(classOf[Subscribe])
+    def shouldSubscribe(): Subscribe = {
+      broker ! StartBrokering(EUR.currency, gateway.ref)
+      gateway.expectMsgClass(classOf[Subscribe])
+    }
 
     def shouldSpawnArbiter() = arbiterProbe.expectMsgClass(classOf[OrderMatch])
   }

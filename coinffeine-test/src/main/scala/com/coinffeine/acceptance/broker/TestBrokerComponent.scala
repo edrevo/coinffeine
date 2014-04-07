@@ -5,6 +5,7 @@ import com.google.bitcoin.core.Transaction
 import com.coinffeine.arbiter.{CommitmentValidation, HandshakeArbiterActor}
 import com.coinffeine.broker.BrokerActor
 import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection}
+import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.network.NetworkComponent
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
@@ -27,6 +28,7 @@ trait TestBrokerComponent  extends BrokerSupervisorActor.Component
 
   lazy val broker: TestBroker = {
     val port = DefaultTcpPortAllocator.allocatePort()
-    new TestBroker(brokerSupervisorProps(port), port)
+    val tradedCurrencies = Set(CurrencyCode.EUR.currency)
+    new TestBroker(brokerSupervisorProps(port, tradedCurrencies), port)
   }
 }
