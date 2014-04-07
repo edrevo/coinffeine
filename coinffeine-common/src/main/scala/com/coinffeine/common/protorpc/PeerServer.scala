@@ -55,7 +55,7 @@ class PeerServer(serverInfo: PeerInfo, service: Service) {
 
   def start(): ChannelFuture = { bootstrap.bind() }
 
-  def shutdown() {
+  def shutdown(): Unit = {
     eventGroups.foreach(_.shutdownGracefully())
     executor.shutdown()
   }
@@ -89,7 +89,7 @@ private [protorpc] class PeerSessionImpl(
 
   override val controller = channel.newRpcController()
 
-  def close() {
+  override def close(): Unit = {
     channel.close()
     eventGroup.shutdownGracefully()
   }
