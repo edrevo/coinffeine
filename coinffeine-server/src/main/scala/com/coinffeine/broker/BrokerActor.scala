@@ -7,6 +7,7 @@ import scala.util.Random
 
 import akka.actor._
 
+import com.coinffeine.arbiter.HandshakeArbiterActor
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.gateway.MessageGateway._
@@ -92,7 +93,7 @@ private[broker] class BrokerActor(
 }
 
 object BrokerActor {
-  trait Component {
+  trait Component { this: HandshakeArbiterActor.Component =>
 
     /** Props for creating a broker actor given some dependencies.
       *
@@ -101,13 +102,11 @@ object BrokerActor {
       *
       * @param currency  Currency to be traded for
       * @param gateway   Message gateway
-      * @param handshakeArbiterProps  Props of the actor to take care of new exchange handshakes.
       * @param orderExpirationInterval  Time that orders take to be discarded if not renewed.
       */
     def brokerActorProps(
         currency: Currency,
         gateway: ActorRef,
-        handshakeArbiterProps: Props,
         orderExpirationInterval: Duration = 1 minute) =
       Props(new BrokerActor(currency, gateway, handshakeArbiterProps, orderExpirationInterval))
   }

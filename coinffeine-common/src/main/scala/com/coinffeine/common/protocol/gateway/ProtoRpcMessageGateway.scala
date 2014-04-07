@@ -2,21 +2,23 @@ package com.coinffeine.common.protocol.gateway
 
 import java.io.IOException
 
-import akka.actor.{Props, Terminated, ActorRef, Actor}
+import akka.actor._
 import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
+import io.netty.channel.ChannelFuture
+import io.netty.util.concurrent.{Future, GenericFutureListener}
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
-import com.coinffeine.common.protorpc.{Callbacks, PeerSession, PeerServer}
-import com.coinffeine.common.protocol.messages.PublicMessage
-import com.coinffeine.common.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
 import com.coinffeine.common.network.NetworkComponent
+import com.coinffeine.common.protocol.gateway.MessageGateway._
+import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
+import com.coinffeine.common.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
+import com.coinffeine.common.protorpc.{Callbacks, PeerServer, PeerSession}
 
-private[gateway] class ProtoRpcMessageGateway(
-   serverInfo: PeerInfo, serialization: ProtocolSerialization) extends Actor {
+private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
+  extends Actor with ActorLogging {
 
   import ProtoRpcMessageGateway._
 
@@ -39,32 +41,45 @@ private[gateway] class ProtoRpcMessageGateway(
     }
   }
 
-  private val server: PeerServer = new PeerServer(
-    serverInfo, proto.PeerService.newReflectiveService(new PeerServiceImpl()))
-
+  private var server: PeerServer = _
+  private var serverInfo: PeerInfo = _
   private var subscriptions = Map.empty[ActorRef, MessageSubscription]
   private var sessions = Map.empty[PeerConnection, PeerSession]
 
-  override def preStart(): Unit = {
-    val starting = server.start()
-    starting.await()
-    if (!starting.isSuccess) {
-      server.shutdown()
-      throw starting.cause()
-    }
-  }
-
   override def postStop(): Unit = server.shutdown()
 
-  override def receive = {
+  override def receive = waitingForInitialization orElse managingSubscriptions
+
+  private val forwardingMessages: Receive = {
     case m @ ForwardMessage(msg, dest) =>
       forward(sender, dest, msg)
+  }
+
+  private val managingSubscriptions: Receive = {
     case Subscribe(filter) =>
       subscriptions += sender -> MessageSubscription(filter)
     case Unsubscribe =>
       subscriptions -= sender
     case Terminated(actor) =>
       subscriptions -= actor
+  }
+
+  private def binding(startFuture: ChannelFuture, listener: ActorRef): Receive = {
+    case ServerStarted if startFuture.isSuccess =>
+      listener ! BoundTo(serverInfo)
+      context.become(forwardingMessages orElse managingSubscriptions)
+      log.info(s"Message gateway started on $serverInfo")
+    case ServerStarted =>
+      server.shutdown()
+      listener ! BindingError(startFuture.cause())
+      log.info(s"Message gateway couldn't start at $serverInfo")
+      context.become(waitingForInitialization orElse managingSubscriptions)
+  }
+
+  private val waitingForInitialization: Receive = {
+    case Bind(address) =>
+      val startFuture = startServer(address)
+      context.become(binding(startFuture, sender) orElse managingSubscriptions)
   }
 
   private def forward(from: ActorRef, to: PeerConnection, message: PublicMessage): Unit =
@@ -79,6 +94,15 @@ private[gateway] class ProtoRpcMessageGateway(
       case e: IOException =>
         throw ForwardException(s"cannot forward message $message to $to: ${e.getMessage}", e)
     }
+
+  private def startServer(address: PeerInfo): ChannelFuture = {
+    serverInfo = address
+    server = new PeerServer(serverInfo, proto.PeerService.newReflectiveService(new PeerServiceImpl()))
+    val starting = server.start()
+    starting.addListener(new GenericFutureListener[Future[_ >: Void]] {
+      override def operationComplete(future: Future[_ >: Void]): Unit = self ! ServerStarted
+    })
+  }
 
   private def dispatchToSubscriptions(msg: PublicMessage, sender: PeerConnection): Unit = {
     val notification = ReceiveMessage(msg, sender)
@@ -98,10 +122,11 @@ object ProtoRpcMessageGateway {
 
   private[protocol] val VoidResponse = proto.Void.newBuilder().build()
 
+  private case object ServerStarted
+
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with NetworkComponent=>
 
-    override def messageGatewayProps(serverInfo: PeerInfo): Props =
-      Props(new ProtoRpcMessageGateway(serverInfo, protocolSerialization))
+    override lazy val messageGatewayProps = Props(new ProtoRpcMessageGateway(protocolSerialization))
   }
 }

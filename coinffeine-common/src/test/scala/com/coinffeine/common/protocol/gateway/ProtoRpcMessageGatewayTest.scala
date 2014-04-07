@@ -5,14 +5,14 @@ import scala.concurrent.duration._
 import akka.actor.ActorRef
 import akka.testkit.{TestActorRef, TestProbe}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
-import org.scalatest.concurrent.{IntegrationPatience, Eventually}
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection, AkkaSpec}
-import com.coinffeine.common.protocol.TestClient
-import com.coinffeine.common.protocol.serialization._
-import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
+import com.coinffeine.common.{AkkaSpec, DefaultTcpPortAllocator, PeerConnection}
 import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.protocol.TestClient
+import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo, ReceiveMessage}
+import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
+import com.coinffeine.common.protocol.serialization._
 
 class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   with Eventually with IntegrationPatience {
@@ -43,23 +43,10 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   it must "throw while forwarding when recipient was never connected" in new FreshGateway {
     val msg = randomMessage()
     remotePeer.shutdown()
-    intercept[MessageGateway.ForwardException] {
+    evaluating {
       testGateway.receive(MessageGateway.ForwardMessage(msg, remotePeerConnection))
-    }
+    } should produce [MessageGateway.ForwardException]
   }
-
-  it must "throw while forwarding when recipient was connected and then disconnects" in
-    new FreshGateway {
-      val (msg1, msg2) = (randomMessage(), randomMessage())
-      testGateway.receive(MessageGateway.ForwardMessage(msg1, remotePeerConnection))
-      eventually { remotePeer.receivedMessagesNumber should be (1) }
-      remotePeer.shutdown()
-      testGateway.receive(MessageGateway.ForwardMessage(msg2, remotePeerConnection))
-      eventually {
-        remotePeer.receivedMessagesNumber should be (1)
-        remotePeer.receivedMessages contains protocolSerialization.toProtobuf(msg1)
-      }
-    }
 
   val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(msg: OrderMatch, _) => true
@@ -98,16 +85,22 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
 
     private def createGateway(): (PeerInfo, ActorRef) = {
       val peerInfo = allocateLocalPeerInfo()
+      val ref = system.actorOf(messageGatewayProps)
       eventually {
-        (peerInfo, system.actorOf(messageGatewayProps(peerInfo)))
+        ref ! Bind(peerInfo)
+        expectMsg(BoundTo(peerInfo))
       }
+      (peerInfo, ref)
     }
 
     private def createGatewayTestActor: TestActorRef[ProtoRpcMessageGateway] = {
       val peerInfo = allocateLocalPeerInfo()
+      val ref = TestActorRef(new ProtoRpcMessageGateway(protocolSerialization))
       eventually {
-        TestActorRef(new ProtoRpcMessageGateway(peerInfo, protocolSerialization))
+        ref ! Bind(peerInfo)
+        expectMsg(BoundTo(peerInfo))
       }
+      ref
     }
 
     private def createRemotePeer(localPeerAddress: PeerInfo): (PeerInfo, TestClient) = {

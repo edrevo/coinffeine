@@ -14,6 +14,7 @@ class ReRequestRefundDefaultHandshakeActorTest extends DefaultHandshakeActorTest
   )
 
   "The handshake actor" should "request refund transaction signature after a timeout" in {
+    givenActorIsInitialized()
     gateway.expectMsgClass(classOf[Subscribe])
     shouldForwardRefundSignatureRequest()
     gateway.expectNoMsg(100 millis)

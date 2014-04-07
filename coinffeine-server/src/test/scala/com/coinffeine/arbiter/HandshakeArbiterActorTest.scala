@@ -7,7 +7,8 @@ import akka.testkit.TestProbe
 import com.google.bitcoin.core.Transaction
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.common.{PeerConnection, AkkaSpec}
+import com.coinffeine.arbiter.HandshakeArbiterActor.StartHandshake
+import com.coinffeine.common.{AkkaSpec, PeerConnection}
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
@@ -16,7 +17,7 @@ import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.protocol.messages.handshake.{ExchangeRejection, ExchangeAborted, EnterExchange}
+import com.coinffeine.common.protocol.messages.handshake.{EnterExchange, ExchangeAborted, ExchangeRejection}
 
 class HandshakeArbiterActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("HandshakeArbiterSystem"))
@@ -41,14 +42,12 @@ class HandshakeArbiterActorTest
     val blockchain = TestProbe()
     val arbiter = system.actorOf(Props(new HandshakeArbiterActor(
       arbiter = TestCommitmentValidation,
-      gateway = gateway.ref,
-      blockchain = blockchain.ref,
       constants = ProtocolConstants(commitmentAbortTimeout = timeout)
     )))
     listener.watch(arbiter)
 
     def shouldSubscribeForMessages() = {
-      listener.send(arbiter, orderMatch)
+      listener.send(arbiter, StartHandshake(orderMatch, gateway.ref, blockchain.ref))
       gateway.expectMsgClass(classOf[Subscribe])
     }
 

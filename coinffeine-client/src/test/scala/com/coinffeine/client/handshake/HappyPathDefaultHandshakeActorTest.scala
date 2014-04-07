@@ -6,7 +6,7 @@ import scala.util.Success
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.client.handshake.HandshakeActor.HandshakeResult
+import com.coinffeine.client.handshake.HandshakeActor.{HandshakeResult, StartHandshake}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
@@ -22,7 +22,9 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     refundSignatureAbortTimeout = 1 minute
   )
 
-  "Handshake happy path" should "start with a subscription to the relevant messages" in {
+  "Handshake happy path" should "subscribe to the relevant messages when initialized" in {
+    gateway.expectNoMsg()
+    givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
     val irrelevantSignatureRequest =

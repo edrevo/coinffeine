@@ -1,7 +1,8 @@
 package com.coinffeine.arbiter
 
-import com.coinffeine.common.PeerConnection
 import com.google.bitcoin.core.Transaction
+
+import com.coinffeine.common.PeerConnection
 
 /** Arbiter of a handshake able to validate commitment transactions before its publication */
 trait CommitmentValidation {
@@ -16,4 +17,10 @@ trait CommitmentValidation {
     * @return                       Whether or not the commitment is valid
     */
   def isValidCommitment(committer: PeerConnection, commitmentTransaction: Transaction): Boolean
+}
+
+object CommitmentValidation {
+  trait Component {
+    def commitmentValidation: CommitmentValidation
+  }
 }
