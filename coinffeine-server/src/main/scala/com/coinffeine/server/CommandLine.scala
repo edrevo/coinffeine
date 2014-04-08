@@ -1,4 +1,4 @@
-package com.coinffeine
+package com.coinffeine.server
 
 import com.beust.jcommander.{JCommander, Parameter}
 

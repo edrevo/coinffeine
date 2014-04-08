@@ -11,18 +11,14 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.coinffeine.broker.BrokerActor
 import com.coinffeine.broker.BrokerActor.StartBrokering
 import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError}
+import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
+import com.coinffeine.common.system.ActorSystemBootstrap
+import com.coinffeine.server.BrokerSupervisorActor.InitializedBroker
 
 class BrokerSupervisorActor(
-    serverInfo: PeerInfo,
     tradedCurrencies: Set[Currency],
     gatewayProps: Props,
     brokerProps: Props) extends Actor {
-
-  private val gateway = context.actorOf(gatewayProps)
-  private val brokers = tradedCurrencies.foreach { currency =>
-    context.actorOf(brokerProps) ! StartBrokering(currency, gateway)
-  }
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 10 seconds) {
@@ -30,25 +26,41 @@ class BrokerSupervisorActor(
       case _ => Restart
     }
 
-  override def preStart(): Unit = {
-    context.watch(gateway)
-    gateway ! Bind(serverInfo)
+  val receive: Receive = {
+    case ActorSystemBootstrap.Start(args) =>
+      val cli = CommandLine.fromArgList(args)
+      val serverInfo = new PeerInfo(BrokerSupervisorActor.ListenAddress, cli.port)
+      context.become(supervising(sender, startMessageGateway(serverInfo)))
   }
 
-  val receive: Receive = {
-    case BindingError(_) | Terminated(`gateway`) => self ! PoisonPill
+  private def supervising(listener: ActorRef, gateway: ActorRef): Receive = {
+    case BindingError(_) | Terminated(`gateway`) =>
+      context.stop(self)
+
+    case BoundTo(_) =>
+      tradedCurrencies.foreach { currency =>
+        context.actorOf(brokerProps) ! StartBrokering(currency, gateway)
+      }
+      listener ! InitializedBroker
+  }
+
+  private def startMessageGateway(serverInfo: PeerInfo): ActorRef = {
+    val gateway = context.actorOf(gatewayProps)
+    context.watch(gateway)
+    gateway ! Bind(serverInfo)
+    gateway
   }
 }
 
 object BrokerSupervisorActor {
   val ListenAddress = "localhost"
 
+  case object InitializedBroker
+
   trait Component {
     this: BrokerActor.Component with MessageGateway.Component =>
 
-    def brokerSupervisorProps(port: Int, tradedCurrencies: Set[Currency]): Props =
-      Props(new BrokerSupervisorActor(
-        serverInfo = new PeerInfo(ListenAddress, port),
-        tradedCurrencies, messageGatewayProps, brokerActorProps))
+    def brokerSupervisorProps(tradedCurrencies: Set[Currency]): Props =
+      Props(new BrokerSupervisorActor(tradedCurrencies, messageGatewayProps, brokerActorProps))
   }
 }

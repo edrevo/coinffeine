@@ -29,6 +29,6 @@ trait TestBrokerComponent  extends BrokerSupervisorActor.Component
   lazy val broker: TestBroker = {
     val port = DefaultTcpPortAllocator.allocatePort()
     val tradedCurrencies = Set(CurrencyCode.EUR.currency)
-    new TestBroker(brokerSupervisorProps(port, tradedCurrencies), port)
+    new TestBroker(brokerSupervisorProps(tradedCurrencies), port)
   }
 }
