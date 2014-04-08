@@ -1,7 +1,8 @@
 package com.coinffeine.common.currency
 
+
 case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
-  val asSatoshi = (amount * BtcAmount.OneBtcInSatoshi).toBigIntExact().get.underlying()
+  lazy val asSatoshi = (amount * BtcAmount.OneBtcInSatoshi).toBigIntExact().get.underlying()
 
   def min(other: BtcAmount): BtcAmount = if (this <= other) this else other
   def +(that: BtcAmount) = BtcAmount(amount + that.amount)
@@ -17,8 +18,9 @@ case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
 
 object BtcAmount {
   val OneBtcInSatoshi = BigDecimal(100000000)
-  /** Alternative constructors for Java code */
+
   def apply(amount: java.math.BigDecimal): BtcAmount = BtcAmount(new BigDecimal(amount))
+
   def apply(amount: java.math.BigInteger): BtcAmount =
     BtcAmount(BigDecimal(amount) / OneBtcInSatoshi)
   implicit object BtcAmountNumeric extends Numeric[BtcAmount] {

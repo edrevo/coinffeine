@@ -1,11 +1,10 @@
-package com.coinffeine.market
+package com.coinffeine.common.protocol.messages.brokerage
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.MustMatchers
 
-import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid}
+import com.coinffeine.common.currency.CurrencyCode.EUR
 
 class OrderTest extends FlatSpec with MustMatchers {
 

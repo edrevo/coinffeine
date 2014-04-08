@@ -17,7 +17,6 @@ class ReRequestRefundDefaultHandshakeActorTest extends DefaultHandshakeActorTest
     givenActorIsInitialized()
     gateway.expectMsgClass(classOf[Subscribe])
     shouldForwardRefundSignatureRequest()
-    gateway.expectNoMsg(100 millis)
     shouldForwardRefundSignatureRequest()
   }
 
