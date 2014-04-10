@@ -35,15 +35,15 @@ class DefaultProtocolSerializationTest
     EnterExchange(exchangeId, transaction),
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
     OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
-    OrderCancellation(CurrencyCode.USD.currency),
+    CancelOrder(CurrencyCode.USD.currency),
     Order(Bid, btcAmount, fiatAmount),
     QuoteRequest(CurrencyCode.USD.currency),
     Quote(fiatAmount -> fiatAmount, fiatAmount),
     ExchangeRejection(exchangeId, "reason"),
     RefundTxSignatureRequest(exchangeId, transaction),
     RefundTxSignatureResponse(exchangeId, transactionSignature),
-    OfferTransaction(exchangeId, transaction),
-    OfferSignature(exchangeId, transactionSignature),
+    NewOffer(exchangeId, transaction),
+    OfferAccepted(exchangeId, transactionSignature),
     PaymentProof(exchangeId, "paymentId")
   )
   val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))

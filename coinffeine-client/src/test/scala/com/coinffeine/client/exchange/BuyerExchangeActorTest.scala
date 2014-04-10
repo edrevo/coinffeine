@@ -18,8 +18,8 @@ import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
-import com.coinffeine.common.protocol.messages.exchange.{OfferSignature, OfferTransaction, PaymentProof}
+import com.coinffeine.common.protocol.messages.brokerage.CancelOrder
+import com.coinffeine.common.protocol.messages.exchange.{OfferAccepted, NewOffer, PaymentProof}
 
 class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -60,42 +60,42 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     gateway.expectNoMsg()
     actor ! StartExchange(exchangeInfo, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOfferAccepted = OfferSignature("id", TransactionSignature.dummy())
-    val irrelevantOfferAccepted = OfferSignature("another-id", TransactionSignature.dummy())
+    val relevantOfferAccepted = OfferAccepted("id", TransactionSignature.dummy())
+    val irrelevantOfferAccepted = OfferAccepted("another-id", TransactionSignature.dummy())
     val anotherPeer = PeerConnection("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
-    val randomMessage = OrderCancellation(CurrencyCode.EUR.currency)
+    val randomMessage = CancelOrder(CurrencyCode.EUR.currency)
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 
   it should "send the first offer as soon as it gets initialized" in {
-    shouldForward (OfferTransaction(exchangeInfo.id, exchange.getOffer(1))) to counterpart
+    shouldForward (NewOffer(exchangeInfo.id, exchange.getOffer(1))) to counterpart
     gateway.expectNoMsg(100 milliseconds)
   }
 
   it should "respond to offer accepted messages by sending a payment and a new offer until all " +
     "steps have are done" in {
       for (i <- 2 to exchangeInfo.steps) {
-        actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy)) // For step i - 1
+        actor ! fromCounterpart(OfferAccepted(exchangeInfo.id, TransactionSignature.dummy)) // For step i - 1
         val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId") // For step i -1
-        val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.getOffer(i))
+        val newOfferMsg = NewOffer(exchangeInfo.id, exchange.getOffer(i))
         shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
         gateway.expectNoMsg(100 milliseconds)
       }
     }
 
   it should "respond to the acceptance of the last step offer with the final offer" in {
-    actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
-    val newOfferMsg = OfferTransaction(exchangeInfo.id, exchange.finalOffer)
+    actor ! fromCounterpart(OfferAccepted(exchangeInfo.id, TransactionSignature.dummy))
+    val newOfferMsg = NewOffer(exchangeInfo.id, exchange.finalOffer)
     val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId") // For the last step
     shouldForwardAll message(paymentMsg) message(newOfferMsg) to counterpart
     gateway.expectNoMsg(100 milliseconds)
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
-    actor ! fromCounterpart(OfferSignature(exchangeInfo.id, TransactionSignature.dummy))
+    actor ! fromCounterpart(OfferAccepted(exchangeInfo.id, TransactionSignature.dummy))
     listener.expectMsg(ExchangeSuccess)
   }
 }

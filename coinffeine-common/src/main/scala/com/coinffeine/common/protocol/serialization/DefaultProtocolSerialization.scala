@@ -29,8 +29,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
       case m: Order =>
         builder.setOrder(ProtoMapping.toProtobuf(m))
-      case m: OrderCancellation =>
-        builder.setOrderCancellation(ProtoMapping.toProtobuf(m))
+      case m: CancelOrder =>
+        builder.setCancelOrder(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
       case m: Quote =>
@@ -41,9 +41,9 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setRefundTxSignatureRequest(ProtoMapping.toProtobuf(m))
       case m: RefundTxSignatureResponse =>
         builder.setRefundTxSignatureResponse(ProtoMapping.toProtobuf(m))
-      case m: OfferTransaction =>
+      case m: NewOffer =>
         builder.setOfferTransaction(ProtoMapping.toProtobuf(m))
-      case m: OfferSignature =>
+      case m: OfferAccepted =>
         builder.setOfferSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))
@@ -69,8 +69,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(message.getOrderMatch)
       case ORDER_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(message.getOrder)
-      case ORDERCANCELLATION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(message.getOrderCancellation)
+      case CANCELORDER_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(message.getCancelOrder)
       case QUOTEREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(message.getQuoteRequest)
       case QUOTE_FIELD_NUMBER =>

@@ -100,7 +100,7 @@ class BrokerActorTest
     shouldSubscribe()
     gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
     gateway.relayMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2"))
-    gateway.relayMessage(OrderCancellation(EUR.currency), PeerConnection("client1"))
+    gateway.relayMessage(CancelOrder(EUR.currency), PeerConnection("client1"))
     shouldHaveQuote(Quote(EUR.currency, None -> Some(EUR(950))))
   }
 

@@ -18,8 +18,8 @@ import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
-import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
-import com.coinffeine.common.protocol.messages.exchange.{OfferTransaction, PaymentProof}
+import com.coinffeine.common.protocol.messages.brokerage.CancelOrder
+import com.coinffeine.common.protocol.messages.exchange.{NewOffer, PaymentProof}
 
 class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -62,8 +62,8 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOffer = OfferTransaction("id", null)
-    val irrelevantOffer = OfferTransaction("another-id", null)
+    val relevantOffer = NewOffer("id", null)
+    val irrelevantOffer = NewOffer("another-id", null)
     val anotherPeer = PeerConnection("some-random-peer")
     val relevantPayment = PaymentProof("id", null)
     val irrelevantPayment = PaymentProof("another-id", null)
@@ -72,46 +72,46 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     filter(ReceiveMessage(relevantOffer, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOffer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
-    val randomMessage = OrderCancellation(CurrencyCode.EUR.currency)
+    val randomMessage = CancelOrder(CurrencyCode.EUR.currency)
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 
   it should "ignore unexpected offers" in {
-    actor ! fromCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(2)))
+    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(2)))
     gateway.expectNoMsg(100 milliseconds)
   }
 
   it should "sign the first offer as soon as it receives it" in {
-    actor ! fromCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(1)))
+    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(1)))
     val offerSignature = exchange.sign(exchange.getOffer(1), exchangeInfo.userKey)
-    shouldForward(OfferSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
   }
 
   it should "not sign the second offer until payment proof has been provided" in {
-    actor ! fromCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(2)))
+    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(2)))
     gateway.expectNoMsg(100 milliseconds)
   }
 
   it should "sign the second offer once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     val offerSignature = exchange.sign(exchange.getOffer(2), exchangeInfo.userKey)
-    shouldForward(OfferSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
   }
 
   it should "sign offers once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     for (i <- 3 to exchangeInfo.steps) {
-      actor ! fromCounterpart(OfferTransaction(exchangeInfo.id, exchange.getOffer(i)))
+      actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(i)))
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
       val offerSignature = exchange.sign(exchange.getOffer(i), exchangeInfo.userKey)
-      shouldForward(OfferSignature(exchangeInfo.id, offerSignature)) to counterpart
+      shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
     }
   }
 
   it should "sign the final offer" in {
-    actor ! fromCounterpart(OfferTransaction(exchangeInfo.id, exchange.finalOffer))
+    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.finalOffer))
     val offerSignature = exchange.sign(exchange.finalOffer, exchangeInfo.userKey)
-    shouldForward(OfferSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

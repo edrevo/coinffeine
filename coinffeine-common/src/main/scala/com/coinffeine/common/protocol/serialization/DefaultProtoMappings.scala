@@ -122,13 +122,13 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   }
 
   implicit val orderCancellationMapping =
-    new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
+    new ProtoMapping[CancelOrder, msg.CancelOrder] {
 
-      override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
+      override def fromProtobuf(message: msg.CancelOrder) = CancelOrder(
         currency = Currency.getInstance(message.getCurrency)
       )
 
-      override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
+      override def toProtobuf(obj: CancelOrder) = msg.CancelOrder.newBuilder
         .setCurrency(obj.currency.getCurrencyCode)
         .build
     }
@@ -215,27 +215,27 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           .build()
     }
 
-  implicit val offerTransactionMapping = new ProtoMapping[OfferTransaction, msg.OfferTransaction] {
+  implicit val offerTransactionMapping = new ProtoMapping[NewOffer, msg.OfferTransaction] {
 
-    override def fromProtobuf(message: msg.OfferTransaction) = OfferTransaction(
+    override def fromProtobuf(message: msg.OfferTransaction) = NewOffer(
       exchangeId = message.getExchangeId,
       offer = txSerialization.deserializeTransaction(message.getTransaction)
     )
 
-    override def toProtobuf(obj: OfferTransaction) = msg.OfferTransaction.newBuilder
+    override def toProtobuf(obj: NewOffer) = msg.OfferTransaction.newBuilder
       .setExchangeId(obj.exchangeId)
       .setTransaction(txSerialization.serialize(obj.offer))
       .build()
   }
 
-  implicit val offerSignatureMapping = new ProtoMapping[OfferSignature, msg.OfferSignature] {
+  implicit val offerSignatureMapping = new ProtoMapping[OfferAccepted, msg.OfferSignature] {
 
-    override def fromProtobuf(message: msg.OfferSignature) = OfferSignature(
+    override def fromProtobuf(message: msg.OfferSignature) = OfferAccepted(
       exchangeId = message.getExchangeId,
       signature = txSerialization.deserializeSignature(message.getTransactionSignature)
     )
 
-    override def toProtobuf(obj: OfferSignature) = msg.OfferSignature.newBuilder
+    override def toProtobuf(obj: OfferAccepted) = msg.OfferSignature.newBuilder
       .setExchangeId(obj.exchangeId)
       .setTransactionSignature(txSerialization.serialize(obj.signature))
       .build()

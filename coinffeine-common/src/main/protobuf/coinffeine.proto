@@ -29,7 +29,7 @@ message Order {
     required FiatAmount price = 3;
 }
 
-message OrderCancellation {
+message CancelOrder {
     required string currency = 1;
 }
 
@@ -106,7 +106,7 @@ message CoinffeineMessage {
     optional CommitmentNotification commitmentNotification = 3;
     optional OrderMatch orderMatch = 4;
     optional Order order = 5;
-    optional OrderCancellation orderCancellation = 6;
+    optional CancelOrder cancelOrder = 6;
     optional QuoteRequest quoteRequest = 7;
     optional Quote quote = 8;
     optional ExchangeRejection exchangeRejection = 9;

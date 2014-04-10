@@ -39,7 +39,7 @@ private[broker] class BrokerActor(
       case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
       case ReceiveMessage(quoteRequest: QuoteRequest, _)
         if quoteRequest.currency == currency => true
-      case ReceiveMessage(OrderCancellation(`currency`), _) => true
+      case ReceiveMessage(CancelOrder(`currency`), _) => true
       case _ => false
     }
 
@@ -69,7 +69,7 @@ private[broker] class BrokerActor(
       case ReceiveMessage(QuoteRequest(_), requester) =>
         gateway ! ForwardMessage(Quote(currency, book.spread, lastPrice), requester)
 
-      case ReceiveMessage(OrderCancellation(_), requester) =>
+      case ReceiveMessage(CancelOrder(_), requester) =>
         log.info(s"Order of $requester is cancelled")
         book = book.cancelOrder(requester)
 

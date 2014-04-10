@@ -111,8 +111,8 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers with UnitTes
   "Exchange rejection" should behave like thereIsAMappingBetween(
     exchangeRejection, exchangeRejectionMessage)
 
-  val cancellation = OrderCancellation(EUR.currency)
-  val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
+  val cancellation = CancelOrder(EUR.currency)
+  val cancellationMessage = msg.CancelOrder.newBuilder.setCurrency("EUR").build
 
   "Order cancellation" should behave like thereIsAMappingBetween(cancellation, cancellationMessage)
 

@@ -20,7 +20,7 @@ class SellerExchangeActor(
 
   override def preStart(): Unit = {
     messageGateway ! Subscribe {
-      case ReceiveMessage(OfferTransaction(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(NewOffer(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
       case ReceiveMessage(PaymentProof(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
       case _ => false
     }
@@ -30,18 +30,18 @@ class SellerExchangeActor(
   override def receive: Receive = waitForOffer(1)
 
   private def waitForOffer(step: Int): Receive = {
-    case ReceiveMessage(OfferTransaction(_, offer), _) if exchange.getOffer(step) == offer =>
+    case ReceiveMessage(NewOffer(_, offer), _) if exchange.getOffer(step) == offer =>
       assert(step <= exchangeInfo.steps,
         s"Invalid step $step (exchange has ${exchangeInfo.steps} steps)")
-      forwardToCounterpart(OfferSignature(exchangeInfo.id, exchange.sign(offer, exchangeInfo.userKey)))
+      forwardToCounterpart(OfferAccepted(exchangeInfo.id, exchange.sign(offer, exchangeInfo.userKey)))
       context.become(waitForPaymentProof(step))
-    case ReceiveMessage(OfferTransaction(_, offer), _) =>
+    case ReceiveMessage(NewOffer(_, offer), _) =>
       log.warning(s"Unexpected new offer received: $offer. Expected: ${exchange.getOffer(step)}")
   }
 
   private val waitForFinalOffer: Receive = {
-    case ReceiveMessage(OfferTransaction(_, offer), _) if exchange.finalOffer == offer =>
-      forwardToCounterpart(OfferSignature(exchangeInfo.id, exchange.sign(offer, exchangeInfo.userKey)))
+    case ReceiveMessage(NewOffer(_, offer), _) if exchange.finalOffer == offer =>
+      forwardToCounterpart(OfferAccepted(exchangeInfo.id, exchange.sign(offer, exchangeInfo.userKey)))
       finishExchange()
   }
 
@@ -54,7 +54,7 @@ class SellerExchangeActor(
     case ReceiveMessage(PaymentProof(_, paymentId), _) =>
       log.warning("PaymentProof message received with invalid payment. " +
         s"Step: $step, PaymentId: $paymentId ")
-    case ReceiveMessage(offer: OfferTransaction, _) =>
+    case ReceiveMessage(offer: NewOffer, _) =>
       stash()
   }
 
