@@ -8,7 +8,7 @@ class QuoteTest extends AcceptanceTest {
 
   feature("Any peer should be able to query price quotes") {
 
-    ignore("no previous order placed") { f =>
+    scenario("no previous order placed") { f =>
       f.withPeer { peer =>
         Given("that no peer has placed any order")
 

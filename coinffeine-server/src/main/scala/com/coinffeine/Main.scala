@@ -25,10 +25,7 @@ object Main extends ActorSystemBootstrap
   override val protocolConstants = ProtocolConstants.DefaultConstants
   val tradedCurrencies = Set(EUR, USD).map(_.currency)
 
-  override protected def supervisorProps(args: Array[String]): Props = {
-    val cli = CommandLine.fromArgList(args)
-    brokerSupervisorProps(cli.port, tradedCurrencies)
-  }
+  override protected val supervisorProps: Props = brokerSupervisorProps(tradedCurrencies)
 
   // TODO: implement a real CommitmentValidation
   override def commitmentValidation: CommitmentValidation = ???
