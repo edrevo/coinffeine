@@ -7,17 +7,15 @@ import scala.util.Try
 
 import com.google.bitcoin.core._
 import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.utils.BriefLogFormatter
 import com.google.bitcoin.store.H2FullPrunedBlockStore
-import org.scalatest.{FlatSpec, BeforeAndAfter}
-import org.scalatest.matchers.ShouldMatchers
+import com.google.bitcoin.utils.BriefLogFormatter
 
+import com.coinffeine.common.UnitTest
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-abstract class BitcoinjTest extends FlatSpec
-  with ShouldMatchers with BeforeAndAfter with WithSampleExchangeInfo {
+abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
@@ -63,7 +61,7 @@ abstract class BitcoinjTest extends FlatSpec
   }
 
   /** Mine bitcoins into a wallet until having a minimum amount. */
-  def sendMoneyToWallet(wallet: Wallet, amount: BtcAmount) {
+  def sendMoneyToWallet(wallet: Wallet, amount: BtcAmount): Unit = {
     val miner = new ECKey
     val minerWallet = createWallet(miner)
     while (BtcAmount(minerWallet.getBalance) < amount) {
@@ -83,7 +81,7 @@ abstract class BitcoinjTest extends FlatSpec
     * @param miner  Destination key of the coinbase
     * @param txs    Transactions to include in the new block
     */
-  def sendToBlockChain(miner: ECKey, txs: Transaction*) {
+  def sendToBlockChain(miner: ECKey, txs: Transaction*): Unit = {
     val lastBlock = blockStore.getChainHead
     val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
       miner.getPubKey, (50 BTC).asSatoshi)
@@ -102,7 +100,7 @@ abstract class BitcoinjTest extends FlatSpec
   def throughWire(sig: TransactionSignature) =
     TransactionSignature.decodeFromBitcoin(sig.encodeToBitcoin(), true)
 
-  private def createH2BlockStore() {
+  private def createH2BlockStore(): Unit = {
     blockStorePath = File.createTempFile("temp", "blockStore")
     blockStorePath.delete()
     blockStorePath.mkdir()
@@ -110,12 +108,12 @@ abstract class BitcoinjTest extends FlatSpec
     blockStore.resetStore()
   }
 
-  private def destroyH2BlockStore() {
+  private def destroyH2BlockStore(): Unit = {
     blockStore.close()
     recursiveDelete(blockStorePath)
   }
 
-  private def recursiveDelete(file: File) {
+  private def recursiveDelete(file: File): Unit = {
     val files = Option(file.listFiles()).getOrElse(Array.empty)
     files.foreach(recursiveDelete)
     file.delete()

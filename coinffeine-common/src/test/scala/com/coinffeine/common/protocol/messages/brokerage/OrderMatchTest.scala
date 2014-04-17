@@ -1,13 +1,10 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
-
+import com.coinffeine.common.{PeerConnection, UnitTest}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.PeerConnection
 
-class OrderMatchTest extends FlatSpec with ShouldMatchers {
+class OrderMatchTest extends UnitTest {
 
   "An order match" should "provide the match participants" in {
     val buyer = PeerConnection("buyer")

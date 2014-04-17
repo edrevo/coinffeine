@@ -4,16 +4,15 @@ import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 
 /** FlatSpec configured to test Akka actors. */
 abstract class AkkaSpec(actorSystem: ActorSystem = ActorSystem("TestSystem"))
-  extends TestKit(actorSystem) with FlatSpec with BeforeAndAfterAll with ShouldMatchers
+  extends TestKit(actorSystem) with FlatSpecLike with BeforeAndAfterAll with ShouldMatchers
   with ImplicitSender {
 
   def this(systemName: String) = this(ActorSystem(systemName))
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     system.shutdown()
   }
 }

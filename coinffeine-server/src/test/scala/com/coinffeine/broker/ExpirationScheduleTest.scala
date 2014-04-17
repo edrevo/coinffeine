@@ -2,10 +2,9 @@ package com.coinffeine.broker
 
 import scala.concurrent.duration._
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import com.coinffeine.common.UnitTest
 
-class ExpirationScheduleTest extends FlatSpec with ShouldMatchers {
+class ExpirationScheduleTest extends UnitTest {
 
   private class TestSchedule extends ExpirationSchedule[String]
 

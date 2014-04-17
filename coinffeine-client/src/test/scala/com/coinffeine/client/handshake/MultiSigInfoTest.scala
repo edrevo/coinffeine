@@ -5,10 +5,10 @@ import scala.collection.JavaConversions._
 import com.google.bitcoin.core.ECKey
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 
-class MultiSigInfoTest extends FlatSpec with ShouldMatchers {
+import com.coinffeine.common.UnitTest
+
+class MultiSigInfoTest extends UnitTest {
 
   "MultiSigInfo" should "read all the parameters of a multisig output script" in {
     val keys = List.fill(10)(new ECKey())
@@ -22,16 +22,12 @@ class MultiSigInfoTest extends FlatSpec with ShouldMatchers {
 
   it should "fail on non-multisig scripts" in {
     val script = ScriptBuilder.createOutputScript(new ECKey())
-    evaluating {
-      MultiSigInfo(script)
-    } should produce [IllegalArgumentException]
+    an [IllegalArgumentException] should be thrownBy MultiSigInfo(script)
   }
 
   it should "fail on input multisig scripts" in {
     val script = ScriptBuilder.createMultiSigInputScript(List(
       new TransactionSignature(BigInt(0).underlying(), BigInt(0).underlying())))
-    evaluating {
-      MultiSigInfo(script)
-    } should produce [IllegalArgumentException]
+    an [IllegalArgumentException] should be thrownBy MultiSigInfo(script)
   }
 }

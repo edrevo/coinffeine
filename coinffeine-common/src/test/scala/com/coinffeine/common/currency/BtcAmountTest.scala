@@ -1,11 +1,9 @@
 package com.coinffeine.common.currency
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
-
+import com.coinffeine.common.UnitTest
 import com.coinffeine.common.currency.Implicits._
 
-class BtcAmountTest extends FlatSpec with ShouldMatchers {
+class BtcAmountTest extends UnitTest {
 
   "BTC amounts" should "be converted to satoshis" in {
     1.BTC.asSatoshi.longValue() should be (BtcAmount.OneBtcInSatoshi.longValue())

@@ -1,10 +1,10 @@
 package com.coinffeine.server
 
 import com.beust.jcommander.ParameterException
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 
-class CommandLineTest extends FlatSpec with ShouldMatchers {
+import com.coinffeine.common.UnitTest
+
+class CommandLineTest extends UnitTest {
 
   "The command line parser" must "parse the port" in {
     parseCli("--port", "1234").port should be (1234)
@@ -15,7 +15,7 @@ class CommandLineTest extends FlatSpec with ShouldMatchers {
   }
 
   it should "reject invalid arguments" in {
-    evaluating(parseCli("--unknown-flag")) should produce [ParameterException]
+    a [ParameterException] should be thrownBy parseCli("--unknown-flag")
   }
 
   private def parseCli(arguments: String*) = CommandLine.fromArgList(arguments)

@@ -2,15 +2,13 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger
 
-import com.google.bitcoin.core.{Transaction, Sha256Hash}
+import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
+import com.coinffeine.common.{PeerConnection, UnitTest}
+import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.arbitration._
@@ -18,7 +16,7 @@ import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
-class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers with UnitTestNetworkComponent {
+class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
   val commitmentTransaction = new Transaction(network)
   val txSerialization = new TransactionSerialization(network)
@@ -26,7 +24,7 @@ class DefaultProtoMappingsTest extends FlatSpec with ShouldMatchers with UnitTes
   import testMappings._
 
   def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
-                                             (implicit mapping: ProtoMapping[T, M]) {
+                                             (implicit mapping: ProtoMapping[T, M]): Unit = {
 
     it should "convert the case class into the protobuf message" in {
       ProtoMapping.toProtobuf(obj) should be (msg)
