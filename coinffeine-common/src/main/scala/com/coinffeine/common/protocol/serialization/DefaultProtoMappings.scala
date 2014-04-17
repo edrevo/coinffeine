@@ -215,27 +215,14 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           .build()
     }
 
-  implicit val offerTransactionMapping = new ProtoMapping[NewOffer, msg.OfferTransaction] {
+  implicit val offerSignatureMapping = new ProtoMapping[StepSignature, msg.StepSignature] {
 
-    override def fromProtobuf(message: msg.OfferTransaction) = NewOffer(
-      exchangeId = message.getExchangeId,
-      offer = txSerialization.deserializeTransaction(message.getTransaction)
-    )
-
-    override def toProtobuf(obj: NewOffer) = msg.OfferTransaction.newBuilder
-      .setExchangeId(obj.exchangeId)
-      .setTransaction(txSerialization.serialize(obj.offer))
-      .build()
-  }
-
-  implicit val offerSignatureMapping = new ProtoMapping[OfferAccepted, msg.OfferSignature] {
-
-    override def fromProtobuf(message: msg.OfferSignature) = OfferAccepted(
+    override def fromProtobuf(message: msg.StepSignature) = StepSignature(
       exchangeId = message.getExchangeId,
       signature = txSerialization.deserializeSignature(message.getTransactionSignature)
     )
 
-    override def toProtobuf(obj: OfferAccepted) = msg.OfferSignature.newBuilder
+    override def toProtobuf(obj: StepSignature) = msg.StepSignature.newBuilder
       .setExchangeId(obj.exchangeId)
       .setTransactionSignature(txSerialization.serialize(obj.signature))
       .build()

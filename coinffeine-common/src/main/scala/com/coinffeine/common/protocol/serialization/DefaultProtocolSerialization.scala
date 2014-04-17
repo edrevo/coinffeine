@@ -41,10 +41,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setRefundTxSignatureRequest(ProtoMapping.toProtobuf(m))
       case m: RefundTxSignatureResponse =>
         builder.setRefundTxSignatureResponse(ProtoMapping.toProtobuf(m))
-      case m: NewOffer =>
-        builder.setOfferTransaction(ProtoMapping.toProtobuf(m))
-      case m: OfferAccepted =>
-        builder.setOfferSignature(ProtoMapping.toProtobuf(m))
+      case m: StepSignature =>
+        builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))
       case _ => throw new IllegalArgumentException("Unsupported message: " + message)
@@ -81,10 +79,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(message.getRefundTxSignatureRequest)
       case REFUNDTXSIGNATURERESPONSE_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(message.getRefundTxSignatureResponse)
-      case OFFERTRANSACTION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(message.getOfferTransaction)
-      case OFFERSIGNATURE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(message.getOfferSignature)
+      case STEPSIGNATURE_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(message.getStepSignature)
       case PAYMENTPROOF_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(message.getPaymentProof)
       case _ => throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)

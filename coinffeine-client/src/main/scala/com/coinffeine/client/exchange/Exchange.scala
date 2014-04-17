@@ -11,6 +11,8 @@ trait Exchange {
   /** Returns the bitcoin transaction that corresponds with the offer for the passed in step */
   def getOffer(step: Int): Transaction
 
+  def getStepSignature(step: Int, key: ECKey): TransactionSignature = sign(getOffer(step), key)
+
   /** Returns the bitcoin transaction that corresponds with the final offer */
   val finalOffer: Transaction
 

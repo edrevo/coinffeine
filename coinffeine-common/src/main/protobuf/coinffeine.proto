@@ -83,12 +83,7 @@ message EnterExchange {
     required bytes commitmentTransaction = 2;
 }
 
-message OfferTransaction {
-    required string exchangeId = 1;
-    required bytes transaction = 2;
-}
-
-message OfferSignature {
+message StepSignature {
     required string exchangeId = 1;
     required bytes transactionSignature = 2;
 }
@@ -112,9 +107,8 @@ message CoinffeineMessage {
     optional ExchangeRejection exchangeRejection = 9;
     optional RefundTxSignatureRequest refundTxSignatureRequest = 10;
     optional RefundTxSignatureResponse refundTxSignatureResponse = 11;
-    optional OfferTransaction offerTransaction = 12;
-    optional OfferSignature offerSignature = 13;
-    optional PaymentProof paymentProof = 14;
+    optional StepSignature stepSignature = 12;
+    optional PaymentProof paymentProof = 13;
 }
 
 service PeerService {

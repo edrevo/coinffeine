@@ -42,8 +42,7 @@ class DefaultProtocolSerializationTest
     ExchangeRejection(exchangeId, "reason"),
     RefundTxSignatureRequest(exchangeId, transaction),
     RefundTxSignatureResponse(exchangeId, transactionSignature),
-    NewOffer(exchangeId, transaction),
-    OfferAccepted(exchangeId, transactionSignature),
+    StepSignature(exchangeId, transactionSignature),
     PaymentProof(exchangeId, "paymentId")
   )
   val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))

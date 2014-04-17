@@ -17,9 +17,8 @@ import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange._
 import com.coinffeine.common.protocol.messages.brokerage.CancelOrder
-import com.coinffeine.common.protocol.messages.exchange.{NewOffer, PaymentProof}
+import com.coinffeine.common.protocol.messages.exchange._
 
 class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -59,56 +58,42 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOffer = NewOffer("id", null)
-    val irrelevantOffer = NewOffer("another-id", null)
     val anotherPeer = PeerConnection("some-random-peer")
     val relevantPayment = PaymentProof("id", null)
     val irrelevantPayment = PaymentProof("another-id", null)
-    filter(fromCounterpart(relevantOffer)) should be (true)
     filter(fromCounterpart(relevantPayment)) should be (true)
-    filter(ReceiveMessage(relevantOffer, anotherPeer)) should be (false)
-    filter(fromCounterpart(irrelevantOffer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
     val randomMessage = CancelOrder(CurrencyCode.EUR.currency)
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 
-  it should "ignore unexpected offers" in {
-    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(2)))
-    gateway.expectNoMsg(100 milliseconds)
-  }
-
-  it should "sign the first offer as soon as it receives it" in {
-    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(1)))
+  it should "send the first step signature as soon as the exchange starts" in {
     val offerSignature = exchange.sign(exchange.getOffer(1), exchangeInfo.userKey)
-    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
   }
 
-  it should "not sign the second offer until payment proof has been provided" in {
-    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(2)))
+  it should "not send the second step signature until payment proof has been provided" in {
     gateway.expectNoMsg(100 milliseconds)
   }
 
-  it should "sign the second offer once payment proof has been provided" in {
+  it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     val offerSignature = exchange.sign(exchange.getOffer(2), exchangeInfo.userKey)
-    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
   }
 
-  it should "sign offers once payment proof has been provided" in {
+  it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     for (i <- 3 to exchangeInfo.steps) {
-      actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.getOffer(i)))
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
       val offerSignature = exchange.sign(exchange.getOffer(i), exchangeInfo.userKey)
-      shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
+      shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
     }
   }
 
-  it should "sign the final offer" in {
-    actor ! fromCounterpart(NewOffer(exchangeInfo.id, exchange.finalOffer))
+  it should "send the final signature" in {
     val offerSignature = exchange.sign(exchange.finalOffer, exchangeInfo.userKey)
-    shouldForward(OfferAccepted(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
