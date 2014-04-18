@@ -3,10 +3,10 @@ package com.coinffeine.common.protocol
 import java.math.BigInteger
 
 import com.google.bitcoin.crypto.TransactionSignature
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 
-class TransactionSignatureUtilsTest extends FlatSpec with ShouldMatchers {
+import com.coinffeine.common.UnitTest
+
+class TransactionSignatureUtilsTest extends UnitTest {
 
   "Transaction signatures" should "be equal when comparing null values" in {
     TransactionSignatureUtils.equals(null, null) should be (true)

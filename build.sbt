@@ -18,11 +18,10 @@ resolvers in ThisBuild ++= Seq(
 )
 
 libraryDependencies in ThisBuild ++= Seq(
-  Dependencies.hamcrest,
   Dependencies.jodaTime,
   Dependencies.logbackClassic,
   Dependencies.logbackCore,
-  Dependencies.mockito,
-  Dependencies.scalatest,
+  Dependencies.mockito % "test",
+  Dependencies.scalatest % "test",
   Dependencies.slf4j
 )

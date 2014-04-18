@@ -6,11 +6,9 @@ import scala.collection.JavaConversions
 import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.reflections.Reflections
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.{CurrencyCode, BtcAmount}
+import com.coinffeine.common.{PeerConnection, UnitTest}
+import com.coinffeine.common.currency.{BtcAmount, CurrencyCode}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -20,8 +18,7 @@ import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-class DefaultProtocolSerializationTest
-  extends FlatSpec with ShouldMatchers with UnitTestNetworkComponent {
+class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComponent {
 
   val exchangeId = "exchangeid"
   val transaction = new Transaction(network)
@@ -58,17 +55,17 @@ class DefaultProtocolSerializationTest
   }
 
   it must "throw when serializing unknown public messages" in {
-    val ex = evaluating {
+    val ex = the [IllegalArgumentException] thrownBy {
       instance.toProtobuf(new PublicMessage {})
-    } should produce [IllegalArgumentException]
+    }
     ex.getMessage should include ("Unsupported message")
   }
 
   it must "throw when deserializing an empty protobuf message" in {
     val emptyMessage = CoinffeineMessage.newBuilder.build
-    val ex = evaluating {
+    val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(emptyMessage)
-    } should produce [IllegalArgumentException]
+    }
     ex.getMessage should include ("Message has no content")
   }
 
@@ -77,9 +74,9 @@ class DefaultProtocolSerializationTest
       .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
       .setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD"))
       .build
-    val ex = evaluating {
+    val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(emptyMessage)
-    } should produce [IllegalArgumentException]
+    }
     ex.getMessage should include ("Malformed message with 2 fields")
   }
 

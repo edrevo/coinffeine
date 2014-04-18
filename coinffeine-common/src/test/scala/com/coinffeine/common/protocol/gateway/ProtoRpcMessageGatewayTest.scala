@@ -43,9 +43,9 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   it must "throw while forwarding when recipient was never connected" in new FreshGateway {
     val msg = randomMessage()
     remotePeer.shutdown()
-    evaluating {
+    a [MessageGateway.ForwardException] should be thrownBy {
       testGateway.receive(MessageGateway.ForwardMessage(msg, remotePeerConnection))
-    } should produce [MessageGateway.ForwardException]
+    }
   }
 
   val subscribeToOrderMatches = MessageGateway.Subscribe {

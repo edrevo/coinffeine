@@ -15,22 +15,22 @@ class DefaultHandshakeTest extends BitcoinjTest {
 
   "The DefaultExchangeHandshake constructor" should
     "fail if the wallet does not contain the private key" in {
-      evaluating {
+      an [IllegalArgumentException] should be thrownBy {
         new DefaultHandshake(
           exchangeInfo = exchangeInfo,
           amountToCommit = 2 BTC,
           userWallet = createWallet()) {}
-      } should produce [IllegalArgumentException]
+      }
     }
 
   it should "fail if the amount to commit is less or equal to zero" in {
     val userWallet = createWallet(exchangeInfo.userKey, 5 BTC)
-    evaluating {
+    an [IllegalArgumentException] should be thrownBy {
       new DefaultHandshake(
         exchangeInfo = exchangeInfo,
         amountToCommit = 0 BTC,
         userWallet = userWallet) {}
-    } should produce [IllegalArgumentException]
+    }
   }
 
   "The commitment transaction" should
@@ -73,9 +73,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    evaluating {
-      sendToBlockChain(handshake.refundTransaction)
-    } should produce [VerificationException]
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
   }
 
   it should "not be broadcastable if the timelock hasn't expired yet" in {
@@ -86,9 +84,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    evaluating {
-      sendToBlockChain(handshake.refundTransaction)
-    } should produce [VerificationException]
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
   }
 
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
@@ -100,9 +96,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
     (1L to exchangeInfo.lockTime).foreach(_ => mineBlock())
-    evaluating {
-      sendToBlockChain(handshake.refundTransaction)
-    } should produce [VerificationException]
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
   }
 
   it should "be broadcastable after the timelock expired if is has been signed" in {
@@ -147,7 +141,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
     def signRefund(
         exchangeInfo: ExchangeInfo,
         userHandshake: Handshake,
-        counterpartHandshake: Handshake) {
+        counterpartHandshake: Handshake): Unit = {
       val signatures = List(
         throughWire(counterpartHandshake.signCounterpartRefundTransaction(
           throughWire(userHandshake.refundTransaction)).get),

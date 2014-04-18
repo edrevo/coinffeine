@@ -1,10 +1,12 @@
 package com.coinffeine.acceptance
 
+import org.scalatest.concurrent.ScalaFutures
+
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.protocol.messages.brokerage.{Order, Ask, Bid, Quote}
+import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid, Order, Quote}
 
-class QuoteTest extends AcceptanceTest {
+class QuoteTest extends AcceptanceTest with ScalaFutures {
 
   feature("Any peer should be able to query price quotes") {
 
@@ -16,7 +18,7 @@ class QuoteTest extends AcceptanceTest {
         val quote = peer.askForQuote(EUR.currency)
 
         Then("he should get an empty quote")
-        quote should eventually(be(Quote.empty(EUR.currency)))
+        quote.futureValue should be(Quote.empty(EUR.currency))
       }
     }
 
@@ -30,7 +32,7 @@ class QuoteTest extends AcceptanceTest {
         val quote = bob.askForQuote(EUR.currency)
 
         Then("he should get the current spread")
-        quote should eventually(be(Quote(EUR.currency, Some(EUR(500)) -> Some(EUR(600)))))
+        quote.futureValue should be(Quote(EUR.currency, Some(EUR(500)) -> Some(EUR(600))))
       }
     }
   }

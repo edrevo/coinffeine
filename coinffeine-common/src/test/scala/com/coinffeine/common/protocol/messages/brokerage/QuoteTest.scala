@@ -1,17 +1,14 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
-
+import com.coinffeine.common.UnitTest
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 
-class QuoteTest extends FlatSpec with ShouldMatchers {
+class QuoteTest extends UnitTest {
 
   "A quote" must "use the same currency for all its prices" in {
-    val ex = evaluating {
+    the [IllegalArgumentException] thrownBy  {
       Quote(EUR(10) -> USD(20), EUR(15))
-    } should produce [IllegalArgumentException]
-    ex.toString should include ("Inconsistent price 20 USD, EUR was expected")
+    } should have message "requirement failed: Inconsistent price 20 USD, EUR was expected"
   }
 
   it must "print to a readable string" in {

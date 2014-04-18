@@ -7,9 +7,9 @@ class MockActor(master: ActorRef) extends Actor with ActorLogging {
 
   import MockActor._
 
-  override def preStart() { master ! MockStarted(self) }
-  override def postStop() { master ! MockStopped(self) }
-  override def postRestart(reason: Throwable) {
+  override def preStart(): Unit = { master ! MockStarted(self) }
+  override def postStop(): Unit = { master ! MockStopped(self) }
+  override def postRestart(reason: Throwable): Unit = {
     master ! MockRestarted(self, reason)
   }
 
