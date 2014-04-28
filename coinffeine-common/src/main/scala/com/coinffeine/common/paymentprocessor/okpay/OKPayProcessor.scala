@@ -17,6 +17,8 @@ class OKPayProcessor(
     account: String,
     service: I_OkPayAPI = OKPayProcessor.defaultClient()) extends PaymentProcessor {
 
+  override def id: String = OKPayProcessor.Id
+
   /** Send a payment from any of your wallets to someone wallet.
     *
     * @param receiverId OKPay Wallet ID of receiver of payment, example: OK321345.
@@ -119,7 +121,9 @@ class OKPayProcessor(
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
 }
 
-private[this] object OKPayProcessor {
+object OKPayProcessor {
+
+  val Id = "OKPAY"
 
   private val DateFormat = "yyyy-MM-dd HH:mm:ss"
 

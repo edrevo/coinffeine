@@ -5,6 +5,9 @@ import scala.concurrent.Future
 
 trait PaymentProcessor {
 
+  /** Unique identifier of this payment processor */
+  def id: String
+
   /** Send a payment from any of your wallets to someone.
     *
     * @param receiverId account id of receiver of payment
