@@ -8,7 +8,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Second, Seconds, Span}
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
-import com.coinffeine.acceptance.peer.{TestPeer, TestPeerComponent}
+import com.coinffeine.client.api.CoinffeineApp
 
 /** Base trait for acceptance testing that includes a test fixture */
 trait AcceptanceTest extends fixture.FeatureSpec
@@ -35,7 +35,7 @@ trait AcceptanceTest extends fixture.FeatureSpec
     /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
       * even if the block throws exceptions.
       */
-    def withPeer[T](block: TestPeer => T): T = {
+    def withPeer[T](block: CoinffeineApp => T): T = {
       val peer = buildPeer()
       try {
         block(peer)
@@ -45,13 +45,13 @@ trait AcceptanceTest extends fixture.FeatureSpec
     }
 
     /** Loan pattern for a couple of peers. */
-    def withPeerPair[T](block: (TestPeer, TestPeer) => T): T =
+    def withPeerPair[T](block: (CoinffeineApp, CoinffeineApp) => T): T =
       withPeer(bob =>
         withPeer(sam =>
           block(bob, sam)
         ))
 
-    private def buildPeer(): TestPeer = new TestPeerComponent(broker.address).peer
+    private def buildPeer() = new TestCoinffeineApp(broker.address).app
   }
 
   override type FixtureParam = IntegrationTestFixture

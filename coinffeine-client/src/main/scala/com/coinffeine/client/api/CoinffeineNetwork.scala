@@ -48,7 +48,7 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Exchange]
+  def submitSellOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Order]
 
   /** Cancel an unmatched order. */
   def cancelOrder(order: Order): Unit

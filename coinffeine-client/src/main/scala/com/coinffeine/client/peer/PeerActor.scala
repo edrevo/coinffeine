@@ -46,7 +46,7 @@ object PeerActor {
   trait Component {
     this: QuoteRequestActor.Component with MessageGateway.Component with ConfigComponent =>
 
-    lazy val peerSupervisorProps: Props = {
+    lazy val peerProps: Props = {
       val peerInfo = new PeerInfo(config.getString(HostSetting), config.getInt(PortSetting))
       val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
       Props(new PeerActor(
