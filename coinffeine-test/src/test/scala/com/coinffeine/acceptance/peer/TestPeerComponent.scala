@@ -3,7 +3,7 @@ package com.coinffeine.acceptance.peer
 import com.typesafe.config.ConfigFactory
 
 import com.coinffeine.acceptance.IntegrationTestNetworkComponent
-import com.coinffeine.client.peer.{PeerActor, PeerSupervisorActor}
+import com.coinffeine.client.peer.{QuoteRequestActor, PeerActor}
 import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
@@ -11,8 +11,8 @@ import com.coinffeine.common.protocol.serialization.DefaultProtocolSerialization
 
 /** Cake-pattern factory of peers configured for GUI-less testing. */
 class TestPeerComponent(brokerAddress: PeerConnection)
-  extends PeerSupervisorActor.Component
-  with PeerActor.Component
+  extends PeerActor.Component
+  with QuoteRequestActor.Component
   with ProtoRpcMessageGateway.Component
   with DefaultProtocolSerializationComponent
   with IntegrationTestNetworkComponent

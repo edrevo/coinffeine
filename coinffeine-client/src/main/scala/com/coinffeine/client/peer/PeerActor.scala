@@ -1,56 +1,60 @@
 package com.coinffeine.client.peer
 
-import java.util.Currency
-
 import akka.actor._
+import com.googlecode.protobuf.pro.duplex.PeerInfo
 
-import com.coinffeine.client.peer.PeerActor.JoinNetwork
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.protocol.gateway.MessageGateway._
-import com.coinffeine.common.protocol.messages.brokerage.{Quote, QuoteRequest}
+import com.coinffeine.common.config.ConfigComponent
+import com.coinffeine.common.protocol.gateway.MessageGateway
+import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError}
+import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
-/** A peer that is able to take part in multiple exchanges. */
-class PeerActor() extends Actor with ActorLogging {
+/** Topmost actor on a peer node. It starts all the relevant actors like the peer actor and
+  * the message gateway and supervise them.
+  */
+class PeerActor(
+    address: PeerInfo,
+    brokerAddress: PeerConnection,
+    gatewayProps: Props,
+    quoteRequestProps: Props
+  ) extends Actor with ActorLogging {
 
-  override def receive: Receive = {
-    case JoinNetwork(messageGateway, brokerAddress) =>
-      new PeerOnNetwork(messageGateway, brokerAddress).join()
+  val gatewayRef = context.actorOf(gatewayProps, "gateway")
+
+  override def preStart(): Unit = {
+    gatewayRef ! Bind(address)
   }
 
-  private class PeerOnNetwork(gateway: ActorRef, broker: PeerConnection) {
+  override def receive: Receive = {
 
-    def join(): Unit = {
-      subscribeToMessages(broker)
-      context.become(receive)
-    }
+    case BindingError(cause) =>
+      log.error(cause, "Cannot start peer")
+      context.stop(self)
 
-    private var quoteRequesters = Map.empty[Currency, ActorRef]
-
-    private val receive: Receive = {
-      case request @ QuoteRequest(currency) =>
-        quoteRequesters += currency -> sender
-        gateway ! ForwardMessage(request, broker)
-
-      case ReceiveMessage(quote: Quote, _) =>
-        quoteRequesters.get(quote.currency).foreach { ref =>
-          ref ! quote
-        }
-        quoteRequesters -= quote.currency
-    }
-
-    private def subscribeToMessages(broker: PeerConnection): Unit = gateway ! Subscribe {
-      case ReceiveMessage(quote: Quote, `broker`) => true
-      case _ => false
-    }
+    case QuoteRequest(currency) =>
+      val request = QuoteRequestActor.StartRequest(currency, gatewayRef, brokerAddress)
+      context.actorOf(quoteRequestProps) forward request
   }
 }
 
 object PeerActor {
 
-  /** Order the peer to join the network */
-  case class JoinNetwork(messageGateway: ActorRef, brokerAddress: PeerConnection)
+  val HostSetting = "coinffeine.peer.host"
+  val PortSetting = "coinffeine.peer.port"
+  val BrokerAddressSetting = "coinffeine.broker.address"
 
   trait Component {
-    lazy val peerActorProps = Props(new PeerActor())
+    this: QuoteRequestActor.Component with MessageGateway.Component with ConfigComponent =>
+
+    lazy val peerSupervisorProps: Props = {
+      val peerInfo = new PeerInfo(config.getString(HostSetting), config.getInt(PortSetting))
+      val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
+      Props(new PeerActor(
+        peerInfo,
+        brokerAddress,
+        gatewayProps = messageGatewayProps,
+        quoteRequestProps = quoteRequestProps
+      ))
+    }
   }
 }

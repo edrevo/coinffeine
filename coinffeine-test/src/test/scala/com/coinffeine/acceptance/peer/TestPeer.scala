@@ -1,7 +1,7 @@
 package com.coinffeine.acceptance.peer
 
 import java.util.Currency
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -16,11 +16,8 @@ class TestPeer(peerSupervisorProps: Props, name: String)
     extends TestActorSystem(peerSupervisorProps, name) {
   implicit private val timeout = Timeout(3, SECONDS)
 
-  private val peerRef: ActorRef =
-    Await.result(system.actorSelection(supervisorRef.path / "peer").resolveOne(), timeout.duration)
-
   def askForQuote(currency: Currency): Future[Quote] =
-    (peerRef ? QuoteRequest(currency)).mapTo[Quote]
+    (supervisorRef ? QuoteRequest(currency)).mapTo[Quote]
 
   def placeOrder(order: Order): Unit = {}
 }
