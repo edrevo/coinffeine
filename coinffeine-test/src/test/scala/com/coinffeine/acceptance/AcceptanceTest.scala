@@ -51,8 +51,7 @@ trait AcceptanceTest extends fixture.FeatureSpec
           block(bob, sam)
         ))
 
-    private def buildPeer(): TestPeer =
-      new TestPeerComponent().buildPeer(broker.address)
+    private def buildPeer(): TestPeer = new TestPeerComponent(broker.address).peer
   }
 
   override type FixtureParam = IntegrationTestFixture
