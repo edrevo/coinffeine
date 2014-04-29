@@ -28,4 +28,8 @@ object ProtocolConstants {
   trait Component {
     val protocolConstants: ProtocolConstants
   }
+
+  trait DefaultComponent extends Component {
+    override val protocolConstants = DefaultConstants
+  }
 }
