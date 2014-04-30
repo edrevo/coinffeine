@@ -24,13 +24,7 @@ trait AcceptanceTest extends fixture.FeatureSpec
   class IntegrationTestFixture {
 
     private val broker = new TestBrokerComponent().broker
-
-    def withBroker[T](block: => T): T = try {
-      Await.ready(broker.start(), Duration.Inf)
-      block
-    } finally {
-      broker.close()
-    }
+    Await.ready(broker.start(), Duration.Inf)
 
     /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
       * even if the block throws exceptions.
@@ -51,6 +45,10 @@ trait AcceptanceTest extends fixture.FeatureSpec
           block(bob, sam)
         ))
 
+    private[AcceptanceTest] def close(): Unit = {
+      broker.close()
+    }
+
     private def buildPeer() = new TestCoinffeineApp(broker.address).app
   }
 
@@ -58,8 +56,10 @@ trait AcceptanceTest extends fixture.FeatureSpec
 
   override def withFixture(test: OneArgTest): Outcome = {
     val fixture = new IntegrationTestFixture()
-    fixture.withBroker {
+    try {
       withFixture(test.toNoArgTest(fixture))
+    } finally {
+      fixture.close()
     }
   }
 }
