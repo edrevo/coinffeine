@@ -1,12 +1,10 @@
 package com.coinffeine.client.api
 
 import java.util.Currency
-
 import scala.concurrent.Future
 
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
-import com.coinffeine.common.protocol.Spread
-import com.coinffeine.common.protocol.messages.brokerage.Order
+import com.coinffeine.common.protocol.messages.brokerage.{Order, Quote}
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
@@ -32,7 +30,7 @@ trait CoinffeineNetwork {
   def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
 
   /** Check current prices for a given payment form */
-  def currentSpread(paymentProcessorId: String, currency: Currency): Future[Spread]
+  def currentQuote(paymentProcessorId: String, currency: Currency): Future[Quote]
 
   /** Submit an order to buy bitcoins.
     *
@@ -50,7 +48,7 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Exchange]
+  def submitSellOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Order]
 
   /** Cancel an unmatched order. */
   def cancelOrder(order: Order): Unit
@@ -59,7 +57,7 @@ trait CoinffeineNetwork {
 object CoinffeineNetwork {
 
   sealed trait Status
-  case object Disconnected
+  case object Disconnected extends Status
   case class Connected(peers: Set[PeerId]) extends Status
   case object Connecting extends Status
 

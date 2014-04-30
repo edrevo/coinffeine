@@ -1,14 +1,14 @@
 package com.coinffeine.acceptance
 
-import com.google.bitcoin.params.TestNet3Params
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import org.scalatest.{GivenWhenThen, Outcome, ShouldMatchers, fixture}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Second, Seconds, Span}
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
-import com.coinffeine.acceptance.peer.TestPeerComponent
-import com.coinffeine.common.network.NetworkComponent
-import com.coinffeine.common.protocol.ProtocolConstants
+import com.coinffeine.client.api.CoinffeineApp
 
 /** Base trait for acceptance testing that includes a test fixture */
 trait AcceptanceTest extends fixture.FeatureSpec
@@ -21,21 +21,45 @@ trait AcceptanceTest extends fixture.FeatureSpec
     interval = Span(1, Second)
   )
 
-  class TestComponent extends TestPeerComponent
-    with TestBrokerComponent with NetworkComponent with ProtocolConstants.Component {
+  class IntegrationTestFixture {
 
-    override lazy val network = TestNet3Params.get()
-    override val protocolConstants = ProtocolConstants.DefaultConstants
+    private val broker = new TestBrokerComponent().broker
+    Await.ready(broker.start(), Duration.Inf)
+
+    /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
+      * even if the block throws exceptions.
+      */
+    def withPeer[T](block: CoinffeineApp => T): T = {
+      val peer = buildPeer()
+      try {
+        block(peer)
+      } finally {
+        peer.close()
+      }
+    }
+
+    /** Loan pattern for a couple of peers. */
+    def withPeerPair[T](block: (CoinffeineApp, CoinffeineApp) => T): T =
+      withPeer(bob =>
+        withPeer(sam =>
+          block(bob, sam)
+        ))
+
+    private[AcceptanceTest] def close(): Unit = {
+      broker.close()
+    }
+
+    private def buildPeer() = new TestCoinffeineApp(broker.address).app
   }
 
-  override type FixtureParam = TestComponent
+  override type FixtureParam = IntegrationTestFixture
 
   override def withFixture(test: OneArgTest): Outcome = {
-    val component = new TestComponent
+    val fixture = new IntegrationTestFixture()
     try {
-      withFixture(test.toNoArgTest(component))
+      withFixture(test.toNoArgTest(fixture))
     } finally {
-      component.broker.close()
+      fixture.close()
     }
   }
 }

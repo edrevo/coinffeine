@@ -1,29 +1,35 @@
 package com.coinffeine.client.peer
 
-import akka.actor._
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.TestProbe
+import com.googlecode.protobuf.pro.duplex.PeerInfo
 
-import com.coinffeine.client.peer.PeerActor.JoinNetwork
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
-import com.coinffeine.common.currency.CurrencyCode._
-import com.coinffeine.common.protocol.gateway.GatewayProbe
-import com.coinffeine.common.protocol.messages.brokerage.{Quote, QuoteRequest}
+import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
+import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
+import com.coinffeine.common.protocol.gateway.MessageGateway.Bind
+import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
+import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
 
-class PeerActorTest extends AkkaSpec(ActorSystem("PeerTests")) {
+class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
-  val broker = PeerConnection("broker")
-  val gateway = new GatewayProbe()
-  val peer = system.actorOf(Props(new PeerActor()), "ask-for-quotes")
+  val address = new PeerInfo("localhost", 8080)
+  val brokerAddress = PeerConnection("host", 8888)
+  val gatewayProbe = TestProbe()
+  val requestsProbe = TestProbe()
+  val peer = system.actorOf(Props(new PeerActor(address, brokerAddress,
+    MockActor.props(gatewayProbe), MockActor.props(requestsProbe))))
+  var gatewayRef: ActorRef = _
 
-  "A peer" should "subscribe to messages when joining the network" in {
-    gateway.expectNoMsg()
-    peer ! JoinNetwork(gateway.ref, broker)
-    gateway.expectSubscription()
+  "A peer" must "start the message gateway" in {
+    gatewayRef = gatewayProbe.expectMsgClass(classOf[MockStarted]).ref
+    gatewayProbe.expectMsg(MockReceived(gatewayRef, peer, Bind(address)))
   }
 
-  it should "forward quote requests to the broker" in {
+  it must "delegate quote requests" in {
     peer ! QuoteRequest(EUR.currency)
-    gateway.expectForwarding(QuoteRequest(EUR.currency), broker)
-    gateway.relayMessage(Quote.empty(EUR.currency), broker)
-    expectMsg(Quote.empty(EUR.currency))
+    val requestRef = requestsProbe.expectMsgClass(classOf[MockStarted]).ref
+    val expectedInitialization = StartRequest(EUR.currency, gatewayRef, brokerAddress)
+    requestsProbe.expectMsg(MockReceived(requestRef, self, expectedInitialization))
   }
 }
