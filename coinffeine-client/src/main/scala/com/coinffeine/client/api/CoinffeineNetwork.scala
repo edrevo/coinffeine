@@ -15,7 +15,7 @@ trait CoinffeineNetwork {
     *
     * @return The connected status in case of success or ConnectException otherwise
     */
-  def connect(): Future[CoinffeineNetwork.Connected]
+  def connect(): Future[CoinffeineNetwork.Connected.type]
 
   /** Disconnect from the network.
     *
@@ -58,10 +58,10 @@ object CoinffeineNetwork {
 
   sealed trait Status
   case object Disconnected extends Status
-  case class Connected(peers: Set[PeerId]) extends Status
+  case object Connected extends Status
   case object Connecting extends Status
 
-  class ConnectException(cause: Throwable)
+  case class ConnectException(cause: Throwable)
     extends Exception("Cannot connect to the P2P network", cause)
 
   trait ExchangeListener {
