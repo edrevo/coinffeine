@@ -1,5 +1,7 @@
 package com.coinffeine.client.exchange
 
+import scala.util.{Failure, Success}
+
 import akka.actor._
 
 import com.coinffeine.client.{ExchangeInfo, MessageForwarding}
@@ -15,14 +17,15 @@ class BuyerExchangeActor(exchange: Exchange, constants: ProtocolConstants)
   extends Actor with ActorLogging  {
 
   override def receive: Receive = {
-    case StartExchange(exchangeInfo, messageGateway, resultListeners) =>
-      new InitializedBuyerExchange(exchangeInfo, messageGateway, resultListeners).startExchange()
+    case StartExchange(messageGateway, resultListeners) =>
+      new InitializedBuyerExchange(messageGateway, resultListeners).startExchange()
   }
 
   private class InitializedBuyerExchange(
-      override val exchangeInfo: ExchangeInfo,
       override val messageGateway: ActorRef,
       listeners: Set[ActorRef]) extends MessageForwarding {
+
+    override val exchangeInfo: ExchangeInfo = exchange.exchangeInfo
 
     def startExchange(): Unit = {
       subscribeToMessages()
@@ -36,28 +39,33 @@ class BuyerExchangeActor(exchange: Exchange, constants: ProtocolConstants)
     }
 
     private val waitForFinalSignature: Receive = {
-      case ReceiveMessage(StepSignature(_, signature), _)
-        if exchange.validateFinalSignature(signature) =>
-          log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
-          // TODO: Publish transaction to blockchain
-          listeners.foreach { _ ! ExchangeSuccess }
-          context.stop(self)
+      case ReceiveMessage(StepSignature(_, signature), _) =>
+        exchange.validateFinalSignature(signature) match {
+          case Success(_) =>
+            log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
+            // TODO: Publish transaction to blockchain
+            listeners.foreach { _ ! ExchangeSuccess }
+            context.stop(self)
+          case Failure(cause) =>
+            log.warning(s"Received invalid final signature: $signature. Reason: $cause")
+        }
     }
 
     private def waitForNextStepSignature(step: Int): Receive = {
-      case ReceiveMessage(StepSignature(_, signature), _)
-        if exchange.validateSignature(step, signature) =>
-        import context.dispatcher
-        forwardToCounterpart(
-          exchange.pay(step).map(payment => PaymentProof(exchangeInfo.id, payment.id)))
-        if (step == exchangeInfo.steps) {
-          context.become(waitForFinalSignature)
-        } else {
-          context.become(waitForNextStepSignature(step + 1))
-        }
       case ReceiveMessage(StepSignature(_, signature), _) =>
-        log.warning("StepSignature message received with invalid signature. " +
-          s"Step: $step, Signature: ${signature.encodeToBitcoin.toSeq} ")
+        exchange.validateSignature(step, signature) match {
+          case Success(_) =>
+            import context.dispatcher
+            forwardToCounterpart(
+              exchange.pay(step).map(payment => PaymentProof (exchangeInfo.id, payment.id)))
+            if (step == exchangeInfo.steps) {
+              context.become(waitForFinalSignature)
+            } else {
+              context.become(waitForNextStepSignature(step + 1))
+            }
+          case Failure(cause) =>
+            log.warning(s"Received invalid signature $signature in step $step. Reason: $cause")
+        }
     }
   }
 }

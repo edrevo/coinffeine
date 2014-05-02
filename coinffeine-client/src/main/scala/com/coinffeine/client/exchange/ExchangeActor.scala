@@ -2,16 +2,13 @@ package com.coinffeine.client.exchange
 
 import akka.actor.{ActorRef, Props}
 
-import com.coinffeine.client.ExchangeInfo
-
-/** Am exchange actor is in charge of performing each of the exchange steps by sending/receiving
+/** An exchange actor is in charge of performing each of the exchange steps by sending/receiving
   * bitcoins and fiat.
   */
 object ExchangeActor {
 
   /** Sent to the the actor to start the actual exchange. */
   case class StartExchange(
-      exchangeInfo: ExchangeInfo,
       messageGateway: ActorRef,
       resultListeners: Set[ActorRef]
   )
