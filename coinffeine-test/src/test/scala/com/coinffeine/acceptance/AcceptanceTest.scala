@@ -4,7 +4,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 import org.scalatest.{GivenWhenThen, Outcome, ShouldMatchers, fixture}
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{ScalaFutures, Eventually}
 import org.scalatest.time.{Second, Seconds, Span}
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
@@ -14,7 +14,8 @@ import com.coinffeine.client.api.CoinffeineApp
 trait AcceptanceTest extends fixture.FeatureSpec
   with GivenWhenThen
   with Eventually
-  with ShouldMatchers {
+  with ShouldMatchers
+  with ScalaFutures {
 
   override implicit def patienceConfig = PatienceConfig(
     timeout = Span(10, Seconds),

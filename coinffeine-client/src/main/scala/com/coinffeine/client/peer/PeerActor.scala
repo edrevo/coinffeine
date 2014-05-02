@@ -1,12 +1,16 @@
 package com.coinffeine.client.peer
 
+import scala.concurrent.duration._
+
 import akka.actor._
+import akka.pattern._
+import akka.util.Timeout
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError}
+import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
 /** Topmost actor on a peer node. It starts all the relevant actors like the peer actor and
@@ -19,13 +23,18 @@ class PeerActor(
     quoteRequestProps: Props
   ) extends Actor with ActorLogging {
 
+  import context.dispatcher
+
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
 
-  override def preStart(): Unit = {
-    gatewayRef ! Bind(address)
-  }
-
   override def receive: Receive = {
+
+    case PeerActor.Connect =>
+      implicit val timeout = PeerActor.ConnectionTimeout
+      (gatewayRef ? Bind(address)).map {
+        case BoundTo(_) => PeerActor.Connected
+        case BindingError(cause) => PeerActor.ConnectionFailed(cause)
+      }.pipeTo(sender)
 
     case BindingError(cause) =>
       log.error(cause, "Cannot start peer")
@@ -39,9 +48,15 @@ class PeerActor(
 
 object PeerActor {
 
+  case object Connect
+  case object Connected
+  case class ConnectionFailed(cause: Throwable)
+
   val HostSetting = "coinffeine.peer.host"
   val PortSetting = "coinffeine.peer.port"
   val BrokerAddressSetting = "coinffeine.broker.address"
+
+  private val ConnectionTimeout = Timeout(10.seconds)
 
   trait Component {
     this: QuoteRequestActor.Component with MessageGateway.Component with ConfigComponent =>
