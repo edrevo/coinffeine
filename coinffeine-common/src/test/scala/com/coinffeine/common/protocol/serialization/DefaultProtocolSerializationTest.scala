@@ -10,6 +10,7 @@ import org.reflections.Reflections
 import com.coinffeine.common.{PeerConnection, UnitTest}
 import com.coinffeine.common.currency.{BtcAmount, CurrencyCode}
 import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -42,7 +43,9 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     StepSignature(exchangeId, transactionSignature),
     PaymentProof(exchangeId, "paymentId")
   )
-  val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))
+  val version = Version(major = 1, minor = 0)
+  val protoVersion = proto.ProtocolVersion.newBuilder().setMajor(1).setMinor(0).build()
+  val instance = new DefaultProtocolSerialization(version, new TransactionSerialization(network))
 
   requireSampleInstancesForAllPublicMessages()
 
@@ -54,6 +57,18 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     }
   }
 
+  it must "throw when deserializing messages of a different protocol version" in {
+    val message = CoinffeineMessage.newBuilder
+      .setVersion(protoVersion.toBuilder.setMajor(42))
+      .setPayload(
+        proto.Payload.newBuilder.setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD")))
+      .build
+    val ex = the [IllegalArgumentException] thrownBy {
+      instance.fromProtobuf(message)
+    }
+    ex.getMessage should include ("Cannot deserialize message with version 42.0")
+  }
+
   it must "throw when serializing unknown public messages" in {
     val ex = the [IllegalArgumentException] thrownBy {
       instance.toProtobuf(new PublicMessage {})
@@ -62,7 +77,10 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
   }
 
   it must "throw when deserializing an empty protobuf message" in {
-    val emptyMessage = CoinffeineMessage.newBuilder.build
+    val emptyMessage = CoinffeineMessage.newBuilder
+      .setVersion(protoVersion)
+      .setPayload(proto.Payload.newBuilder())
+      .build
     val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(emptyMessage)
     }
@@ -70,12 +88,14 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
   }
 
   it must "throw when deserializing a protobuf message with multiple messages" in {
-    val emptyMessage = CoinffeineMessage.newBuilder
-      .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
-      .setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD"))
+    val multiMessage = CoinffeineMessage.newBuilder
+      .setVersion(protoVersion)
+      .setPayload(proto.Payload.newBuilder
+        .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+        .setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD")))
       .build
     val ex = the [IllegalArgumentException] thrownBy {
-      instance.fromProtobuf(emptyMessage)
+      instance.fromProtobuf(multiMessage)
     }
     ex.getMessage should include ("Malformed message with 2 fields")
   }

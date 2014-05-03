@@ -6,6 +6,7 @@ import com.coinffeine.client.app.DefaultCoinffeineApp
 import com.coinffeine.client.peer.{PeerActor, QuoteRequestActor}
 import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
+import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 import com.coinffeine.common.protocol.serialization.DefaultProtocolSerializationComponent
 
@@ -16,7 +17,8 @@ class TestCoinffeineApp(brokerAddress: PeerConnection) extends DefaultCoinffeine
   with ProtoRpcMessageGateway.Component
   with DefaultProtocolSerializationComponent
   with IntegrationTestNetworkComponent
-  with ConfigComponent {
+  with ConfigComponent
+  with ProtocolConstants.DefaultComponent {
 
   override lazy val config = {
     val port = DefaultTcpPortAllocator.allocatePort()
