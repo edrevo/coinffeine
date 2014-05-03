@@ -93,9 +93,7 @@ message PaymentProof {
     required string paymentId = 2;
 }
 
-message Void {}
-
-message CoinffeineMessage {
+message Payload {
     optional ExchangeAborted exchangeAborted = 1;
     optional EnterExchange enterExchange = 2;
     optional CommitmentNotification commitmentNotification = 3;
@@ -110,6 +108,18 @@ message CoinffeineMessage {
     optional StepSignature stepSignature = 12;
     optional PaymentProof paymentProof = 13;
 }
+
+message ProtocolVersion {
+    required int32 major = 1;
+    required int32 minor = 2;
+}
+
+message CoinffeineMessage {
+    required ProtocolVersion version = 1;
+    required Payload payload = 2;
+}
+
+message Void {}
 
 service PeerService {
     rpc SendMessage(CoinffeineMessage) returns (Void);

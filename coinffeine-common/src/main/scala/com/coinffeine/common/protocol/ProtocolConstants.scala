@@ -12,13 +12,15 @@ import scala.concurrent.duration._
   * @param commitmentAbortTimeout  Maximum time than a broker will wait for buyer and seller
   *                                commitments
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
+  * @param version                 Protocol version
   */
 case class ProtocolConstants(
   commitmentConfirmations: Int = 1,
   resubmitRefundSignatureTimeout: FiniteDuration = 10 seconds,
   refundSignatureAbortTimeout: FiniteDuration = 5 minutes,
   commitmentAbortTimeout: FiniteDuration = 5 minutes,
-  orderExpirationInterval: FiniteDuration = 1 minute
+  orderExpirationInterval: FiniteDuration = 1 minute,
+  version: Version = Version(major = 0, minor = 1)
 )
 
 object ProtocolConstants {
