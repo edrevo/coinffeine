@@ -14,6 +14,8 @@ case class FiatAmount(amount: BigDecimal, currency: Currency) {
     FiatAmount(this.amount + that.amount, this.currency)
   }
 
+  def unary_- : FiatAmount = FiatAmount(-amount, currency)
+
   def / (divisor: BigDecimal): FiatAmount = copy(amount = amount / divisor)
 
   override def toString = "%s %s".format(amount.underlying().toPlainString, currency)
