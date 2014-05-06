@@ -15,13 +15,4 @@ object ExchangeActor {
 
   /** Sent to the exchange listeners to notify success of the exchange */
   case object ExchangeSuccess
-
-  trait Component {
-    /** Create the properties of an exchange actor.
-      *
-      * @param exchange          Class that contains the exchange logic
-      * @return                  Actor properties
-      */
-    def exchangeActorProps(exchange: Exchange): Props
-  }
 }

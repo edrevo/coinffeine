@@ -1,4 +1,4 @@
-package com.coinffeine.client.handshake
+package com.coinffeine.client
 
 import scala.collection.JavaConversions._
 

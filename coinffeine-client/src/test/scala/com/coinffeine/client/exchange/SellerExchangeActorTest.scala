@@ -23,7 +23,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val exchange = new MockExchange(exchangeInfo)
+  val exchange = new MockExchange(exchangeInfo) with SellerUser
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(
@@ -47,7 +47,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   it should "send the first step signature as soon as the exchange starts" in {
     val offerSignature = exchange.signStep(1)
-    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignatures(exchangeInfo.id, offerSignature)) to counterpart
   }
 
   it should "not send the second step signature until payment proof has been provided" in {
@@ -56,22 +56,19 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
-    val offerSignature = exchange.signStep(2)
-    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignatures(exchangeInfo.id, exchange.signStep(2))) to counterpart
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     for (i <- 3 to exchangeInfo.steps) {
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
-      val offerSignature = exchange.signStep(i)
-      shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
+      shouldForward(StepSignatures(exchangeInfo.id, exchange.signStep(i))) to counterpart
     }
   }
 
   it should "send the final signature" in {
-    val offerSignature = exchange.finalSignature
-    shouldForward(StepSignature(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignatures(exchangeInfo.id, exchange.finalSignature)) to counterpart
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

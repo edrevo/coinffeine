@@ -85,7 +85,8 @@ message EnterExchange {
 
 message StepSignature {
     required string exchangeId = 1;
-    required bytes transactionSignature = 2;
+    required bytes idx0Signature = 2;
+    required bytes idx1Signature = 3;
 }
 
 message PaymentProof {

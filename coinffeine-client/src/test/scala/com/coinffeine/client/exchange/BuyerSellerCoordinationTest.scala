@@ -21,7 +21,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val exchange = new MockExchange(exchangeInfo)
+  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser
+  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser
 
   class MessageForwarder(to: ActorRef) extends Actor {
     override val receive: Receive = {
@@ -37,12 +38,12 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val buyer = system.actorOf(
-    Props(new BuyerExchangeActor(exchange, protocolConstants)),
+    Props(new BuyerExchangeActor(buyerExchange, protocolConstants)),
     "buyer-exchange-actor"
   )
 
   val seller = system.actorOf(
-    Props(new SellerExchangeActor(exchange, protocolConstants)),
+    Props(new SellerExchangeActor(sellerExchange, protocolConstants)),
     "seller-exchange-actor"
   )
 
