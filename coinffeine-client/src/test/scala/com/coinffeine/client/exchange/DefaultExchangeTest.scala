@@ -4,13 +4,13 @@ import scala.collection.JavaConversions._
 
 import com.google.bitcoin.core.{TransactionOutput, ECKey, Transaction}
 import com.google.bitcoin.core.Transaction.SigHash
+import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.BitcoinjTest
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessor
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.currency.BtcAmount
-import com.google.bitcoin.script.ScriptBuilder
 
 class DefaultExchangeTest extends BitcoinjTest {
 

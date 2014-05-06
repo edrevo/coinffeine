@@ -54,14 +54,16 @@ class SellerExchangeActor(exchange: Exchange with SellerUser, constants: Protoco
         context.become(waitForPaymentProof(step))
       case PaymentValidationResult(_) =>
         if (step == exchangeInfo.steps) finishExchange()
-        else {
-          unstashAll()
-          forwardToCounterpart(StepSignatures(
-            exchangeInfo.id,
-            exchange.signStep(step)))
-          context.become(waitForPaymentProof(step + 1))
-        }
+        else transitionToNextStep(step)
       case _ => stash()
+    }
+
+    private def transitionToNextStep(currentStep: Int): Unit = {
+      unstashAll()
+      forwardToCounterpart(StepSignatures(
+        exchangeInfo.id,
+        exchange.signStep(currentStep)))
+      context.become(waitForPaymentProof(currentStep + 1))
     }
 
     private def finishExchange(): Unit = {
