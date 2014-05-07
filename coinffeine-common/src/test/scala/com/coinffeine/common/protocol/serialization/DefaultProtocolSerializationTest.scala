@@ -40,7 +40,7 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     ExchangeRejection(exchangeId, "reason"),
     RefundTxSignatureRequest(exchangeId, transaction),
     RefundTxSignatureResponse(exchangeId, transactionSignature),
-    StepSignature(exchangeId, transactionSignature),
+    StepSignatures(exchangeId, transactionSignature, transactionSignature),
     PaymentProof(exchangeId, "paymentId")
   )
   val version = Version(major = 1, minor = 0)

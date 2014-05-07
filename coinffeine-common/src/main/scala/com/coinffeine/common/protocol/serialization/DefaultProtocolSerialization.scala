@@ -53,7 +53,7 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setRefundTxSignatureRequest(ProtoMapping.toProtobuf(m))
       case m: RefundTxSignatureResponse =>
         builder.setRefundTxSignatureResponse(ProtoMapping.toProtobuf(m))
-      case m: StepSignature =>
+      case m: StepSignatures =>
         builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))

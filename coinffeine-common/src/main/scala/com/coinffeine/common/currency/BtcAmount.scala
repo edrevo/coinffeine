@@ -7,7 +7,11 @@ case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
   def min(other: BtcAmount): BtcAmount = if (this <= other) this else other
   def +(that: BtcAmount) = BtcAmount(amount + that.amount)
   def -(that: BtcAmount) = BtcAmount(amount - that.amount)
-  def /(that: Long) = BtcAmount(amount / that)
+  def /(that: Long) = {
+    val result = BtcAmount(amount / that)
+    result.asSatoshi // Ensures that result doesn't have fractional satoshis
+    result
+  }
   def *(that: Int) = BtcAmount(amount * that)
   def unary_- = BtcAmount(-amount)
 

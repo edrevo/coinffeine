@@ -7,5 +7,5 @@ import com.coinffeine.client.ExchangeInfo
 class SellerHandshake(exchangeInfo: ExchangeInfo, userWallet: Wallet)
   extends DefaultHandshake(
     exchangeInfo,
-    amountToCommit = exchangeInfo.btcExchangeAmount * (1 + 1 / exchangeInfo.steps),
+    amountToCommit = exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
     userWallet)
