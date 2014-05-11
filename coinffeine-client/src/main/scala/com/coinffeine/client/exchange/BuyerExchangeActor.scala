@@ -58,15 +58,15 @@ class BuyerExchangeActor(exchange: Exchange with BuyerUser, constants: ProtocolC
             import context.dispatcher
             forwardToCounterpart(
               exchange.pay(step).map(payment => PaymentProof (exchangeInfo.id, payment.id)))
-            if (step == exchangeInfo.steps) {
-              context.become(waitForFinalSignature)
-            } else {
-              context.become(waitForNextStepSignature(step + 1))
-            }
+            context.become(nextWait(step))
           case Failure(cause) =>
             log.warning(s"Received invalid signature ($signature0, $signature1) in step $step. Reason: $cause")
         }
     }
+
+    private def nextWait(step: Int): Receive =
+      if (step == exchangeInfo.steps) waitForFinalSignature
+      else waitForNextStepSignature(step + 1)
   }
 }
 

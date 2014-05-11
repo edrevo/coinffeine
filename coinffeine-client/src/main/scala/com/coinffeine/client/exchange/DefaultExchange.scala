@@ -49,7 +49,12 @@ class DefaultExchange(
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  private val offers = for (step <- 1 to exchangeInfo.steps) yield {
+  override def pay(step: Int): Future[Payment] = paymentProcessor.sendPayment(
+    exchangeInfo.counterpartFiatAddress,
+    exchangeInfo.fiatStepAmount,
+    getPaymentDescription(step))
+
+  override def getOffer(step: Int): Transaction = {
     val tx = new Transaction(exchangeInfo.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
@@ -59,14 +64,6 @@ class DefaultExchange(
       sellersKey)
     tx
   }
-
-  override def pay(step: Int): Future[Payment] = paymentProcessor.sendPayment(
-    exchangeInfo.counterpartFiatAddress,
-    exchangeInfo.fiatStepAmount,
-    getPaymentDescription(step))
-
-  override def getOffer(step: Int): Transaction =
-    new Transaction(exchangeInfo.network, offers(step).bitcoinSerialize)
 
   override def validateSellersSignature(
       step: Int,
@@ -98,7 +95,7 @@ class DefaultExchange(
       "Payment amount does not match expected amount")
     require(payment.receiverId == sellersFiatAddress,
       "Payment is not being sent to the seller")
-    require(payment.receiverId == buyersFiatAddress,
+    require(payment.senderId == buyersFiatAddress,
       "Payment is not coming from the buyer")
     require(payment.description == getPaymentDescription(step),
       "Payment does not have the required description")
@@ -155,7 +152,7 @@ class DefaultExchange(
     val input = tx.getInput(inputIndex)
     require(sellersKey.verify(
       tx.hashForSignature(
-        0,
+        inputIndex,
         input.getConnectedOutput.getScriptPubKey,
         SigHash.ALL,
         false),

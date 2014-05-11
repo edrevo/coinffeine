@@ -14,6 +14,11 @@ case class FiatAmount(amount: BigDecimal, currency: Currency) {
     FiatAmount(this.amount + that.amount, this.currency)
   }
 
+  def -(that: FiatAmount): FiatAmount = {
+    FiatAmount.requireCompatible(this, that)
+    FiatAmount(this.amount - that.amount, this.currency)
+  }
+
   def unary_- : FiatAmount = FiatAmount(-amount, currency)
 
   def / (divisor: BigDecimal): FiatAmount = copy(amount = amount / divisor)
