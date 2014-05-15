@@ -18,12 +18,12 @@ sealed trait UserRole {
   /** The fiat address for the buyer */
   val buyersFiatAddress: String
 
-  /** The input index that contains the user's funds in an exchange transaction (see TXi.0 in
+  /** The input index that contains the user's funds in an exchange transaction (see TX i in
     * https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm#transaction-definitions)
     */
   val userInputIndex: Int
 
-  /** The input index that contains the counterpart's funds in an exchange transaction (see TXi.0 in
+  /** The input index that contains the counterpart's funds in an exchange transaction (see TX i in
     * https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm#transaction-definitions)
     */
   val counterPartInputIndex: Int

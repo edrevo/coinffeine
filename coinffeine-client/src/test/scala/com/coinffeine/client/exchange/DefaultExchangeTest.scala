@@ -29,7 +29,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
     lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, 200 BTC)
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
-    val sellerPaymentProc = new paymentProcFactory.MockPaymentProcessor(
+    val sellerPaymentProc = paymentProcFactory.newProcessor(
       sellerExchangeInfo.userFiatAddress, Seq(0 EUR))
 
     val buyerExchangeInfo = sampleExchangeInfo.copy(
@@ -40,7 +40,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
     )
     lazy val buyerWallet = createWallet(buyerExchangeInfo.userKey, 5 BTC)
     lazy val buyerHandshake = new BuyerHandshake(buyerExchangeInfo, buyerWallet)
-    val buyerPaymentProc = new paymentProcFactory.MockPaymentProcessor(
+    val buyerPaymentProc = paymentProcFactory.newProcessor(
       buyerExchangeInfo.userFiatAddress, Seq(1000 EUR))
   }
 

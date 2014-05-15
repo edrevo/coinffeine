@@ -12,9 +12,9 @@ import com.coinffeine.common.currency.FiatAmount
 class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
   @volatile var payments: List[Payment] = initialPayments
 
-  class MockPaymentProcessor(
+  private class MockPaymentProcessor(
       fiatAddress: String,
-      initialBalance: Seq[FiatAmount]= Seq.empty) extends PaymentProcessor {
+      initialBalance: Seq[FiatAmount]) extends PaymentProcessor {
 
     override def id: String = "MockPay"
 
@@ -53,4 +53,8 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
         Future.failed(new Error("[MockPay] The user does not have an account with that currency."))
       }
   }
+
+  def newProcessor(
+      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): PaymentProcessor =
+    new MockPaymentProcessor(fiatAddress, initialBalance)
 }
