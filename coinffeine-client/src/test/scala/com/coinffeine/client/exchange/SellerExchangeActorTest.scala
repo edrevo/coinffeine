@@ -13,7 +13,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage.CancelOrder
+import com.coinffeine.common.protocol.messages.brokerage.OrderCancellation
 import com.coinffeine.common.protocol.messages.exchange._
 
 class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
@@ -41,7 +41,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
-    val randomMessage = CancelOrder(CurrencyCode.EUR.currency)
+    val randomMessage = OrderCancellation(CurrencyCode.EUR.currency)
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 

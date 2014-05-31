@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
-import com.coinffeine.broker.BrokerActor.StartBrokering
+import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.{AkkaSpec, MockActor}
 import com.coinffeine.common.MockActor._
 import com.coinffeine.common.currency.CurrencyCode.EUR
@@ -42,7 +42,7 @@ class BrokerSupervisorActorTest extends AkkaSpec {
   it should "initialize brokers" in {
     brokerRef = brokerProbe.expectMsgClass(classOf[MockStarted]).ref
     brokerProbe.expectMsgPF() {
-      case MockReceived(_, _, StartBrokering(EUR.currency, _)) =>
+      case MockReceived(_, _, BrokeringStart(EUR.currency, _)) =>
     }
   }
 

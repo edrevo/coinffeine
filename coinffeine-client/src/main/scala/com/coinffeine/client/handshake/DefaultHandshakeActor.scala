@@ -61,7 +61,7 @@ private[handshake] class DefaultHandshakeActor(handshake: Handshake, constants: 
       case ReceiveMessage(RefundTxSignatureResponse(_, refundSignature), _) =>
         handshake.validateRefundSignature(refundSignature) match {
           case Success(_) =>
-            forwardToBroker(EnterExchange(exchangeInfo.id, handshake.commitmentTransaction))
+            forwardToBroker(ExchangeCommitment(exchangeInfo.id, handshake.commitmentTransaction))
             log.info("Handshake {}: Got a valid refund TX signature", exchangeInfo.id)
             context.become(waitForPublication(refundSignature))
 

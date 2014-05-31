@@ -60,7 +60,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForward (EnterExchange("id", handshake.commitmentTransaction)) to broker
+    shouldForward (ExchangeCommitment("id", handshake.commitmentTransaction)) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {

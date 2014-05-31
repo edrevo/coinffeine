@@ -33,16 +33,16 @@ private[serialization] class DefaultProtocolSerialization(
     message match {
       case m: ExchangeAborted =>
         builder.setExchangeAborted(ProtoMapping.toProtobuf(m))
-      case m: EnterExchange =>
-        builder.setEnterExchange(ProtoMapping.toProtobuf(m))
+      case m: ExchangeCommitment =>
+        builder.setExchangeCommitment(ProtoMapping.toProtobuf(m))
       case m: CommitmentNotification =>
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: OrderMatch =>
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
       case m: Order =>
         builder.setOrder(ProtoMapping.toProtobuf(m))
-      case m: CancelOrder =>
-        builder.setCancelOrder(ProtoMapping.toProtobuf(m))
+      case m: OrderCancellation =>
+        builder.setOrderCancellation(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
       case m: Quote =>
@@ -82,16 +82,16 @@ private[serialization] class DefaultProtocolSerialization(
     descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getExchangeAborted)
-      case ENTEREXCHANGE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getEnterExchange)
+      case EXCHANGECOMMITMENT_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getExchangeCommitment)
       case COMMITMENTNOTIFICATION_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
       case ORDERMATCH_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOrderMatch)
       case ORDER_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOrder)
-      case CANCELORDER_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getCancelOrder)
+      case ORDERCANCELLATION_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getOrderCancellation)
       case QUOTEREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getQuoteRequest)
       case QUOTE_FIELD_NUMBER =>

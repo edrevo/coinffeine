@@ -7,7 +7,7 @@ import scala.util.Random
 import akka.actor._
 
 import com.coinffeine.arbiter.HandshakeArbiterActor
-import com.coinffeine.broker.BrokerActor.StartBrokering
+import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -21,7 +21,7 @@ private[broker] class BrokerActor(
     orderExpirationInterval: Duration) extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case StartBrokering(currency, gateway) =>
+    case BrokeringStart(currency, gateway) =>
       new InitializedBroker(currency, gateway).startBrokering()
   }
 
@@ -39,7 +39,7 @@ private[broker] class BrokerActor(
       case ReceiveMessage(order: Order, _) if order.price.currency == currency => true
       case ReceiveMessage(quoteRequest: QuoteRequest, _)
         if quoteRequest.currency == currency => true
-      case ReceiveMessage(CancelOrder(`currency`), _) => true
+      case ReceiveMessage(OrderCancellation(`currency`), _) => true
       case _ => false
     }
 
@@ -69,7 +69,7 @@ private[broker] class BrokerActor(
       case ReceiveMessage(QuoteRequest(_), requester) =>
         gateway ! ForwardMessage(Quote(currency, book.spread, lastPrice), requester)
 
-      case ReceiveMessage(CancelOrder(_), requester) =>
+      case ReceiveMessage(OrderCancellation(_), requester) =>
         log.info(s"Order of $requester is cancelled")
         book = book.cancelOrder(requester)
 
@@ -92,7 +92,7 @@ private[broker] class BrokerActor(
 object BrokerActor {
 
   /** Start brokering exchanges on a given currency. */
-  case class StartBrokering(currency: Currency, gateway: ActorRef)
+  case class BrokeringStart(currency: Currency, gateway: ActorRef)
 
   trait Component { this: HandshakeArbiterActor.Component with ProtocolConstants.Component =>
 

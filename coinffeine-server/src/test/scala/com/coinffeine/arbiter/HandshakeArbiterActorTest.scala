@@ -7,7 +7,7 @@ import akka.testkit.TestProbe
 import com.google.bitcoin.core.Transaction
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.arbiter.HandshakeArbiterActor.StartHandshake
+import com.coinffeine.arbiter.HandshakeArbiterActor.HandshakeStart
 import com.coinffeine.common.{AkkaSpec, PeerConnection}
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
 import com.coinffeine.common.currency.BtcAmount
@@ -17,7 +17,7 @@ import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.protocol.messages.handshake.{EnterExchange, ExchangeAborted, ExchangeRejection}
+import com.coinffeine.common.protocol.messages.handshake.{ExchangeCommitment, ExchangeAborted, ExchangeRejection}
 
 class HandshakeArbiterActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("HandshakeArbiterSystem"))
@@ -47,7 +47,7 @@ class HandshakeArbiterActorTest
     listener.watch(arbiter)
 
     def shouldSubscribeForMessages() = {
-      listener.send(arbiter, StartHandshake(orderMatch, gateway.ref, blockchain.ref))
+      listener.send(arbiter, HandshakeStart(orderMatch, gateway.ref, blockchain.ref))
       gateway.expectMsgClass(classOf[Subscribe])
     }
 
@@ -71,10 +71,10 @@ class HandshakeArbiterActorTest
     val commitmentTransaction = new Transaction(CoinffeineUnitTestParams)
     val unknownPeer = PeerConnection("unknownPeer")
 
-    val relevantEntrance = EnterExchange(exchangeId, commitmentTransaction)
+    val relevantEntrance = ExchangeCommitment(exchangeId, commitmentTransaction)
     filter(ReceiveMessage(relevantEntrance, buyer)) should be (true)
     filter(ReceiveMessage(relevantEntrance, seller)) should be (true)
-    filter(ReceiveMessage(EnterExchange("other exchange", commitmentTransaction), buyer)) should
+    filter(ReceiveMessage(ExchangeCommitment("other exchange", commitmentTransaction), buyer)) should
       be (false)
     filter(ReceiveMessage(relevantEntrance, unknownPeer)) should be (false)
 
@@ -86,8 +86,8 @@ class HandshakeArbiterActorTest
 
   it must "notify the match, collect TXs, publish them and terminate" in new WithTestArbiter {
     shouldNotifyOrderMatch()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, sellerTx), seller))
+    gateway.send(arbiter, ReceiveMessage(ExchangeCommitment(exchangeId, buyerTx), buyer))
+    gateway.send(arbiter, ReceiveMessage(ExchangeCommitment(exchangeId, sellerTx), seller))
     blockchain.expectMsgAllOf(PublishTransaction(buyerTx), PublishTransaction(sellerTx))
     val notification = CommitmentNotification(exchangeId, buyerTx.getHash, sellerTx.getHash)
     gateway.expectMsgAllOf(
@@ -99,7 +99,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel exchange if a TX is not valid" in new WithTestArbiter {
     shouldNotifyOrderMatch()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, invalidCommitmentTx), buyer))
+    gateway.send(arbiter, ReceiveMessage(ExchangeCommitment(exchangeId, invalidCommitmentTx), buyer))
     shouldAbort(s"Invalid commitment from $buyer")
   }
 
@@ -114,7 +114,7 @@ class HandshakeArbiterActorTest
 
   it must "cancel handshake on timeout" in new WithTestArbiter(timeout = 1 second) {
     shouldNotifyOrderMatch()
-    gateway.send(arbiter, ReceiveMessage(EnterExchange(exchangeId, buyerTx), buyer))
+    gateway.send(arbiter, ReceiveMessage(ExchangeCommitment(exchangeId, buyerTx), buyer))
     gateway.expectNoMsg(100 millis)
     shouldAbort("Timeout waiting for commitments")
   }

@@ -11,7 +11,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.protocol.messages.handshake.{EnterExchange, ExchangeAborted, ExchangeRejection}
+import com.coinffeine.common.protocol.messages.handshake.{ExchangeCommitment, ExchangeAborted, ExchangeRejection}
 
 /** A handshake arbiter is an actor able to mediate between buyer and seller to publish
   * commitment transactions at the same time.
@@ -28,7 +28,7 @@ private[arbiter] class HandshakeArbiterActor(
   override def postStop(): Unit = timeout.foreach(_.cancel())
 
   override val receive: Receive = {
-    case StartHandshake(orderMatch, gateway, blockchain) =>
+    case HandshakeStart(orderMatch, gateway, blockchain) =>
       new HandshakeBehaviors(orderMatch, gateway, blockchain).startHandshake()
   }
 
@@ -43,7 +43,7 @@ private[arbiter] class HandshakeArbiterActor(
 
     private val waitForCommitments: Receive = {
 
-      case ReceiveMessage(EnterExchange(_, tx), committer) =>
+      case ReceiveMessage(ExchangeCommitment(_, tx), committer) =>
         if (commitments.contains(committer)) logAlreadyCommitted(committer)
         else if (!arbiter.isValidCommitment(committer, tx)) abortOnInvalidCommitment(committer, tx)
         else acceptCommitment(committer, tx)
@@ -97,7 +97,7 @@ private[arbiter] class HandshakeArbiterActor(
     private def subscribeToMessages(): Unit = {
       val id = orderMatch.exchangeId
       gateway ! Subscribe {
-        case ReceiveMessage(EnterExchange(`id`, _), requester)
+        case ReceiveMessage(ExchangeCommitment(`id`, _), requester)
           if orderMatch.participants.contains(requester) => true
         case ReceiveMessage(ExchangeRejection(`id`, _), requester)
           if orderMatch.participants.contains(requester) => true
@@ -117,7 +117,7 @@ private[arbiter] class HandshakeArbiterActor(
 
 object HandshakeArbiterActor {
 
-  case class StartHandshake(
+  case class HandshakeStart(
       orderMatch: OrderMatch,
       gateway: ActorRef,
       blockchain: ActorRef

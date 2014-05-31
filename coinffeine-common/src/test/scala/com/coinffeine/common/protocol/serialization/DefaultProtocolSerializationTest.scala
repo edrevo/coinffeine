@@ -30,10 +30,10 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
   val peerConnection = PeerConnection("host", 8888)
   val sampleMessages = Seq(
     ExchangeAborted(exchangeId, "reason"),
-    EnterExchange(exchangeId, transaction),
+    ExchangeCommitment(exchangeId, transaction),
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
     OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
-    CancelOrder(CurrencyCode.USD.currency),
+    OrderCancellation(CurrencyCode.USD.currency),
     Order(Bid, btcAmount, fiatAmount),
     QuoteRequest(CurrencyCode.USD.currency),
     Quote(fiatAmount -> fiatAmount, fiatAmount),

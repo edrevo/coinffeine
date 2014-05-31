@@ -29,7 +29,7 @@ message Order {
     required FiatAmount price = 3;
 }
 
-message CancelOrder {
+message OrderCancellation {
     required string currency = 1;
 }
 
@@ -78,7 +78,7 @@ message RefundTxSignatureResponse {
     required bytes transactionSignature = 2;
 }
 
-message EnterExchange {
+message ExchangeCommitment {
     required string exchangeId = 1;
     required bytes commitmentTransaction = 2;
 }
@@ -96,11 +96,11 @@ message PaymentProof {
 
 message Payload {
     optional ExchangeAborted exchangeAborted = 1;
-    optional EnterExchange enterExchange = 2;
+    optional ExchangeCommitment exchangeCommitment = 2;
     optional CommitmentNotification commitmentNotification = 3;
     optional OrderMatch orderMatch = 4;
     optional Order order = 5;
-    optional CancelOrder cancelOrder = 6;
+    optional OrderCancellation orderCancellation = 6;
     optional QuoteRequest quoteRequest = 7;
     optional Quote quote = 8;
     optional ExchangeRejection exchangeRejection = 9;
