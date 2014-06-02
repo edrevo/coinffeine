@@ -4,7 +4,7 @@ import com.google.bitcoin.core.Transaction
 
 import com.coinffeine.common.protocol.messages.PublicMessage
 
-case class EnterExchange(
+case class ExchangeCommitment(
   exchangeId: String,
   commitmentTransaction: Transaction
 ) extends PublicMessage

@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.testkit._
 
-import com.coinffeine.broker.BrokerActor.StartBrokering
+import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.{AkkaSpec, PeerConnection}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
@@ -39,7 +39,7 @@ class BrokerActorTest
     }
 
     def shouldSubscribe(): Subscribe = {
-      broker ! StartBrokering(EUR.currency, gateway.ref)
+      broker ! BrokeringStart(EUR.currency, gateway.ref)
       gateway.expectSubscription()
     }
 
@@ -100,7 +100,7 @@ class BrokerActorTest
     shouldSubscribe()
     gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
     gateway.relayMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2"))
-    gateway.relayMessage(CancelOrder(EUR.currency), PeerConnection("client1"))
+    gateway.relayMessage(OrderCancellation(EUR.currency), PeerConnection("client1"))
     shouldHaveQuote(Quote(EUR.currency, None -> Some(EUR(950))))
   }
 

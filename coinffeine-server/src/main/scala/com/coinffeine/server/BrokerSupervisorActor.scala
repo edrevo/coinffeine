@@ -9,7 +9,7 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.broker.BrokerActor
-import com.coinffeine.broker.BrokerActor.StartBrokering
+import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.system.ActorSystemBootstrap
@@ -39,7 +39,7 @@ class BrokerSupervisorActor(
 
     case BoundTo(_) =>
       tradedCurrencies.foreach { currency =>
-        context.actorOf(brokerProps) ! StartBrokering(currency, gateway)
+        context.actorOf(brokerProps) ! BrokeringStart(currency, gateway)
       }
       listener ! InitializedBroker
   }

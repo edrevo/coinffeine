@@ -81,13 +81,13 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
 
-  val enterExchange = EnterExchange(exchangeId = "1234", commitmentTransaction)
-  val enterExchangeMessage = msg.EnterExchange.newBuilder()
+  val commitment = ExchangeCommitment(exchangeId = "1234", commitmentTransaction)
+  val commitmentMessage = msg.ExchangeCommitment.newBuilder()
     .setExchangeId("1234")
     .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
     .build()
 
-  "Enter exchange" must behave like thereIsAMappingBetween(enterExchange, enterExchangeMessage)
+  "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
   val exchangeAborted = ExchangeAborted("1234", "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
@@ -109,8 +109,8 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   "Exchange rejection" should behave like thereIsAMappingBetween(
     exchangeRejection, exchangeRejectionMessage)
 
-  val cancellation = CancelOrder(EUR.currency)
-  val cancellationMessage = msg.CancelOrder.newBuilder.setCurrency("EUR").build
+  val cancellation = OrderCancellation(EUR.currency)
+  val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
 
   "Order cancellation" should behave like thereIsAMappingBetween(cancellation, cancellationMessage)
 

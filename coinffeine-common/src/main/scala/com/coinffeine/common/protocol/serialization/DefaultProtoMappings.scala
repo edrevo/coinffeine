@@ -45,15 +45,15 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           .build
     }
 
-  implicit val enterExchangeMapping = new ProtoMapping[EnterExchange, msg.EnterExchange] {
+  implicit val enterExchangeMapping = new ProtoMapping[ExchangeCommitment, msg.ExchangeCommitment] {
 
-      override def fromProtobuf(enter: msg.EnterExchange) = EnterExchange(
+      override def fromProtobuf(enter: msg.ExchangeCommitment) = ExchangeCommitment(
         commitmentTransaction = txSerialization.deserializeTransaction(
           enter.getCommitmentTransaction),
         exchangeId = enter.getExchangeId
       )
 
-      override def toProtobuf(enter: EnterExchange) = msg.EnterExchange.newBuilder
+      override def toProtobuf(enter: ExchangeCommitment) = msg.ExchangeCommitment.newBuilder
         .setExchangeId(enter.exchangeId)
         .setCommitmentTransaction(txSerialization.serialize(enter.commitmentTransaction)).build
     }
@@ -122,13 +122,13 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   }
 
   implicit val orderCancellationMapping =
-    new ProtoMapping[CancelOrder, msg.CancelOrder] {
+    new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
 
-      override def fromProtobuf(message: msg.CancelOrder) = CancelOrder(
+      override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
         currency = Currency.getInstance(message.getCurrency)
       )
 
-      override def toProtobuf(obj: CancelOrder) = msg.CancelOrder.newBuilder
+      override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
         .setCurrency(obj.currency.getCurrencyCode)
         .build
     }

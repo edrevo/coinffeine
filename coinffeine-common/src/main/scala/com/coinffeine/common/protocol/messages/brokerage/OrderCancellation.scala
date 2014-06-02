@@ -4,4 +4,4 @@ import java.util.Currency
 
 import com.coinffeine.common.protocol.messages.PublicMessage
 
-case class CancelOrder(currency: Currency) extends PublicMessage
+case class OrderCancellation(currency: Currency) extends PublicMessage
