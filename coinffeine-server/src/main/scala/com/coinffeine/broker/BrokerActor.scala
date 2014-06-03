@@ -2,7 +2,6 @@ package com.coinffeine.broker
 
 import java.util.Currency
 import scala.concurrent.duration.Duration
-import scala.util.Random
 
 import akka.actor._
 
@@ -48,16 +47,16 @@ private[broker] class BrokerActor(
         log.error("Dropping order not placed in %s: %s", currency, order)
 
       case ReceiveMessage(order: Order, requester)
-        if book.positions.contains(Position(requester, order)) =>
+        if book.positions.toList.contains(Position(requester, order)) =>
         orderTimeouts.setExpirationFor(requester, orderExpirationInterval)
 
       case ReceiveMessage(order: Order, requester) =>
         log.info("Order placed " + order)
-        val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket(idGenerator)
+        val (clearedBook, crosses) = book.placeOrder(requester, order).clearMarket
         book = clearedBook
-        crosses.foreach {
-          orderMatch =>
-            context.actorOf(handshakeArbiterProps) ! orderMatch
+        crosses.foreach { cross =>
+          val orderMatch = cross.toOrderMatch(randomId())
+          context.actorOf(handshakeArbiterProps) ! orderMatch
         }
         crosses.lastOption.foreach {
           cross => lastPrice = Some(cross.price)
@@ -71,7 +70,7 @@ private[broker] class BrokerActor(
 
       case ReceiveMessage(OrderCancellation(_), requester) =>
         log.info(s"Order of $requester is cancelled")
-        book = book.cancelOrder(requester)
+        book = book.cancelPositions(requester)
 
       case ReceiveTimeout => expireOrders()
     }
@@ -81,11 +80,12 @@ private[broker] class BrokerActor(
 
     private def expireOrders(): Unit = {
       val expired = orderTimeouts.removeExpired()
-      book = expired.foldLeft(book)(_.cancelOrder(_))
+      book = expired.foldLeft(book)(_.cancelPositions(_))
       log.info("Expiring orders of " + expired.mkString(", "))
     }
 
-    private def idGenerator = Stream.continually(Random.nextLong().toString)
+    private val random = new scala.util.Random(new java.security.SecureRandom())
+    private def randomId() = random.nextLong().abs.toString
   }
 }
 
