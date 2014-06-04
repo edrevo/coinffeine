@@ -10,6 +10,7 @@ import com.google.protobuf.{ByteString, Message}
 import com.coinffeine.common.{PeerConnection, UnitTest}
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -55,17 +56,21 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     .build
   )
 
-  val bidMessage = msg.Order.newBuilder
-    .setType(msg.OrderType.BID)
-    .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-    .setPrice(msg.FiatAmount.newBuilder.setValue(300).setScale(0).setCurrency("EUR"))
-    .build
-  val askMessage = bidMessage.toBuilder.setType(msg.OrderType.ASK).build
-  val bid = Order(Bid, BtcAmount(2), EUR(300))
-  val ask = Order(Ask, BtcAmount(2), EUR(300))
-
-  "Bid order" should behave like thereIsAMappingBetween(bid, bidMessage)
-  "Ask order" should behave like thereIsAMappingBetween(ask, askMessage)
+  val orderSetMessage = msg.OrderSet.newBuilder
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
+    .addBids(msg.Order.newBuilder
+      .setAmount(msg.BtcAmount.newBuilder.setValue(1).setScale(0))
+      .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
+    ).addAsks(msg.Order.newBuilder
+      .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
+      .setPrice(msg.FiatAmount.newBuilder.setValue(500).setScale(0).setCurrency("EUR"))
+    ).build
+  val orderSet = OrderSet(
+    market = Market(EUR.currency),
+    bids = Seq(OrderSet.Entry(1.BTC, 400.EUR)),
+    asks = Seq(OrderSet.Entry(2.BTC, 500.EUR))
+  )
+  "OrderSet" should behave like thereIsAMappingBetween(orderSet, orderSetMessage)
 
   val commitmentNotification = CommitmentNotification(
     exchangeId = "1234",
@@ -108,11 +113,6 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
   "Exchange rejection" should behave like thereIsAMappingBetween(
     exchangeRejection, exchangeRejectionMessage)
-
-  val cancellation = OrderCancellation(EUR.currency)
-  val cancellationMessage = msg.OrderCancellation.newBuilder.setCurrency("EUR").build
-
-  "Order cancellation" should behave like thereIsAMappingBetween(cancellation, cancellationMessage)
 
   val orderMatch = OrderMatch(
     exchangeId = "1234",

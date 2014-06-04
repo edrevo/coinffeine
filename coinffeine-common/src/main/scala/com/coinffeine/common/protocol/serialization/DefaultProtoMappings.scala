@@ -2,13 +2,14 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigDecimal
 import java.util.Currency
+import scala.collection.JavaConverters._
 
 import com.google.bitcoin.core.Sha256Hash
 import com.google.protobuf.ByteString
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
-import com.coinffeine.common.protocol.messages.arbitration._
+import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._
 import com.coinffeine.common.protocol.messages.handshake._
@@ -98,40 +99,43 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val orderMapping = new ProtoMapping[Order, msg.Order] {
+  implicit val marketMapping = new ProtoMapping[Market, msg.Market] {
 
-    override def fromProtobuf(order: msg.Order): Order = {
-      Order(
-        orderType = order.getType match {
-          case msg.OrderType.BID => Bid
-          case msg.OrderType.ASK => Ask
-        },
-        amount = ProtoMapping.fromProtobuf(order.getAmount),
-        price = ProtoMapping.fromProtobuf(order.getPrice)
-      )
-    }
+    override def fromProtobuf(market: msg.Market): Market =
+      Market(currency = Currency.getInstance(market.getCurrency))
 
-    override def toProtobuf(order: Order): msg.Order = msg.Order.newBuilder
-      .setType(order.orderType match {
-        case Bid => msg.OrderType.BID
-        case Ask => msg.OrderType.ASK
-      })
+    override def toProtobuf(market: Market): msg.Market = msg.Market.newBuilder
+      .setCurrency(market.currency.getCurrencyCode)
+      .build
+  }
+
+  implicit val orderMapping = new ProtoMapping[OrderSet.Entry, msg.Order] {
+
+    override def fromProtobuf(order: msg.Order): OrderSet.Entry = OrderSet.Entry(
+      amount = ProtoMapping.fromProtobuf(order.getAmount),
+      price = ProtoMapping.fromProtobuf(order.getPrice)
+    )
+
+    override def toProtobuf(order: OrderSet.Entry): msg.Order = msg.Order.newBuilder
       .setAmount(ProtoMapping.toProtobuf(order.amount))
       .setPrice(ProtoMapping.toProtobuf(order.price))
       .build
   }
 
-  implicit val orderCancellationMapping =
-    new ProtoMapping[OrderCancellation, msg.OrderCancellation] {
+  implicit val orderSetMapping = new ProtoMapping[OrderSet, msg.OrderSet] {
 
-      override def fromProtobuf(message: msg.OrderCancellation) = OrderCancellation(
-        currency = Currency.getInstance(message.getCurrency)
-      )
+    override def fromProtobuf(orderSet: msg.OrderSet): OrderSet = OrderSet(
+      market = ProtoMapping.fromProtobuf(orderSet.getMarket),
+      bids = orderSet.getBidsList.asScala.map(ProtoMapping.fromProtobuf[OrderSet.Entry, msg.Order]),
+      asks = orderSet.getAsksList.asScala.map(ProtoMapping.fromProtobuf[OrderSet.Entry, msg.Order])
+    )
 
-      override def toProtobuf(obj: OrderCancellation) = msg.OrderCancellation.newBuilder
-        .setCurrency(obj.currency.getCurrencyCode)
-        .build
-    }
+    override def toProtobuf(orderSet: OrderSet): msg.OrderSet = msg.OrderSet.newBuilder
+      .setMarket(ProtoMapping.toProtobuf(orderSet.market))
+      .addAllBids(orderSet.bids.map(ProtoMapping.toProtobuf[OrderSet.Entry, msg.Order]).asJava)
+      .addAllAsks(orderSet.asks.map(ProtoMapping.toProtobuf[OrderSet.Entry, msg.Order]).asJava)
+      .build
+  }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 

@@ -39,10 +39,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: OrderMatch =>
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
-      case m: Order =>
-        builder.setOrder(ProtoMapping.toProtobuf(m))
-      case m: OrderCancellation =>
-        builder.setOrderCancellation(ProtoMapping.toProtobuf(m))
+      case m: OrderSet =>
+        builder.setOrderSet(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
       case m: Quote =>
@@ -88,10 +86,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
       case ORDERMATCH_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOrderMatch)
-      case ORDER_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOrder)
-      case ORDERCANCELLATION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOrderCancellation)
+      case ORDERSET_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getOrderSet)
       case QUOTEREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getQuoteRequest)
       case QUOTE_FIELD_NUMBER =>

@@ -3,16 +3,19 @@ package com.coinffeine.market
 import java.util.Currency
 import scala.annotation.tailrec
 
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.Spread
-import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid, Order}
+import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid}
 
 /** Represents a snapshot of a continuous double auction (CDA) */
-case class OrderBook(bids: OrderMap, asks: OrderMap) {
+case class OrderBook(bids: BidMap, asks: AskMap) {
 
   require(bids.currency == asks.currency)
-  require(bids.orderType == Bid && asks.orderType == Ask)
 
-  def positions: Iterable[Position] = bids.positions ++ asks.positions
+  def positions: Iterable[Position[_]] = bids.positions ++ asks.positions
+
+  def userPositions(userId: PeerConnection): Seq[Position[_]] =
+    bids.userPositions(userId) ++ asks.userPositions(userId)
 
   /** Tells if a transaction is possible with current orders. */
   def isCrossed: Boolean = spread match {
@@ -27,20 +30,22 @@ case class OrderBook(bids: OrderMap, asks: OrderMap) {
 
   def lowestAsk: Option[Price] = asks.firstPrice
 
-  /** Place a new order.
+  /** Add a new position
     *
-    * @param requester  Who is placing the order
-    * @param order      Ask or Bid to place
-    * @return           New order book
+    * @param position  Position to add
+    * @return          New order book
     */
-  def placeOrder(requester: ClientId, order: Order): OrderBook =
-    addPosition(Position(requester, order))
+  def addPosition(position: Position[_]): OrderBook =
+    position.fold(bid = addBidPosition, ask = addAskPosition)
 
-  /** Add a new position */
-  def addPosition(position: Position): OrderBook = position.order.orderType match {
-    case Bid => copy(bids = bids.addPosition(position))
-    case Ask => copy(asks = asks.addPosition(position))
-  }
+  def addPositions(positions: Seq[Position[_]]): OrderBook =
+    positions.foldLeft(this)(_.addPosition(_))
+
+  def addBidPosition(position: Position[Bid.type]): OrderBook =
+    copy(bids = bids.addPosition(position))
+
+  def addAskPosition(position: Position[Ask.type]): OrderBook =
+    copy(asks = asks.addPosition(position))
 
   /** Cancel a position.
     *
@@ -49,13 +54,20 @@ case class OrderBook(bids: OrderMap, asks: OrderMap) {
     * @param position  Position to cancel
     * @return          New order book
     */
-  def cancelPosition(position: Position): OrderBook = position.order.orderType match {
-    case Bid => copy(bids = bids.cancelPosition(position))
-    case Ask => copy(asks = asks.cancelPosition(position))
-  }
+  def cancelPosition(position: Position[_]): OrderBook =
+    position.fold(bid = cancelBidPosition, ask = cancelAskPosition)
+
+  def cancelBidPosition(position: Position[Bid.type]): OrderBook =
+    copy(bids = bids.cancelPosition(position))
+
+  def cancelAskPosition(position: Position[Ask.type]): OrderBook =
+    copy(asks = asks.cancelPosition(position))
+
+  def cancelPositions(positions: Seq[Position[_]]): OrderBook =
+    positions.foldLeft(this)(_.cancelPosition(_))
 
   /** Cancel al orders of a given client */
-  def cancelPositions(requester: ClientId): OrderBook =
+  def cancelAllPositions(requester: ClientId): OrderBook =
     copy(bids = bids.cancelPositions(requester), asks = asks.cancelPositions(requester))
 
   /** Clear the market by crossing bid and ask orders
@@ -65,7 +77,7 @@ case class OrderBook(bids: OrderMap, asks: OrderMap) {
   def clearMarket: (OrderBook, Seq[Cross]) = clearMarket(bids, asks, Seq.empty)
 
   @tailrec
-  private def clearMarket(bids: OrderMap, asks: OrderMap, crosses: Seq[Cross]): (OrderBook, Seq[Cross]) =
+  private def clearMarket(bids: BidMap, asks: AskMap, crosses: Seq[Cross]): (OrderBook, Seq[Cross]) =
     (bids.firstPrice, asks.firstPrice) match {
       case (Some(bidPrice), Some(askPrice)) if bidPrice >= askPrice =>
         val (cross, remainingBids, remainingAsks) = crossOrders(bids, asks)
@@ -73,13 +85,13 @@ case class OrderBook(bids: OrderMap, asks: OrderMap) {
       case _ => (OrderBook(bids, asks), crosses)
     }
 
-  private def crossOrders(bids: OrderMap, asks: OrderMap): (Cross, OrderMap, OrderMap) = {
+  private def crossOrders(bids: BidMap, asks: AskMap): (Cross, BidMap, AskMap) = {
     val bid = bids.firstPosition.get
     val ask = asks.firstPosition.get
-    val crossedAmount = bid.order.amount min ask.order.amount
+    val crossedAmount = bid.amount min ask.amount
     val cross = Cross(
       amount = crossedAmount,
-      price = (bid.order.price + ask.order.price) / 2,
+      price = (bid.price + ask.price) / 2,
       buyer = bid.requester,
       seller = ask.requester
     )
@@ -88,11 +100,9 @@ case class OrderBook(bids: OrderMap, asks: OrderMap) {
 }
 
 object OrderBook {
-  def apply(position: Position, otherPositions: Position*): OrderBook = {
-    val accum = empty(position.order.price.currency)
-    val positions = position +: otherPositions
-    positions.foldLeft(accum)(_.addPosition(_))
-  }
+
+  def apply(position: Position[_], otherPositions: Position[_]*): OrderBook =
+    empty(position.price.currency).addPositions(position +: otherPositions)
 
   def empty(currency: Currency): OrderBook = OrderBook(
     bids = OrderMap.empty(Bid, currency),
