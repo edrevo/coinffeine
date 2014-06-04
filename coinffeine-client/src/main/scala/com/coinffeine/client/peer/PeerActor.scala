@@ -11,7 +11,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
+import com.coinffeine.common.protocol.messages.brokerage.{Order, QuoteRequest}
 
 /** Topmost actor on a peer node. It starts all the relevant actors like the peer actor and
   * the message gateway and supervise them.
@@ -20,7 +20,8 @@ class PeerActor(
     address: PeerInfo,
     brokerAddress: PeerConnection,
     gatewayProps: Props,
-    quoteRequestProps: Props
+    quoteRequestProps: Props,
+    orderSubmissionsProps: Props
   ) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -43,6 +44,10 @@ class PeerActor(
     case QuoteRequest(currency) =>
       val request = QuoteRequestActor.StartRequest(currency, gatewayRef, brokerAddress)
       context.actorOf(quoteRequestProps) forward request
+
+    case order: Order =>
+      val orderSubmission = OrderSubmissionActor.StartRequest(order, gatewayRef, brokerAddress)
+      context.actorOf(orderSubmissionsProps) forward orderSubmission
   }
 }
 
@@ -59,7 +64,8 @@ object PeerActor {
   private val ConnectionTimeout = Timeout(10.seconds)
 
   trait Component {
-    this: QuoteRequestActor.Component with MessageGateway.Component with ConfigComponent =>
+    this: QuoteRequestActor.Component with OrderSubmissionActor.Component
+      with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
       val peerInfo = new PeerInfo(config.getString(HostSetting), config.getInt(PortSetting))
@@ -68,7 +74,8 @@ object PeerActor {
         peerInfo,
         brokerAddress,
         gatewayProps = messageGatewayProps,
-        quoteRequestProps = quoteRequestProps
+        quoteRequestProps = quoteRequestProps,
+        orderSubmissionsProps = orderSubmissionProps
       ))
     }
   }

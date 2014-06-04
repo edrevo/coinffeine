@@ -35,20 +35,18 @@ trait CoinffeineNetwork {
   /** Submit an order to buy bitcoins.
     *
     * @param btcAmount           Amount to buy
-    * @param paymentProcessorId  Form of payment
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitBuyOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Order]
+  def submitBuyOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order
 
   /** Submit an order to sell bitcoins.
     *
     * @param btcAmount           Amount to sell
-    * @param paymentProcessorId  Form of payment
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder(btcAmount: BtcAmount, paymentProcessorId: String, fiatAmount: FiatAmount): Future[Order]
+  def submitSellOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order
 
   /** Cancel an unmatched order. */
   def cancelOrder(order: Order): Unit
