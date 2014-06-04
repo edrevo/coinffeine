@@ -27,12 +27,13 @@ case class FiatAmount(amount: BigDecimal, currency: Currency) {
 }
 
 object FiatAmount extends Ordering[FiatAmount] {
+
   override def compare(x: FiatAmount, y: FiatAmount): Int = {
     requireCompatible(x, y)
     x.amount.compare(y.amount)
   }
 
-  private def requireCompatible(x: FiatAmount, y: FiatAmount) {
+  private def requireCompatible(x: FiatAmount, y: FiatAmount): Unit = {
     require(x.currency == y.currency)
   }
 }
