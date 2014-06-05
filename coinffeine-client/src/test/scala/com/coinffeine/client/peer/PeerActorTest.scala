@@ -8,8 +8,9 @@ import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
 import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
 import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
+import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
 
 class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
@@ -22,9 +23,18 @@ class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     MockActor.props(gatewayProbe), MockActor.props(requestsProbe),
     MockActor.props(ordersProbe))))
   var gatewayRef: ActorRef = _
+  var ordersRef: ActorRef = _
 
   "A peer" must "start the message gateway" in {
     gatewayRef = gatewayProbe.expectMsgClass(classOf[MockStarted]).ref
+  }
+
+  it must "start the order submissions actor" in {
+    ordersRef = ordersProbe.expectMsgClass(classOf[MockStarted]).ref
+    val gw = gatewayRef
+    ordersProbe.expectMsgPF() {
+      case MockReceived(_, _, OrderSubmissionActor.Initialize(`gw`, _)) =>
+    }
   }
 
   it must "make the message gateway start listening when connecting" in {
@@ -50,5 +60,11 @@ class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val requestRef = requestsProbe.expectMsgClass(classOf[MockStarted]).ref
     val expectedInitialization = StartRequest(EUR.currency, gatewayRef, brokerAddress)
     requestsProbe.expectMsg(MockReceived(requestRef, self, expectedInitialization))
+  }
+
+  it must "delegate order placement" in {
+    val order = Order(Bid, 10.BTC, 300.EUR)
+    peer ! order
+    ordersProbe.expectMsg(MockReceived(ordersRef, peer, order))
   }
 }

@@ -1,51 +1,70 @@
 package com.coinffeine.client.peer
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 
-import com.coinffeine.client.peer.OrderSubmissionActor.StartRequest
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage._
 
 /** Submits an order */
-class OrderSubmissionActor extends Actor with ActorLogging {
+class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+
+  import OrderSubmissionActor._
+
+  private val resubmitTimeout = protocolConstants.orderExpirationInterval / 2
 
   override def receive: Receive = {
-    case StartRequest(order, gateway, brokerAddress) =>
-      val orderSet = orderToOrderSet(order)
-      subscribeToMessages(gateway, brokerAddress)
-      gateway ! ForwardMessage(orderSet, brokerAddress)
-      context.become(waitForResponse(gateway, brokerAddress, sender))
+    case Initialize(gateway, brokerAddress) =>
+      new InitializedOrderSubmission(gateway, brokerAddress).start()
   }
 
-  private def waitForResponse(
-      gateway: ActorRef, broker: PeerConnection, listener: ActorRef): Receive = {
-    case ReceiveMessage(orderSet: OrderSet, _) =>
-      listener ! orderSet
-  }
+  private class InitializedOrderSubmission(gateway: ActorRef, broker: PeerConnection) {
 
-  private def subscribeToMessages(gateway: ActorRef, broker: PeerConnection): Unit = {
-    gateway ! Subscribe {
-      case ReceiveMessage(order: Order, `broker`) => true
-      case _ => false
+    def start(): Unit = {
+      subscribeToMessages()
+      context.become(waitingForOrders)
+    }
+
+    private val waitingForOrders: Receive = {
+      case order: Order =>
+        val orderSet = orderToOrderSet(order)
+        forwardOrders(orderSet)
+        context.become(keepingOpenOrders(orderSet))
+    }
+
+    private def keepingOpenOrders(orderSet: OrderSet): Receive = {
+      case order: Order =>
+        val mergedOrderSet = orderSet.addOrder(order.orderType, order.amount, order.price)
+        forwardOrders(mergedOrderSet)
+        context.become(keepingOpenOrders(mergedOrderSet))
+
+      case ReceiveTimeout =>
+        forwardOrders(orderSet)
+    }
+
+    private def forwardOrders(orderSet: OrderSet): Unit = {
+      gateway ! ForwardMessage(orderSet, broker)
+      context.setReceiveTimeout(resubmitTimeout)
+    }
+
+    private def subscribeToMessages(): Unit = {
+      gateway ! Subscribe {
+        case ReceiveMessage(_: Order, `broker`) => true
+        case _ => false
+      }
     }
   }
 
-  private def orderToOrderSet(order: Order) = {
-    val entry = OrderSet.Entry(order.amount, order.price)
-    OrderSet(
-      Market(currency = order.price.currency),
-      bids = if (order.orderType == Bid) Seq(entry) else Seq.empty,
-      asks = if (order.orderType == Ask) Seq(entry) else Seq.empty
-    )
-  }
+  private def orderToOrderSet(order: Order) =
+    OrderSet(Market(order.price.currency)).addOrder(order.orderType, order.amount, order.price)
 }
 
 object OrderSubmissionActor {
 
-  case class StartRequest(order: Order, gateway: ActorRef, brokerAddress: PeerConnection)
+  case class Initialize(gateway: ActorRef, brokerAddress: PeerConnection)
 
-  trait Component {
-    lazy val orderSubmissionProps = Props(new OrderSubmissionActor())
+  trait Component { this: ProtocolConstants.Component =>
+    lazy val orderSubmissionProps = Props(new OrderSubmissionActor(protocolConstants))
   }
 }

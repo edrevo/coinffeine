@@ -27,6 +27,11 @@ class PeerActor(
   import context.dispatcher
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
+  val orderSubmissionRef = {
+    val ref = context.actorOf(orderSubmissionsProps, "orderSubmissions")
+    ref ! OrderSubmissionActor.Initialize(gatewayRef, brokerAddress)
+    ref
+  }
 
   override def receive: Receive = {
 
@@ -46,8 +51,7 @@ class PeerActor(
       context.actorOf(quoteRequestProps) forward request
 
     case order: Order =>
-      val orderSubmission = OrderSubmissionActor.StartRequest(order, gatewayRef, brokerAddress)
-      context.actorOf(orderSubmissionsProps) forward orderSubmission
+      orderSubmissionRef ! order
   }
 }
 
