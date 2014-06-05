@@ -13,13 +13,14 @@ import com.coinffeine.common.protocol.serialization.DefaultProtocolSerialization
 import com.coinffeine.server.BrokerSupervisorActor
 
 /** Cake-pattern factory of brokers configured for E2E testing */
-class TestBrokerComponent extends BrokerSupervisorActor.Component
+class TestBrokerComponent(override val protocolConstants: ProtocolConstants)
+  extends BrokerSupervisorActor.Component
   with BrokerActor.Component
   with HandshakeArbiterActor.Component
   with ProtoRpcMessageGateway.Component
   with DefaultProtocolSerializationComponent
   with CommitmentValidation.Component
-  with ProtocolConstants.DefaultComponent
+  with ProtocolConstants.Component
   with IntegrationTestNetworkComponent {
 
   override def commitmentValidation = new CommitmentValidation {

@@ -30,7 +30,7 @@ trait CoinffeineNetwork {
   def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
 
   /** Check current prices for a given payment form */
-  def currentQuote(paymentProcessorId: String, currency: Currency): Future[Quote]
+  def currentQuote(currency: Currency): Future[Quote]
 
   /** Submit an order to buy bitcoins.
     *
