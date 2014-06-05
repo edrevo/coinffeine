@@ -1,6 +1,6 @@
 name := "Coinffeine Common"
 
-ScoverageSbtPlugin.ScoverageKeys.excludedPackages in ScoverageSbtPlugin.scoverage :=
+ScoverageKeys.excludedPackages in ScoverageCompile :=
   "scalaxb;soapenvelope11;.*generated.*;.*protobuf.*"
 
 libraryDependencies ++= Dependencies.akka ++ Seq(
