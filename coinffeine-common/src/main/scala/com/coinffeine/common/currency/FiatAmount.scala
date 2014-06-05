@@ -3,6 +3,7 @@ package com.coinffeine.common.currency
 import java.util.Currency
 import scala.math.Ordering
 
+@Deprecated
 case class FiatAmount(amount: BigDecimal, currency: Currency) {
 
   /** Alternative constructor for Java code */
@@ -26,6 +27,7 @@ case class FiatAmount(amount: BigDecimal, currency: Currency) {
   override def toString = "%s %s".format(amount.underlying().toPlainString, currency)
 }
 
+@Deprecated
 object FiatAmount extends Ordering[FiatAmount] {
 
   override def compare(x: FiatAmount, y: FiatAmount): Int = {
