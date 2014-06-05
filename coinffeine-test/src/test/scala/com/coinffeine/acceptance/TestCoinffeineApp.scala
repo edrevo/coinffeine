@@ -11,7 +11,9 @@ import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 import com.coinffeine.common.protocol.serialization.DefaultProtocolSerializationComponent
 
 /** Cake-pattern factory of peers configured for GUI-less testing. */
-class TestCoinffeineApp(brokerAddress: PeerConnection) extends DefaultCoinffeineApp.Component
+class TestCoinffeineApp(
+     brokerAddress: PeerConnection,
+     override val protocolConstants: ProtocolConstants) extends DefaultCoinffeineApp.Component
   with PeerActor.Component
   with QuoteRequestActor.Component
   with OrderSubmissionActor.Component
@@ -19,7 +21,7 @@ class TestCoinffeineApp(brokerAddress: PeerConnection) extends DefaultCoinffeine
   with DefaultProtocolSerializationComponent
   with IntegrationTestNetworkComponent
   with ConfigComponent
-  with ProtocolConstants.DefaultComponent {
+  with ProtocolConstants.Component {
 
   override lazy val config = {
     val port = DefaultTcpPortAllocator.allocatePort()

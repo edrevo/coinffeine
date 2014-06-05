@@ -9,6 +9,7 @@ import org.scalatest.time.{Second, Seconds, Span}
 
 import com.coinffeine.acceptance.broker.TestBrokerComponent
 import com.coinffeine.client.api.CoinffeineApp
+import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Base trait for acceptance testing that includes a test fixture */
 trait AcceptanceTest extends fixture.FeatureSpec
@@ -17,6 +18,9 @@ trait AcceptanceTest extends fixture.FeatureSpec
   with ShouldMatchers
   with ScalaFutures {
 
+  /** Easy to override protocol constants used during the acceptance test */
+  def protocolConstants: ProtocolConstants = ProtocolConstants.DefaultConstants
+
   override implicit def patienceConfig = PatienceConfig(
     timeout = Span(10, Seconds),
     interval = Span(1, Second)
@@ -24,7 +28,7 @@ trait AcceptanceTest extends fixture.FeatureSpec
 
   class IntegrationTestFixture {
 
-    private val broker = new TestBrokerComponent().broker
+    private val broker = new TestBrokerComponent(protocolConstants).broker
     Await.ready(broker.start(), Duration.Inf)
 
     /** Loan pattern for a peer. It is guaranteed that the peers will be destroyed
@@ -50,7 +54,7 @@ trait AcceptanceTest extends fixture.FeatureSpec
       broker.close()
     }
 
-    private def buildPeer() = new TestCoinffeineApp(broker.address).app
+    private def buildPeer() = new TestCoinffeineApp(broker.address, protocolConstants).app
   }
 
   override type FixtureParam = IntegrationTestFixture

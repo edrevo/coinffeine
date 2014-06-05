@@ -43,7 +43,7 @@ class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def currentQuote(paymentProcessorId: String, currency: Currency): Future[Quote] =
+  override def currentQuote(currency: Currency): Future[Quote] =
     (peer ? QuoteRequest(currency)).mapTo[Quote]
 
   override def exchanges: Set[Exchange] = Set.empty

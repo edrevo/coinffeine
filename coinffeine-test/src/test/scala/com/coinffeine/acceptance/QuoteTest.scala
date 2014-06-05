@@ -3,9 +3,8 @@ package com.coinffeine.acceptance
 import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.api.CoinffeineNetwork.Connected
-import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.paymentprocessor.okpay.OKPayProcessor
+import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.messages.brokerage.Quote
 
 class QuoteTest extends AcceptanceTest {
@@ -20,7 +19,7 @@ class QuoteTest extends AcceptanceTest {
         peer.network.connect().futureValue should be (Connected)
 
         When("a peer asks for the current quote on a currency")
-        val quote = peer.network.currentQuote(OKPayProcessor.Id, EUR.currency)
+        val quote = peer.network.currentQuote(EUR.currency)
 
         Then("he should get an empty quote")
         quote.futureValue should be(Quote.empty(EUR.currency))
@@ -34,15 +33,15 @@ class QuoteTest extends AcceptanceTest {
         sam.network.connect().futureValue should be (Connected)
 
         Given("that Bob has placed a bid and Sam an ask that does not cross")
-        bob.network.submitBuyOrder(BtcAmount(0.1), EUR(50))
-        sam.network.submitSellOrder(BtcAmount(0.3), EUR(180))
+        bob.network.submitBuyOrder(0.1.BTC, 50.EUR)
+        sam.network.submitSellOrder(0.3.BTC, 180.EUR)
 
         When("Bob asks for the current quote on a currency")
-        def quote = bob.network.currentQuote(OKPayProcessor.Id, EUR.currency)
+        def quote = bob.network.currentQuote(EUR.currency)
 
         Then("he should get the current spread")
         eventually {
-          quote.futureValue should be(Quote(EUR.currency, Some(EUR(50)) -> Some(EUR(180))))
+          quote.futureValue should be(Quote(EUR.currency, Some(50.EUR) -> Some(180.EUR)))
         }
       }
     }
