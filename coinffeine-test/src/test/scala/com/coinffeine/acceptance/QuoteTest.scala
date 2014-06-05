@@ -27,21 +27,23 @@ class QuoteTest extends AcceptanceTest {
       }
     }
 
-    ignore("previous bidding and betting") { f =>
+    scenario("previous bidding and betting") { f =>
       f.withPeerPair { (bob, sam) =>
         Given("Bob and Sam are connected peers")
         bob.network.connect().futureValue should be (Connected)
         sam.network.connect().futureValue should be (Connected)
 
         Given("that Bob has placed a bid and Sam an ask that does not cross")
-        bob.network.submitBuyOrder(BtcAmount(0.1), OKPayProcessor.Id, EUR(50)) isReadyWithin timeout
-        sam.network.submitSellOrder(BtcAmount(0.3), OKPayProcessor.Id, EUR(180)) isReadyWithin timeout
+        bob.network.submitBuyOrder(BtcAmount(0.1), EUR(50))
+        sam.network.submitSellOrder(BtcAmount(0.3), EUR(180))
 
         When("Bob asks for the current quote on a currency")
-        val quote = bob.network.currentQuote(OKPayProcessor.Id, EUR.currency)
+        def quote = bob.network.currentQuote(OKPayProcessor.Id, EUR.currency)
 
         Then("he should get the current spread")
-        quote.futureValue should be(Quote(EUR.currency, Some(EUR(500)) -> Some(EUR(600))))
+        eventually {
+          quote.futureValue should be(Quote(EUR.currency, Some(EUR(50)) -> Some(EUR(180))))
+        }
       }
     }
   }

@@ -17,8 +17,10 @@ class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val brokerAddress = PeerConnection("host", 8888)
   val gatewayProbe = TestProbe()
   val requestsProbe = TestProbe()
+  val ordersProbe = TestProbe()
   val peer = system.actorOf(Props(new PeerActor(address, brokerAddress,
-    MockActor.props(gatewayProbe), MockActor.props(requestsProbe))))
+    MockActor.props(gatewayProbe), MockActor.props(requestsProbe),
+    MockActor.props(ordersProbe))))
   var gatewayRef: ActorRef = _
 
   "A peer" must "start the message gateway" in {
