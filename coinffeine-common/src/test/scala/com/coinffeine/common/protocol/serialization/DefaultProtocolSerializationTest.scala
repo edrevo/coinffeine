@@ -8,7 +8,8 @@ import com.google.bitcoin.crypto.TransactionSignature
 import org.reflections.Reflections
 
 import com.coinffeine.common.{PeerConnection, UnitTest}
-import com.coinffeine.common.currency.{BtcAmount, CurrencyCode}
+import com.coinffeine.common.currency.CurrencyCode
+import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -25,16 +26,19 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
   val transaction = new Transaction(network)
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
   val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
-  val btcAmount = BtcAmount(1)
-  val fiatAmount = CurrencyCode.EUR(1)
+  val btcAmount = 1.BTC
+  val fiatAmount = 1.EUR
   val peerConnection = PeerConnection("host", 8888)
   val sampleMessages = Seq(
     ExchangeAborted(exchangeId, "reason"),
     ExchangeCommitment(exchangeId, transaction),
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
     OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
-    OrderCancellation(CurrencyCode.USD.currency),
-    Order(Bid, btcAmount, fiatAmount),
+    OrderSet(
+      market = Market(CurrencyCode.USD.currency),
+      bids = Seq(OrderSet.Entry(1.3.BTC, 100.USD)),
+      asks = Seq(OrderSet.Entry(0.3.BTC, 200.USD), OrderSet.Entry(0.4.BTC, 250.USD))
+    ),
     QuoteRequest(CurrencyCode.USD.currency),
     Quote(fiatAmount -> fiatAmount, fiatAmount),
     ExchangeRejection(exchangeId, "reason"),

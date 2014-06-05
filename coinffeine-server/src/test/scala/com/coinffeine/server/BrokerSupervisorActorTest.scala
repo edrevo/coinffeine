@@ -11,6 +11,7 @@ import com.coinffeine.common.{AkkaSpec, MockActor}
 import com.coinffeine.common.MockActor._
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo}
+import com.coinffeine.common.protocol.messages.brokerage.Market
 import com.coinffeine.common.system.ActorSystemBootstrap
 import com.coinffeine.server.BrokerSupervisorActor.InitializedBroker
 
@@ -42,7 +43,7 @@ class BrokerSupervisorActorTest extends AkkaSpec {
   it should "initialize brokers" in {
     brokerRef = brokerProbe.expectMsgClass(classOf[MockStarted]).ref
     brokerProbe.expectMsgPF() {
-      case MockReceived(_, _, BrokeringStart(EUR.currency, _)) =>
+      case MockReceived(_, _, BrokeringStart(Market(EUR.currency), _)) =>
     }
   }
 

@@ -7,11 +7,13 @@ import akka.testkit._
 
 import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.{AkkaSpec, PeerConnection}
-import com.coinffeine.common.currency.BtcAmount
+import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
+import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.protocol.messages.brokerage.OrderSet.Entry
 
 class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -25,6 +27,7 @@ class BrokerActorTest
   }
 
   class WithEurBroker(name: String) {
+    val market = Market(EUR.currency)
     val arbiterProbe = TestProbe()
     val gateway = new GatewayProbe()
     val broker = system.actorOf(Props(new BrokerActor(
@@ -39,21 +42,26 @@ class BrokerActorTest
     }
 
     def shouldSubscribe(): Subscribe = {
-      broker ! BrokeringStart(EUR.currency, gateway.ref)
+      broker ! BrokeringStart(market, gateway.ref)
       gateway.expectSubscription()
     }
 
     def shouldSpawnArbiter() = arbiterProbe.expectMsgClass(classOf[OrderMatch])
+
+    def relayBid(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
+      OrderSet(market, bids = Seq(Entry(amount, price))), PeerConnection(requester))
+
+    def relayAsk(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
+      OrderSet(market, asks = Seq(Entry(amount, price))), PeerConnection(requester))
   }
 
   "A broker" must "subscribe himself to relevant messages" in new WithEurBroker("subscribe") {
     val Subscribe(filter) = shouldSubscribe()
     val client: PeerConnection = PeerConnection("client1")
-    val eurBid = Order(Bid, BtcAmount(1), EUR(1000))
-    val dollarBid = Order(Bid, BtcAmount(1), USD(1200))
-    filter(ReceiveMessage(eurBid, PeerConnection("client1"))) should be (true)
-    filter(ReceiveMessage(dollarBid, PeerConnection("client1"))) should be (false)
-    filter(ReceiveMessage(Order(Ask, BtcAmount(1), EUR(600)), client)) should be (true)
+    val relevantOrders = OrderSet(market, bids = Seq.empty, asks = Seq.empty)
+    val irrelevantOrders = OrderSet(Market(USD.currency), bids = Seq.empty, asks = Seq.empty)
+    filter(ReceiveMessage(relevantOrders, PeerConnection("client1"))) should be (true)
+    filter(ReceiveMessage(irrelevantOrders, PeerConnection("client1"))) should be (false)
     filter(ReceiveMessage(QuoteRequest(EUR.currency), client)) should be (true)
     filter(ReceiveMessage(QuoteRequest(USD.currency), client)) should be (false)
   }
@@ -61,12 +69,12 @@ class BrokerActorTest
   it must "keep orders and notify both parts and start an arbiter when they cross" in
     new WithEurBroker("notify-crosses") {
       shouldSubscribe()
-      gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
-      gateway.relayMessage(Order(Bid, BtcAmount(0.8), EUR(950)), PeerConnection("client2"))
-      gateway.relayMessage(Order(Ask, BtcAmount(0.6), EUR(850)), PeerConnection("client3"))
+      relayBid(1.BTC, 900.EUR, "client1")
+      relayBid(0.8.BTC, 950.EUR, "client2")
+      relayAsk(0.6.BTC, 850.EUR, "client3")
       val notifiedOrderMatch = arbiterProbe.expectMsgClass(classOf[OrderMatch])
-      notifiedOrderMatch.amount should be (BtcAmount(0.6))
-      notifiedOrderMatch.price should be (EUR(900))
+      notifiedOrderMatch.amount should be (0.6.BTC)
+      notifiedOrderMatch.price should be (900.EUR)
       notifiedOrderMatch.buyer should be (PeerConnection("client2"))
       notifiedOrderMatch.seller should be (PeerConnection("client3"))
     }
@@ -74,60 +82,52 @@ class BrokerActorTest
   it must "quote spreads" in new WithEurBroker("quote-spreads") {
     shouldSubscribe()
     shouldHaveQuote(Quote.empty(EUR.currency))
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
-    shouldHaveQuote(Quote(EUR.currency, Some(EUR(900)) -> None))
-    gateway.relayMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2"))
-    shouldHaveQuote(Quote(EUR.currency, Some(EUR(900)) -> Some(EUR(950))))
+    relayBid(1.BTC, 900.EUR, "client1")
+    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR) -> None))
+    relayAsk(0.8.BTC, 950.EUR, "client2")
+    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR) -> Some(950.EUR)))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
     shouldSubscribe()
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
-    gateway.relayMessage(Order(Ask, BtcAmount(1), EUR(800)), PeerConnection("client2"))
+    relayBid(1.BTC, 900.EUR, "client1")
+    relayAsk(1.BTC, 800.EUR, "client2")
     shouldSpawnArbiter()
-    shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(EUR(850))))
-  }
-
-  it must "reject orders in other currencies" in new WithEurBroker("reject-other-currencies") {
-    shouldSubscribe()
-    EventFilter.error(pattern = ".*", occurrences = 1) intercept {
-      broker ! ReceiveMessage(Order(Bid, BtcAmount(1), USD(900)), PeerConnection("client"))
-      gateway.expectNoMsg()
-    }
+    shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(850.EUR)))
   }
 
   it must "cancel orders" in new WithEurBroker("cancel-orders") {
     shouldSubscribe()
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client1"))
-    gateway.relayMessage(Order(Ask, BtcAmount(0.8), EUR(950)), PeerConnection("client2"))
-    gateway.relayMessage(OrderCancellation(EUR.currency), PeerConnection("client1"))
-    shouldHaveQuote(Quote(EUR.currency, None -> Some(EUR(950))))
+    relayBid(1.BTC, 900.EUR, "client1")
+    relayAsk(0.8.BTC, 950.EUR, "client2")
+    gateway.relayMessage(OrderSet(market), PeerConnection("client1"))
+    shouldHaveQuote(Quote(EUR.currency, None -> Some(950.EUR)))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {
     shouldSubscribe()
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("client"))
+    relayBid(1.BTC, 900.EUR, "client")
     gateway.expectNoMsg()
     shouldHaveQuote(Quote.empty(EUR.currency))
   }
 
   it must "keep priority of orders when resubmitted" in new WithEurBroker("keep-priority") {
     shouldSubscribe()
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("first-bid"))
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("second-bid"))
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("first-bid"))
-    gateway.relayMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("ask"))
+    relayBid(1.BTC, 900.EUR, "first-bid")
+    relayBid(1.BTC, 900.EUR, "second-bid")
+    relayBid(1.BTC, 900.EUR, "first-bid")
+    relayAsk(1.BTC, 900.EUR, "ask")
     val orderMatch = shouldSpawnArbiter()
     orderMatch.buyer should equal (PeerConnection("first-bid"))
   }
 
   it must "label crosses with random identifiers" in new WithEurBroker("random-id") {
     shouldSubscribe()
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer"))
-    gateway.relayMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller"))
+    relayBid(1.BTC, 900.EUR, "buyer")
+    relayAsk(1.BTC, 900.EUR, "seller")
     val id1 = shouldSpawnArbiter().exchangeId
-    gateway.relayMessage(Order(Bid, BtcAmount(1), EUR(900)), PeerConnection("buyer"))
-    gateway.relayMessage(Order(Ask, BtcAmount(1), EUR(900)), PeerConnection("seller"))
+    relayBid(1.BTC, 900.EUR, "buyer")
+    relayAsk(1.BTC, 900.EUR, "seller")
     val id2 = shouldSpawnArbiter().exchangeId
     id1 should not (equal (id2))
   }

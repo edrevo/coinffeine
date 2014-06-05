@@ -4,36 +4,38 @@ import java.util.Currency
 import scala.annotation.tailrec
 import scala.collection.immutable.{SortedMap, TreeMap}
 
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
-import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid, Order, OrderType}
+import com.coinffeine.common.protocol.messages.brokerage.OrderType
 
 /** Data structure that holds orders sorted by price and, within a given price, keep
   * them sorted with a FIFO policy. */
-case class OrderMap private (orderType: OrderType, currency: Currency, tree: SortedMap[Price, OrderQueue]) {
+case class OrderMap[T <: OrderType] (
+    orderType: T, currency: Currency, tree: SortedMap[Price, OrderQueue]) {
 
-  def addPosition(position: Position): OrderMap = {
-    require(position.order.orderType == orderType,
-      s"Cannot mix $orderType with ${position.order.orderType}")
-    require(position.order.price.currency == currency,
-      s"Cannot mix $currency with ${position.order.price.currency}")
-    val queue = tree.getOrElse(position.order.price, Seq.empty)
-    val updatedQueue = queue :+ (position.order.amount, position.requester)
-    copy(tree = tree.updated(position.order.price, updatedQueue))
+  def addPosition(position: Position[T]): OrderMap[T] = {
+    require(position.price.currency == currency,
+      s"Cannot mix $currency with ${position.price.currency}")
+    val queue = tree.getOrElse(position.price, Seq.empty)
+    val updatedQueue = queue :+ (position.amount, position.requester)
+    copy(tree = tree.updated(position.price, updatedQueue))
   }
 
   /** Sorted client positions */
-  def positions: Iterable[Position] = for {
+  def positions: Iterable[Position[T]] = for {
     (price, queue) <- tree.seq
     (amount, clientId) <- queue
-  } yield Position(clientId, Order(orderType, amount, price))
+  } yield Position(orderType, amount, price, clientId)
 
-  def firstPosition: Option[Position] = positions.headOption
+  def userPositions(userId: ClientId): Seq[Position[T]] =
+    positions.filter(_.requester == userId).toSeq
+
+  def firstPosition: Option[Position[T]] = positions.headOption
 
   def firstPrice: Option[Price] = tree.headOption.map(_._1)
 
   /** Remove an amount of BTC honoring order priority */
-  def removeAmount(amount: BtcAmount): OrderMap = copy(tree = removeAmountFromTree(amount, tree))
+  def removeAmount(amount: BtcAmount): OrderMap[T] = copy(tree = removeAmountFromTree(amount, tree))
 
   /** Cancel a position.
     *
@@ -42,14 +44,13 @@ case class OrderMap private (orderType: OrderType, currency: Currency, tree: Sor
     * @param position  Position to cancel
     * @return          New order map
     */
-  def cancelPosition(position: Position): OrderMap = {
-    require(position.order.orderType == orderType)
-    val value = (position.order.amount, position.requester)
-    tree.get(position.order.price) match {
-      case Some(Seq(`value`)) => copy(tree = tree - position.order.price)
+  def cancelPosition(position: Position[T]): OrderMap[T] = {
+    val value = (position.amount, position.requester)
+    tree.get(position.price) match {
+      case Some(Seq(`value`)) => copy(tree = tree - position.price)
       case Some(queue) if queue.contains(value) =>
         val newQueue = removeLastOccurrence(value, queue)
-        copy(tree = tree.updated(position.order.price, newQueue))
+        copy(tree = tree.updated(position.price, newQueue))
       case _ => this
     }
   }
@@ -82,7 +83,7 @@ case class OrderMap private (orderType: OrderType, currency: Currency, tree: Sor
         (0.BTC, (firstAmount - amount, id) +: rest)
     }
 
-  def cancelPositions(requester: ClientId): OrderMap =
+  def cancelPositions(requester: ClientId): OrderMap[T] =
     copy(tree = removeEmptyQueues(removeByRequester(requester, tree)))
 
   private def removeByRequester(requester: ClientId, tree: SortedMap[Price, OrderQueue]) =
@@ -96,20 +97,17 @@ case class OrderMap private (orderType: OrderType, currency: Currency, tree: Sor
 object OrderMap {
 
   /** Empty order map */
-  def empty(orderType: OrderType, currency: Currency): OrderMap =
-    OrderMap(orderType, currency, TreeMap.empty(OrderMap.Orderings(orderType)))
+  def empty[T <: OrderType](orderType: T, currency: Currency): OrderMap[T] =
+    OrderMap(orderType, currency, TreeMap.empty(orderType.priceOrdering))
 
-  def apply(first: Position, other: Position*): OrderMap = {
+  def apply[T <: OrderType](first: Position[T], other: Position[T]*): OrderMap[T] = {
     val positions = first +: other
-    val accumulator = empty(orderType(positions), orderCurrency(positions))
+    val accumulator: OrderMap[T] = empty(first.orderType, orderCurrency(positions))
     positions.foldLeft(accumulator)(_.addPosition(_))
   }
 
-  private def orderType(positions: Seq[Position]): OrderType =
-    requireSingleValue(positions.map(_.order.orderType))
-
-  private def orderCurrency(positions: Seq[Position]): Currency =
-    requireSingleValue(positions.map(_.order.price.currency))
+  private def orderCurrency(positions: Seq[Position[_]]): Currency =
+    requireSingleValue(positions.map(_.price.currency))
 
   private def requireSingleValue[T](values: Seq[T]): T = values.distinct.toList match {
     case List() => throw new IllegalArgumentException("At least one value required")
@@ -118,9 +116,4 @@ object OrderMap {
       val names = multipleValues.map(_.toString).sorted
       throw new IllegalArgumentException(names.mkString("Cannot mix ", " and ", " values"))
   }
-
-  private val Orderings: Map[OrderType, Ordering[Price]] = Map(
-    Bid -> Ordering.by[FiatAmount, BigDecimal](x => -x.amount),
-    Ask -> FiatAmount
-  )
 }
