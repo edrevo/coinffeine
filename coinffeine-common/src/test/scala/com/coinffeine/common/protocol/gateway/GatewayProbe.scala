@@ -1,7 +1,9 @@
 package com.coinffeine.common.protocol.gateway
 
+import scala.concurrent.duration.Duration
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
-import akka.actor.{ActorSystem, ActorRef}
 import org.scalatest.Assertions
 
 import com.coinffeine.common.PeerConnection
@@ -30,9 +32,17 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     subscription
   }
 
-  def expectForwarding(payload: Any, dest: PeerConnection): Unit = probe.expectMsgPF() {
-    case message @ ForwardMessage(`payload`, `dest`) => message
-  }
+  def expectForwarding(payload: Any, dest: PeerConnection, timeout: Duration = Duration.Undefined): Unit =
+    probe.expectMsgPF(timeout) {
+      case message @ ForwardMessage(`payload`, `dest`) => message
+    }
+
+  def expectForwardingPF[T](dest: PeerConnection, timeout: Duration = Duration.Undefined)
+                           (payloadMatcher: PartialFunction[Any, T]): T =
+    probe.expectMsgPF(timeout) {
+      case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
+        payloadMatcher.apply(payload)
+    }
 
   def expectNoMsg(): Unit = probe.expectNoMsg()
 

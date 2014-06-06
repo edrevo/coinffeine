@@ -1,24 +1,23 @@
-package com.coinffeine.client.peer
+package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
+import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.brokerage._
 
-/** Submits an order */
-class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+/** Submits and resubmits orders for a given market */
+private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case OrderSubmissionActor.Initialize(gateway, brokerAddress) =>
-      new InitializedOrderSubmission(gateway, brokerAddress).start()
+    case OrderSubmissionActor.Initialize(market, gateway, brokerAddress) =>
+      new InitializedOrderSubmission(market, gateway, brokerAddress).start()
   }
 
-  private class InitializedOrderSubmission(gateway: ActorRef, broker: PeerConnection) {
+  private class InitializedOrderSubmission(market: Market, gateway: ActorRef, broker: PeerConnection) {
 
     def start(): Unit = {
-      subscribeToMessages()
       context.become(waitingForOrders)
     }
 
@@ -43,24 +42,15 @@ class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor w
       gateway ! ForwardMessage(orderSet, broker)
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
-
-    private def subscribeToMessages(): Unit = {
-      gateway ! Subscribe {
-        case ReceiveMessage(_: Order, `broker`) => true
-        case _ => false
-      }
-    }
   }
 
   private def orderToOrderSet(order: Order) =
     OrderSet(Market(order.price.currency)).addOrder(order.orderType, order.amount, order.price)
 }
 
-object OrderSubmissionActor {
+private[orders] object OrderSubmissionActor {
 
-  case class Initialize(gateway: ActorRef, brokerAddress: PeerConnection)
+  case class Initialize(market: Market, gateway: ActorRef, brokerAddress: PeerConnection)
 
-  trait Component { this: ProtocolConstants.Component =>
-    lazy val orderSubmissionProps = Props(new OrderSubmissionActor(protocolConstants))
-  }
+  def props(constants: ProtocolConstants) = Props(new OrderSubmissionActor(constants))
 }

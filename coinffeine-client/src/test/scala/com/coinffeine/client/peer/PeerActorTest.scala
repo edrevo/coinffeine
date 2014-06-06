@@ -11,6 +11,7 @@ import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
+import com.coinffeine.client.peer.orders.OrdersActor
 
 class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
@@ -33,7 +34,7 @@ class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     ordersRef = ordersProbe.expectMsgClass(classOf[MockStarted]).ref
     val gw = gatewayRef
     ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrderSubmissionActor.Initialize(`gw`, _)) =>
+      case MockReceived(_, _, OrdersActor.Initialize(`gw`, _)) =>
     }
   }
 
