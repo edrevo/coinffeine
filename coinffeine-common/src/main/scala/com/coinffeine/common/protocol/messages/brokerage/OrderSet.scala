@@ -2,7 +2,6 @@ package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.protocol.messages.PublicMessage
-import com.coinffeine.common.protocol.messages.brokerage.OrderSet.Entry
 
 /** Represents the set of orders placed by a peer.
   *
@@ -12,8 +11,8 @@ import com.coinffeine.common.protocol.messages.brokerage.OrderSet.Entry
   */
 case class OrderSet(
     market: Market,
-    bids: Seq[Entry] = Seq.empty,
-    asks: Seq[Entry] = Seq.empty) extends PublicMessage {
+    bids: Seq[OrderSet.Entry] = Seq.empty,
+    asks: Seq[OrderSet.Entry] = Seq.empty) extends PublicMessage {
 
   requireSingleCurrency()
   requireNotCrossed()
@@ -22,8 +21,8 @@ case class OrderSet(
   def lowestAsk: Option[FiatAmount] = asks.map(_.price).reduceOption(_ min _)
 
   def addOrder(orderType: OrderType, amount: BtcAmount, price: FiatAmount) = orderType match {
-    case Bid => copy(bids = addEntry(bids, Entry(amount, price)))
-    case Ask => copy(asks = addEntry(asks, Entry(amount, price)))
+    case Bid => copy(bids = addEntry(bids, OrderSet.Entry(amount, price)))
+    case Ask => copy(asks = addEntry(asks, OrderSet.Entry(amount, price)))
   }
 
   private def requireSingleCurrency(): Unit = {
@@ -39,10 +38,10 @@ case class OrderSet(
     require(!priceCrossed, "Bids and asks are crossed")
   }
 
-  private def addEntry(entries: Seq[Entry], entry: Entry): Seq[Entry] = {
+  private def addEntry(entries: Seq[OrderSet.Entry], entry: OrderSet.Entry): Seq[OrderSet.Entry] = {
     val (samePrice, otherPrices) = entries.span(_.price == entry.price)
     val newAmount = (entry +: samePrice).map(_.amount).sum
-    otherPrices :+ Entry(newAmount, entry.price)
+    otherPrices :+ OrderSet.Entry(newAmount, entry.price)
   }
 }
 
