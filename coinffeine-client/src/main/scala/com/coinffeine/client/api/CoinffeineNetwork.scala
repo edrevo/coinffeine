@@ -4,7 +4,7 @@ import java.util.Currency
 import scala.concurrent.Future
 
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
-import com.coinffeine.common.protocol.messages.brokerage.{Order, Quote}
+import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid, Order, Quote}
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
@@ -38,7 +38,8 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitBuyOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order
+  def submitBuyOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order =
+    submitOrder(Order(Bid, btcAmount, fiatAmount))
 
   /** Submit an order to sell bitcoins.
     *
@@ -46,7 +47,19 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order
+  def submitSellOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Order =
+    submitOrder(Order(Ask, btcAmount, fiatAmount))
+
+  /** Submit an order. */
+  def submitOrder(order: Order): Order
+
+  def cancelBuyOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Unit = {
+    cancelOrder(Order(Bid, btcAmount, fiatAmount))
+  }
+
+  def cancelSellOrder(btcAmount: BtcAmount, fiatAmount: FiatAmount): Unit = {
+    cancelOrder(Order(Ask, btcAmount, fiatAmount))
+  }
 
   /** Cancel an unmatched order. */
   def cancelOrder(order: Order): Unit

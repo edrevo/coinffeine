@@ -52,21 +52,10 @@ class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
 
   override def orders: Set[Order] = Set.empty
 
+  override def submitOrder(order: Order): Order = {
+    peer ! order
+    order
+  }
+
   override def cancelOrder(order: Order): Unit = ???
-
-  override def submitBuyOrder(
-      btcAmount: BtcAmount,
-      fiatAmount: FiatAmount): Order = {
-    val order = Order(Bid, btcAmount, fiatAmount)
-    peer ! order
-    order
-  }
-
-  override def submitSellOrder(
-      btcAmount: BtcAmount,
-      fiatAmount: FiatAmount): Order = {
-    val order = Order(Ask, btcAmount, fiatAmount)
-    peer ! order
-    order
-  }
 }
