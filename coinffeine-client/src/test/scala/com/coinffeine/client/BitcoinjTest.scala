@@ -10,7 +10,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 
-import com.coinffeine.common.UnitTest
+import com.coinffeine.common.{Currency, UnitTest}
 import com.coinffeine.common.currency.BtcAmount
 import com.coinffeine.common.currency.Implicits._
 
@@ -54,17 +54,17 @@ abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  def createWallet(key: ECKey, amount: BtcAmount): Wallet = {
+  def createWallet(key: ECKey, amount: Currency.Bitcoin.Amount): Wallet = {
     val wallet = createWallet(key)
     sendMoneyToWallet(wallet, amount)
     wallet
   }
 
   /** Mine bitcoins into a wallet until having a minimum amount. */
-  def sendMoneyToWallet(wallet: Wallet, amount: BtcAmount): Unit = {
+  def sendMoneyToWallet(wallet: Wallet, amount: Currency.Bitcoin.Amount): Unit = {
     val miner = new ECKey
     val minerWallet = createWallet(miner)
-    while (BtcAmount(minerWallet.getBalance) < amount) {
+    while (Currency.Bitcoin.fromSatoshi(minerWallet.getBalance) < amount) {
       mineBlock(miner)
     }
     sendToBlockChain(minerWallet.createSend(

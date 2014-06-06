@@ -11,6 +11,7 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
+import com.coinffeine.common.Currency
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRequest, RefundTxSignatureResponse}
@@ -19,7 +20,7 @@ import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureReque
 abstract class DefaultHandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with MockitoSugar {
 
-  class MockHandshake extends Handshake {
+  class MockHandshake extends Handshake[Currency.Euro.type] {
     override val exchangeInfo = sampleExchangeInfo
     override val commitmentTransaction = MockTransaction()
     override val refundTransaction = MockTransaction()

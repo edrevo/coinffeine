@@ -10,11 +10,12 @@ import com.coinffeine.client.exchange.SellerExchangeActor.PaymentValidationResul
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
+import com.coinffeine.common.FiatCurrency
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerExchangeActor(exchange: Exchange with SellerUser, constants: ProtocolConstants)
+class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUser[C], constants: ProtocolConstants)
   extends Actor with ActorLogging with Stash {
 
   override def receive: Receive = {
@@ -26,7 +27,7 @@ class SellerExchangeActor(exchange: Exchange with SellerUser, constants: Protoco
       override protected val messageGateway: ActorRef,
       listeners: Set[ActorRef]) extends MessageForwarding {
 
-    override protected val exchangeInfo: ExchangeInfo = exchange.exchangeInfo
+    override protected val exchangeInfo = exchange.exchangeInfo
 
     messageGateway ! Subscribe {
       case ReceiveMessage(PaymentProof(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
@@ -81,7 +82,7 @@ object SellerExchangeActor {
   private case class PaymentValidationResult(result: Try[Unit])
 
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps(exchange: Exchange with SellerUser): Props =
+    def exchangeActorProps[C <: FiatCurrency](exchange: Exchange[C] with SellerUser[C]): Props =
       Props(new SellerExchangeActor(exchange, protocolConstants))
   }
 }

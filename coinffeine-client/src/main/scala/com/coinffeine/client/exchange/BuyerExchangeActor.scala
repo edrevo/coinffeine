@@ -4,16 +4,17 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 
-import com.coinffeine.client.{ExchangeInfo, MessageForwarding}
+import com.coinffeine.client.{AnyExchangeInfo, MessageForwarding}
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange.{StepSignatures, PaymentProof}
+import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
+import com.coinffeine.common.FiatCurrency
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerExchangeActor(exchange: Exchange with BuyerUser, constants: ProtocolConstants)
+class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser[C], constants: ProtocolConstants)
   extends Actor with ActorLogging  {
 
   override def receive: Receive = {
@@ -25,7 +26,7 @@ class BuyerExchangeActor(exchange: Exchange with BuyerUser, constants: ProtocolC
       override val messageGateway: ActorRef,
       listeners: Set[ActorRef]) extends MessageForwarding {
 
-    override val exchangeInfo: ExchangeInfo = exchange.exchangeInfo
+    override val exchangeInfo: AnyExchangeInfo = exchange.exchangeInfo
 
     def startExchange(): Unit = {
       subscribeToMessages()
@@ -72,7 +73,7 @@ class BuyerExchangeActor(exchange: Exchange with BuyerUser, constants: ProtocolC
 
 object BuyerExchangeActor {
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps(exchange: Exchange with BuyerUser): Props =
+    def exchangeActorProps[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser[C]): Props =
       Props(new BuyerExchangeActor(exchange, protocolConstants))
   }
 }

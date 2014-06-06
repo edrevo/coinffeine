@@ -1,17 +1,16 @@
 package com.coinffeine.client.exchange
 
-import org.scalatest.mock.MockitoSugar
-
 import scala.concurrent.duration._
 
-import akka.actor.{ActorRef, Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
+import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{Currency, PeerConnection}
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, ForwardMessage}
+import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 
 class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
   val buyerListener = TestProbe()
@@ -21,8 +20,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser
-  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser
+  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser[Currency.Euro.type]
+  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser[Currency.Euro.type]
 
   class MessageForwarder(to: ActorRef) extends Actor {
     override val receive: Receive = {

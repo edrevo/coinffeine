@@ -9,7 +9,7 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{Currency, PeerConnection}
 import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -23,7 +23,7 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val exchange = new MockExchange(exchangeInfo) with BuyerUser
+  val exchange = new MockExchange(exchangeInfo) with BuyerUser[Currency.Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(

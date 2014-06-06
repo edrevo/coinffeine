@@ -1,6 +1,7 @@
 package com.coinffeine.client.exchange
 
 import com.google.bitcoin.core.ECKey
+import com.coinffeine.common.FiatCurrency
 
 /** A trait that provides role-specific access to fiat and btc information for both user
   * and counterpart
@@ -30,8 +31,8 @@ sealed trait UserRole {
 }
 
 /** This trait can be mixed with an Exchange if the user is acting like a buyer */
-trait BuyerUser extends UserRole {
-  this: Exchange =>
+trait BuyerUser[C <: FiatCurrency] extends UserRole {
+  this: Exchange[C] =>
 
   override lazy val buyersKey: ECKey = exchangeInfo.userKey
   override lazy val sellersKey: ECKey = exchangeInfo.counterpartKey
@@ -42,8 +43,8 @@ trait BuyerUser extends UserRole {
 }
 
 /** This trait can be mixed with an Exchange if the user is acting like a seller */
-trait SellerUser extends UserRole {
-  this: Exchange =>
+trait SellerUser[C <: FiatCurrency] extends UserRole {
+  this: Exchange[C] =>
 
   override lazy val buyersKey: ECKey = exchangeInfo.counterpartKey
   override lazy val sellersKey: ECKey = exchangeInfo.userKey

@@ -8,7 +8,7 @@ import org.mockito.BDDMockito.given
 import org.mockito.Matchers.any
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.common.UnitTest
+import com.coinffeine.common.{Currency, UnitTest}
 import com.coinffeine.common.currency.CurrencyCode.USD
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
@@ -46,8 +46,8 @@ class OKPayProcessorTest extends UnitTest with MockitoSugar {
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token))
     )).willReturn(Right(Wallet_Get_BalanceResponse(Some(Some(balanceArray)))))
-    val balance = Await.result(instance.currentBalance(), futureTimeout)
-    balance should contain (USD(100))
+    val balance = Await.result(instance.currentBalance(Currency.UsDollar), futureTimeout)
+    balance should be (Currency.UsDollar(100))
   }
 
   it must "be able to send a payment" in new WithOkPayProcessor {
@@ -60,7 +60,7 @@ class OKPayProcessorTest extends UnitTest with MockitoSugar {
       comment = Some(Some("comment")),
       isReceiverPaysFees = Some(false),
       invoice = None)).willReturn(Right(Send_MoneyResponse(Some(Some(txInfo)))))
-    val futureResponse = instance.sendPayment(receiverAccount, USD(100), "comment")
+    val futureResponse = instance.sendPayment(receiverAccount, Currency.UsDollar(100), "comment")
     val response = Await.result(futureResponse, futureTimeout)
     response.id should be ("250092")
   }

@@ -14,8 +14,9 @@ import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
+import com.coinffeine.common.FiatCurrency
 
-private[handshake] class DefaultHandshakeActor(handshake: Handshake, constants: ProtocolConstants)
+private[handshake] class DefaultHandshakeActor[C <: FiatCurrency](handshake: Handshake[C], constants: ProtocolConstants)
   extends Actor with ActorLogging {
 
   import constants._
@@ -164,7 +165,7 @@ private[handshake] class DefaultHandshakeActor(handshake: Handshake, constants: 
 
 object DefaultHandshakeActor {
   trait Component extends HandshakeActor.Component { this: ProtocolConstants.Component =>
-    override def handshakeActorProps(handshake: Handshake): Props =
+    override def handshakeActorProps[C <: FiatCurrency](handshake: Handshake[C]): Props =
       Props(new DefaultHandshakeActor(handshake, protocolConstants))
   }
 

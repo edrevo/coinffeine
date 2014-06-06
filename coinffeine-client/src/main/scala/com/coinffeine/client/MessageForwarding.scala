@@ -11,7 +11,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 trait MessageForwarding {
-  protected def exchangeInfo: ExchangeInfo
+  protected def exchangeInfo: AnyExchangeInfo
   protected def messageGateway: ActorRef
 
   protected def forwardToCounterpart(message: PublicMessage): Unit =

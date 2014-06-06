@@ -6,9 +6,10 @@ import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.ExchangeInfo
+import com.coinffeine.common.FiatCurrency
 
-trait Handshake {
-  val exchangeInfo: ExchangeInfo
+trait Handshake[C <: FiatCurrency] {
+  val exchangeInfo: ExchangeInfo[C]
   val commitmentTransaction: Transaction
   val refundTransaction: Transaction
 

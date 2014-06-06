@@ -10,26 +10,25 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.{Currency, FiatCurrency}
 
-abstract class DefaultHandshake(
-    val exchangeInfo: ExchangeInfo,
-    amountToCommit: BtcAmount,
-    userWallet: Wallet) extends Handshake {
+abstract class DefaultHandshake[C <: FiatCurrency](
+    val exchangeInfo: ExchangeInfo[C],
+    amountToCommit: Currency.Bitcoin.Amount,
+    userWallet: Wallet) extends Handshake[C] {
   require(userWallet.hasKey(exchangeInfo.userKey),
     "User wallet does not contain the user's private key")
-  require(amountToCommit > (0 BTC), "Amount to commit must be greater than zero")
+  require(amountToCommit.isPositive, "Amount to commit must be greater than zero")
 
   private val inputFunds = {
     val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
     val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(0 BTC)((accum, output) => accum + BtcAmount(output.getValue))
+      .scanLeft(Currency.Bitcoin.Amount.Zero)((accum, output) => accum + Currency.Bitcoin.fromSatoshi(output.getValue))
       .takeWhile(_ < amountToCommit)
       .length
     inputFundCandidates.take(necessaryInputCount)
   }
-  private val totalInputFunds = inputFunds.map(funds => BtcAmount(funds.getValue)).sum
+  private val totalInputFunds = inputFunds.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).reduce(_ + _)
   require(totalInputFunds >= amountToCommit,
     "Input funds must cover the amount of funds to commit")
 
@@ -37,12 +36,12 @@ abstract class DefaultHandshake(
     val tx = new Transaction(exchangeInfo.network)
     inputFunds.foreach(tx.addInput)
     val changeAmount = totalInputFunds - amountToCommit
-    require(changeAmount >= (0 BTC))
+    require(!changeAmount.isNegative)
     tx.addOutput(
       amountToCommit.asSatoshi,
       ScriptBuilder.createMultiSigOutputScript(
         2, List(exchangeInfo.counterpartKey, exchangeInfo.userKey)))
-    if (changeAmount > (0 BTC)) {
+    if (changeAmount.isPositive) {
       tx.addOutput(
         (totalInputFunds - amountToCommit).asSatoshi,
         userWallet.getChangeAddress)

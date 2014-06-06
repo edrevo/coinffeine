@@ -7,12 +7,13 @@ import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.paymentprocessor.Payment
+import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.paymentprocessor.AnyPayment
 
-trait Exchange {
+trait Exchange[C <: FiatCurrency] {
   this: UserRole =>
 
-  val exchangeInfo: ExchangeInfo
+  val exchangeInfo: ExchangeInfo[C]
 
   /** Returns the bitcoin transaction that corresponds with the offer for the passed in step */
   def getOffer(step: Int): Transaction
@@ -38,7 +39,7 @@ trait Exchange {
   def validatePayment(step: Int, paymentId: String): Future[Unit]
 
   /** Performs a payment for a step of the exchange */
-  def pay(step: Int): Future[Payment]
+  def pay(step: Int): Future[AnyPayment]
 
   /** Returns the user's signature for the transaction */
   protected def sign(offer: Transaction): (TransactionSignature, TransactionSignature)

@@ -1,6 +1,7 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
-import java.util.Currency
+import java.util.{Currency => JavaCurrency}
+import scala.Some
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -8,8 +9,8 @@ import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
 import scalaxb.{DispatchHttpClients, Soap11Clients, Soap11Fault}
 
-import com.coinffeine.common.currency.FiatAmount
-import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor, PaymentProcessorException}
+import com.coinffeine.common._
+import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor, PaymentProcessorException}
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessor(
@@ -25,21 +26,32 @@ class OKPayProcessor(
     * @param amount amount to send.
     * @return a Payment Object.
     */
-  override def sendPayment(receiverId: String, amount: FiatAmount, comment: String): Future[Payment] =
+  override def sendPayment[C <: FiatCurrency](receiverId: String,
+                                          amount: CurrencyAmount[C],
+                                          comment: String): Future[Payment[C]] = {
     Future {
       val response = getResponse(service.send_Money(
         walletID = Some(Some(account)),
         securityToken = Some(Some(buildCurrentToken())),
         receiver = Some(Some(receiverId)),
-        currency = Some(Some(amount.currency.getCurrencyCode)),
-        amount = Some(amount.amount),
+        currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
+        amount = Some(amount.value),
         comment = Some(Some(comment)),
         isReceiverPaysFees = Some(false),
         invoice = None
       ))
-      response.Send_MoneyResult.flatten.flatMap(parseTransactionInfo)
+      val payment = response
+        .Send_MoneyResult
+        .flatten
+        .flatMap(parseTransactionInfo)
         .getOrElse(throw new PaymentProcessorException("Cannot parse the sent payment: " + response))
+      val expectedCurrency = amount.currency
+      val actualCurrency = payment.amount.currency
+      if (actualCurrency != expectedCurrency) throw new PaymentProcessorException(
+        s"payment returned by OKPay is expressed in $actualCurrency, but $expectedCurrency was expected")
+      else payment.asInstanceOf[Payment[C]]
     }
+  }
 
   /** Find an specific payment by id.
     *
@@ -49,7 +61,7 @@ class OKPayProcessor(
     * @param paymentId PaymentId to search. Example: 2205909.
     * @return The payment wanted.
     */
-  override def findPayment(paymentId: String): Future[Option[Payment]] = Future {
+  override def findPayment(paymentId: String): Future[Option[AnyPayment]] = Future {
     getResponse(service.transaction_Get(
       walletID = Some(Some(this.account)),
       securityToken = Some(Some(buildCurrentToken())),
@@ -66,17 +78,17 @@ class OKPayProcessor(
     *
     * @return a Sequence of FiatAmount.
     */
-  override def currentBalance(): Future[Seq[FiatAmount]] = Future {
+  override def currentBalance[C <: FiatCurrency](currency: C): Future[currency.Amount] = Future {
     val token: String = buildCurrentToken()
     val response = getResponse(service.wallet_Get_Balance(
       walletID = Some(Some(this.account)),
       securityToken = Some(Some(token))
     ))
-    response.Wallet_Get_BalanceResult.flatten.map(parseArrayOfBalance)
+    response.Wallet_Get_BalanceResult.flatten.map(b => parseArrayOfBalance(b, currency))
       .getOrElse(throw new PaymentProcessorException("Cannot parse balances: " + response))
   }
 
-  private def parseTransactionInfo(txInfo: TransactionInfo): Option[Payment] = {
+  private def parseTransactionInfo(txInfo: TransactionInfo): Option[AnyPayment] = {
     txInfo match {
       case TransactionInfo(
         Some(amount),
@@ -92,8 +104,8 @@ class OKPayProcessor(
         Flatten(WalletId(senderId)),
         _
       ) =>
-        val currency = Currency.getInstance(txInfo.Currency.get.get)
-        val amount = FiatAmount(net, currency)
+        val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
+        val amount = currency.Amount(net).asInstanceOf[AnyFiatCurrencyAmount]
         val date = DateTimeFormat.forPattern(OKPayProcessor.DateFormat).parseDateTime(rawDate)
         Some(Payment(paymentId.toString, senderId, receiverId, amount, date, description))
       case _ => None
@@ -113,10 +125,13 @@ class OKPayProcessor(
     identity
   )
 
-  private def parseArrayOfBalance(balances: ArrayOfBalance): Seq[FiatAmount] =
-    balances.Balance.map(balance =>
-      FiatAmount(balance.get.Amount.get, Currency.getInstance(balance.get.Currency.get.get))
-    )
+  private def parseArrayOfBalance[C <: FiatCurrency](balances: ArrayOfBalance,
+                                                     expectedCurrency: C): expectedCurrency.Amount = {
+    val amounts = balances.Balance.collect {
+      case Some(Balance(a, c)) if c.get.get == expectedCurrency.javaCurrency.getCurrencyCode => a.get
+    }
+    expectedCurrency.Amount(amounts.reduce(_ + _))
+  }
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
 }

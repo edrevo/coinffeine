@@ -1,13 +1,14 @@
 package com.coinffeine.common.paymentprocessor
 
-import com.coinffeine.common.currency.FiatAmount
 import org.joda.time.DateTime
 
-case class Payment(
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
+
+case class Payment[C <: FiatCurrency](
   id: String,
   senderId: String,
   receiverId: String,
-  amount: FiatAmount,
+  amount: CurrencyAmount[C],
   date: DateTime,
   description: String
 )
