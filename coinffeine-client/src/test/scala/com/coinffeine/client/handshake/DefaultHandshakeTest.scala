@@ -18,26 +18,26 @@ class DefaultHandshakeTest extends BitcoinjTest {
       an [IllegalArgumentException] should be thrownBy {
         new DefaultHandshake(
           exchangeInfo = exchangeInfo,
-          amountToCommit = Currency.Bitcoin(2),
+          amountToCommit = 2 BTC,
           userWallet = createWallet()) {}
       }
     }
 
   it should "fail if the amount to commit is less or equal to zero" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(5))
+    val userWallet = createWallet(exchangeInfo.userKey, 5 BTC)
     an [IllegalArgumentException] should be thrownBy {
       new DefaultHandshake(
         exchangeInfo = exchangeInfo,
-        amountToCommit = Currency.Bitcoin(0),
+        amountToCommit = 0 BTC,
         userWallet = userWallet) {}
     }
   }
 
   "The commitment transaction" should
     "commit the correct amount when the input exceeds the amount needed" in {
-      val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(1))
-      sendMoneyToWallet(userWallet, Currency.Bitcoin(4))
-      val commitmentAmount = Currency.Bitcoin(2)
+      val userWallet = createWallet(exchangeInfo.userKey, 1 BTC)
+      sendMoneyToWallet(userWallet, 4 BTC)
+      val commitmentAmount = 2 BTC
       val handshake = new DefaultHandshake(
         exchangeInfo,
         commitmentAmount,

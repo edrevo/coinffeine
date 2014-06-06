@@ -26,7 +26,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
       counterpartKey = new ECKey(),
       counterpartFiatAddress = "buyer"
     )
-    lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, Currency.Bitcoin(200))
+    lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, (200 BTC))
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = paymentProcFactory.newProcessor(
