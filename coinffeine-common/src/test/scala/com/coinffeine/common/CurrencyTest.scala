@@ -6,11 +6,11 @@ import org.scalatest.{ShouldMatchers, FlatSpec}
 
 class CurrencyTest extends FlatSpec with ShouldMatchers {
 
-  "US Dollar" must behave like localizedCurrency(Currency.UsDollar, "USD")
-  "Euro" must behave like localizedCurrency(Currency.Euro, "EUR")
-  "Bitcoin" must behave like representableCurrency(Currency.Bitcoin)
+  "US Dollar" must behave like validFiatCurrency(Currency.UsDollar, "USD")
+  "Euro" must behave like validFiatCurrency(Currency.Euro, "EUR")
+  "Bitcoin" must behave like validCurrency(Currency.Bitcoin)
 
-  private def representableCurrency(currency: Currency): Unit =  {
+  private def validCurrency(currency: Currency): Unit =  {
 
     it must "represent amounts in its own currency" in {
       currency.Amount(7).currency should be(currency)
@@ -43,12 +43,12 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
     }
   }
 
-  private def localizedCurrency(currency: Currency, currencyCode: String): Unit = {
+  private def validFiatCurrency(currency: FiatCurrency, currencyCode: String): Unit = {
 
-    representableCurrency(currency)
+    validCurrency(currency)
 
     it must "return the corresponding Java currency instance" in {
-      currency.toJavaCurrency should be(Some(JavaCurrency.getInstance(currencyCode)))
+      currency.javaCurrency should be(JavaCurrency.getInstance(currencyCode))
     }
   }
 }

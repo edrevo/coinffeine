@@ -1,6 +1,7 @@
 package com.coinffeine.common
 
 import java.util.{Currency => JavaCurrency}
+import java.math.BigInteger
 
 /** An finite amount of currency C.
   *
@@ -13,8 +14,18 @@ import java.util.{Currency => JavaCurrency}
   * @tparam C The type of currency this amount is represented in
   */
 trait CurrencyAmount[C <: Currency] {
+
   val currency: C
   val value: BigDecimal
+
+  def + (other: CurrencyAmount[C]): CurrencyAmount[C]
+  def - (other: CurrencyAmount[C]): CurrencyAmount[C]
+  def * (mult: BigDecimal): CurrencyAmount[C]
+  def / (divisor: BigDecimal): CurrencyAmount[C]
+  def unary_- : CurrencyAmount[C]
+
+  val isPositive = value > 0
+  val isNegative = value < 0
 }
 
 /** Representation of a currency. */
@@ -41,40 +52,65 @@ trait Currency {
 
     override val currency: SelfType = self
 
-    def + (other: Amount): Amount = Amount(value + other.value)
-    def - (other: Amount): Amount = Amount(value - other.value)
-    def * (mult: BigDecimal): Amount = Amount(value * mult)
-    def / (divisor: BigDecimal): Amount = Amount(value / divisor)
-    def unary_- : Amount = Amount(-value)
+    override def + (other: CurrencyAmount[SelfType]) = Amount(value + other.value)
+    override def - (other: CurrencyAmount[SelfType]) = Amount(value - other.value)
+    override def * (mult: BigDecimal) = Amount(value * mult)
+    override def / (divisor: BigDecimal) = Amount(value / divisor)
+    override def unary_- = Amount(-value)
   }
 
   object Amount extends Ordering[Amount] {
 
+    val Zero = Amount(0)
     override def compare(x: Amount, y: Amount): Int = x.value.compare(y.value)
   }
 
-  /** Convert this currency into a java.util.Currency instance. */
-  def toJavaCurrency: Option[JavaCurrency]
+  def apply(value: BigDecimal) = Amount(value)
+  def apply(value: Int) = Amount(value)
+  def apply(value: Double) = Amount(value)
+  def apply(value: java.math.BigDecimal) = Amount(BigDecimal(value))
+}
+
+/** A fiat currency. */
+trait FiatCurrency extends Currency {
+  val javaCurrency: JavaCurrency
+}
+
+object FiatCurrency {
+
+  def apply(javaCurrency: JavaCurrency): FiatCurrency = javaCurrency match {
+    case Currency.UsDollar.javaCurrency => Currency.UsDollar
+    case Currency.Euro.javaCurrency => Currency.Euro
+    case _ => throw new IllegalArgumentException(s"cannot convert $javaCurrency into a known Coinffeine fiat currency")
+  }
 }
 
 object Currency {
 
-  object UsDollar extends Currency {
+  object UsDollar extends FiatCurrency {
     type SelfType = UsDollar.type
     val self = this
-    override def toJavaCurrency = Some(JavaCurrency.getInstance("USD"))
+    val javaCurrency = JavaCurrency.getInstance("USD")
   }
 
-  object Euro extends Currency {
+  object Euro extends FiatCurrency {
     type SelfType = Euro.type
     val self = this
-    override def toJavaCurrency = Some(JavaCurrency.getInstance("EUR"))
+    val javaCurrency = JavaCurrency.getInstance("EUR")
   }
 
   object Bitcoin extends Currency {
     type SelfType = Bitcoin.type
     val self = this
-    override def toJavaCurrency = None
+    val OneBtcInSatoshi = BigDecimal(100000000)
+
+    def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
+  }
+
+  implicit class BitcoinSatoshiConverter(btc: Bitcoin.Amount) {
+
+    def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
+
   }
 }
 
