@@ -34,7 +34,7 @@ class OpenOrdersTest extends AcceptanceTest {
       }
     }
 
-    ignore("orders get cancelled") { f =>
+    scenario("orders get cancelled") { f =>
       f.withPeer { peer =>
         Given("the peer is connected and have some orders opened")
         peer.network.connect().futureValue should be(Connected)
@@ -46,7 +46,7 @@ class OpenOrdersTest extends AcceptanceTest {
 
         Then("the order gets removed from the order book")
         eventually {
-          peer.network.currentQuote(EUR.currency).futureValue.spread should be (None -> None)
+          peer.network.currentQuote(EUR.currency).futureValue.spread should be (None -> Some(100.EUR))
         }
       }
     }
