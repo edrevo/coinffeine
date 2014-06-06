@@ -2,6 +2,7 @@ package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
+import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -23,8 +24,10 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
     }
 
     private val waitingForOrders: Receive = {
-      case order: Order =>
-        getOrCreateDelegate(marketOf(order)) forward order
+      case message @ OpenOrder(order) =>
+        getOrCreateDelegate(marketOf(order)) forward message
+      case message @ CancelOrder(order) =>
+        getOrCreateDelegate(marketOf(order)) forward message
     }
 
     private def marketOf(order: Order) = Market(currency = order.price.currency)

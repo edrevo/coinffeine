@@ -43,7 +43,7 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
-    val randomMessage = OrderSet(Market(CurrencyCode.EUR.currency))
+    val randomMessage = OrderSet.empty(Market(CurrencyCode.EUR.currency))
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 

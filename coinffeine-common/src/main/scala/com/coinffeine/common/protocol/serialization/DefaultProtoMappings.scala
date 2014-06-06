@@ -109,32 +109,40 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val orderMapping = new ProtoMapping[OrderSet.Entry, msg.Order] {
-
-    override def fromProtobuf(order: msg.Order): OrderSet.Entry = OrderSet.Entry(
-      amount = ProtoMapping.fromProtobuf(order.getAmount),
-      price = ProtoMapping.fromProtobuf(order.getPrice)
-    )
-
-    override def toProtobuf(order: OrderSet.Entry): msg.Order = msg.Order.newBuilder
-      .setAmount(ProtoMapping.toProtobuf(order.amount))
-      .setPrice(ProtoMapping.toProtobuf(order.price))
-      .build
-  }
-
   implicit val orderSetMapping = new ProtoMapping[OrderSet, msg.OrderSet] {
 
-    override def fromProtobuf(orderSet: msg.OrderSet): OrderSet = OrderSet(
-      market = ProtoMapping.fromProtobuf(orderSet.getMarket),
-      bids = orderSet.getBidsList.asScala.map(ProtoMapping.fromProtobuf[OrderSet.Entry, msg.Order]),
-      asks = orderSet.getAsksList.asScala.map(ProtoMapping.fromProtobuf[OrderSet.Entry, msg.Order])
-    )
+    override def fromProtobuf(orderSet: msg.OrderSet): OrderSet = {
+      val market = ProtoMapping.fromProtobuf(orderSet.getMarket)
 
-    override def toProtobuf(orderSet: OrderSet): msg.OrderSet = msg.OrderSet.newBuilder
-      .setMarket(ProtoMapping.toProtobuf(orderSet.market))
-      .addAllBids(orderSet.bids.map(ProtoMapping.toProtobuf[OrderSet.Entry, msg.Order]).asJava)
-      .addAllAsks(orderSet.asks.map(ProtoMapping.toProtobuf[OrderSet.Entry, msg.Order]).asJava)
-      .build
+      def volumeFromProtobuf(entries: Seq[msg.Order]): VolumeByPrice = {
+        val accum = VolumeByPrice.empty(market.currency)
+        entries.foldLeft(accum) { (volume, entry) => volume.increase(
+            ProtoMapping.fromProtobuf(entry.getPrice),
+            ProtoMapping.fromProtobuf(entry.getAmount)
+        )}
+      }
+
+      OrderSet(
+        market,
+        bids = volumeFromProtobuf(orderSet.getBidsList.asScala),
+        asks = volumeFromProtobuf(orderSet.getAsksList.asScala)
+      )
+    }
+
+    override def toProtobuf(orderSet: OrderSet): msg.OrderSet = {
+      msg.OrderSet.newBuilder
+        .setMarket(ProtoMapping.toProtobuf(orderSet.market))
+        .addAllBids(volumeToProtobuf(orderSet.bids).asJava)
+        .addAllAsks(volumeToProtobuf(orderSet.asks).asJava)
+        .build
+    }
+
+    private def volumeToProtobuf(volume: VolumeByPrice) = for {
+      (price, amount) <- volume.entries
+    } yield msg.Order.newBuilder
+        .setPrice(ProtoMapping.toProtobuf(price))
+        .setAmount(ProtoMapping.toProtobuf(amount))
+        .build
   }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
