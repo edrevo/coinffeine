@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 
+import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.{AkkaSpec, PeerConnection}
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
 import com.coinffeine.common.currency.Implicits._
@@ -36,22 +37,22 @@ class OrdersActorTest extends AkkaSpec {
   }
 
   it must "submit all orders as soon as a new one is open" in new Fixture {
-    actor ! eurOrder1
+    actor ! OpenOrder(eurOrder1)
     gateway.expectForwarding(firstEurOrder, broker)
-    actor ! eurOrder2
+    actor ! OpenOrder(eurOrder2)
     gateway.expectForwarding(bothEurOrders, broker)
   }
 
   it must "keep resubmitting open orders to avoid them being discarded" in new Fixture {
-    actor ! eurOrder1
+    actor ! OpenOrder(eurOrder1)
     gateway.expectForwarding(firstEurOrder, broker)
     gateway.expectForwarding(firstEurOrder, broker, timeout = constants.orderExpirationInterval)
     gateway.expectForwarding(firstEurOrder, broker, timeout = constants.orderExpirationInterval)
   }
 
   it must "group orders by target market" in new Fixture {
-    actor ! eurOrder1
-    actor ! Order(Ask, 0.5.BTC, 500.USD)
+    actor ! OpenOrder(eurOrder1)
+    actor ! OpenOrder(Order(Ask, 0.5.BTC, 500.USD))
 
     def currencyOfNextOrderSet(): Currency =
       gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
@@ -60,5 +61,24 @@ class OrdersActorTest extends AkkaSpec {
 
     val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())
     currencies should be (Set(EUR.currency, USD.currency))
+  }
+
+  it must "keep resubmitting remaining orders after a cancellation" in new Fixture {
+    actor ! OpenOrder(eurOrder1)
+    gateway.expectForwarding(firstEurOrder, broker)
+    actor ! OpenOrder(eurOrder2)
+    gateway.expectForwarding(bothEurOrders, broker)
+    actor ! CancelOrder(eurOrder2)
+    gateway.expectForwarding(firstEurOrder, broker)
+    gateway.expectForwarding(firstEurOrder, broker, timeout = constants.orderExpirationInterval)
+    gateway.expectForwarding(firstEurOrder, broker, timeout = constants.orderExpirationInterval)
+  }
+
+  it must "keep silent if all the orders get cancelled" in new Fixture {
+    actor ! OpenOrder(eurOrder1)
+    gateway.expectForwarding(firstEurOrder, broker)
+    actor ! CancelOrder(eurOrder1)
+    gateway.expectForwarding(noEurOrders, broker)
+    gateway.expectNoMsg(constants.orderExpirationInterval)
   }
 }

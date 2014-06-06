@@ -13,7 +13,7 @@ import akka.util.Timeout
 import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.PeerActor
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.protocol.messages.brokerage._
 
 class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
@@ -53,9 +53,11 @@ class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
   override def orders: Set[Order] = Set.empty
 
   override def submitOrder(order: Order): Order = {
-    peer ! order
+    peer ! OpenOrder(order)
     order
   }
 
-  override def cancelOrder(order: Order): Unit = ???
+  override def cancelOrder(order: Order): Unit = {
+    peer ! CancelOrder(order)
+  }
 }

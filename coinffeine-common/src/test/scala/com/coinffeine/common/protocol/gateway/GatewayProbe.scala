@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.gateway
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{FiniteDuration, Duration}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
@@ -45,6 +45,8 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     }
 
   def expectNoMsg(): Unit = probe.expectNoMsg()
+
+  def expectNoMsg(timeout: FiniteDuration): Unit = probe.expectNoMsg(timeout)
 
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
   def relayMessage(message: PublicMessage, origin: PeerConnection): Unit = {

@@ -2,13 +2,15 @@ package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
+import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.brokerage._
 
 /** Submits and resubmits orders for a given market */
-private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
+  extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case OrderSubmissionActor.Initialize(market, gateway, brokerAddress) =>
@@ -22,17 +24,25 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
     }
 
     private val waitingForOrders: Receive = {
-      case order: Order =>
+      case OpenOrder(order) =>
         val orderSet = orderToOrderSet(order)
         forwardOrders(orderSet)
         context.become(keepingOpenOrders(orderSet))
     }
 
     private def keepingOpenOrders(orderSet: OrderSet): Receive = {
-      case order: Order =>
+      case OpenOrder(order) =>
         val mergedOrderSet = orderSet.addOrder(order.orderType, order.amount, order.price)
         forwardOrders(mergedOrderSet)
         context.become(keepingOpenOrders(mergedOrderSet))
+
+      case CancelOrder(order) =>
+        val reducedOrderSet = orderSet.cancelOrder(order.orderType, order.amount, order.price)
+        forwardOrders(reducedOrderSet)
+        context.become(
+          if (reducedOrderSet.isEmpty) waitingForOrders
+          else keepingOpenOrders(reducedOrderSet)
+        )
 
       case ReceiveTimeout =>
         forwardOrders(orderSet)

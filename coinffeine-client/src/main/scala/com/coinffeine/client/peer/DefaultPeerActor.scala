@@ -7,12 +7,13 @@ import akka.pattern._
 import akka.util.Timeout
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
+import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage.{Order, QuoteRequest}
+import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
@@ -49,8 +50,8 @@ class DefaultPeerActor(address: PeerInfo,
       val request = QuoteRequestActor.StartRequest(currency, gatewayRef, brokerAddress)
       context.actorOf(quoteRequestProps) forward request
 
-    case order: Order =>
-      ordersActorRef ! order
+    case openOrder: OpenOrder => ordersActorRef ! openOrder
+    case cancelOrder: CancelOrder => ordersActorRef ! cancelOrder
   }
 }
 
