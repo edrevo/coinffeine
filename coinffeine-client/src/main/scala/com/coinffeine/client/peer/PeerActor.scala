@@ -7,6 +7,7 @@ import akka.pattern._
 import akka.util.Timeout
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
+import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
@@ -21,12 +22,17 @@ class PeerActor(
     brokerAddress: PeerConnection,
     gatewayProps: Props,
     quoteRequestProps: Props,
-    orderSubmissionsProps: Props
+    ordersActorProps: Props
   ) extends Actor with ActorLogging {
 
   import context.dispatcher
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
+  val ordersActorRef = {
+    val ref = context.actorOf(ordersActorProps, "orders")
+    ref ! OrdersActor.Initialize(gatewayRef, brokerAddress)
+    ref
+  }
 
   override def receive: Receive = {
 
@@ -46,8 +52,7 @@ class PeerActor(
       context.actorOf(quoteRequestProps) forward request
 
     case order: Order =>
-      val orderSubmission = OrderSubmissionActor.StartRequest(order, gatewayRef, brokerAddress)
-      context.actorOf(orderSubmissionsProps) forward orderSubmission
+      ordersActorRef ! order
   }
 }
 
@@ -64,7 +69,7 @@ object PeerActor {
   private val ConnectionTimeout = Timeout(10.seconds)
 
   trait Component {
-    this: QuoteRequestActor.Component with OrderSubmissionActor.Component
+    this: QuoteRequestActor.Component with OrdersActor.Component
       with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
@@ -75,7 +80,7 @@ object PeerActor {
         brokerAddress,
         gatewayProps = messageGatewayProps,
         quoteRequestProps = quoteRequestProps,
-        orderSubmissionsProps = orderSubmissionProps
+        ordersActorProps = ordersActorProps
       ))
     }
   }

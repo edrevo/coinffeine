@@ -20,6 +20,11 @@ case class OrderSet(
   def highestBid: Option[FiatAmount] = bids.map(_.price).reduceOption(_ max _)
   def lowestAsk: Option[FiatAmount] = asks.map(_.price).reduceOption(_ min _)
 
+  def addOrder(orderType: OrderType, amount: BtcAmount, price: FiatAmount) = orderType match {
+    case Bid => copy(bids = addEntry(bids, OrderSet.Entry(amount, price)))
+    case Ask => copy(asks = addEntry(asks, OrderSet.Entry(amount, price)))
+  }
+
   private def requireSingleCurrency(): Unit = {
     val currenciesInOrders = (bids ++ asks).map(_.price.currency).toSet
     require(currenciesInOrders.isEmpty || currenciesInOrders == Set(market.currency), "Mixed currencies")
@@ -31,6 +36,12 @@ case class OrderSet(
       case _ => false
     }
     require(!priceCrossed, "Bids and asks are crossed")
+  }
+
+  private def addEntry(entries: Seq[OrderSet.Entry], entry: OrderSet.Entry): Seq[OrderSet.Entry] = {
+    val (samePrice, otherPrices) = entries.span(_.price == entry.price)
+    val newAmount = (entry +: samePrice).map(_.amount).sum
+    otherPrices :+ OrderSet.Entry(newAmount, entry.price)
   }
 }
 

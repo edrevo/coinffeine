@@ -36,4 +36,15 @@ class OrderSetTest extends UnitTest {
     }
     ex.getMessage should include ("Price must be strictly positive")
   }
+
+  it should "be extended with new orders" in {
+    OrderSet(Market(EUR.currency))
+      .addOrder(Bid, 10.BTC, 1000.EUR)
+      .addOrder(Ask, 1.BTC, 1100.EUR)
+      .addOrder(Bid, 1.BTC, 1000.EUR) should be (OrderSet(
+      market = Market(EUR.currency),
+      bids = Seq(Entry(11.BTC, 1000.EUR)),
+      asks = Seq(Entry(1.BTC, 1100.EUR))
+    ))
+  }
 }

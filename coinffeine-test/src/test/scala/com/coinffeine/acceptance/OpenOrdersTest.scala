@@ -14,16 +14,17 @@ class OpenOrdersTest extends AcceptanceTest {
   val timeout = Span(3, Seconds)
 
   override val protocolConstants = ProtocolConstants.DefaultConstants.copy(
-    orderExpirationInterval = 2.seconds
+    orderExpirationInterval = 2.seconds,
+    orderResubmitInterval = 1.second
   )
 
   feature("A peer should manage its orders") {
 
-    ignore("orders are resent while not matched") { f =>
+    scenario("orders are resent while not matched") { f =>
       f.withPeer { peer =>
         Given("the peer is connected and have some orders opened")
         peer.network.connect().futureValue should be (Connected)
-        peer.network.submitBuyOrder(0.1.BTC, 100.EUR)
+        peer.network.submitSellOrder(0.1.BTC, 100.EUR)
 
         When("more than order timeout time has passed")
         Thread.sleep((peer.protocolConstants.orderExpirationInterval * 2).toMillis)
