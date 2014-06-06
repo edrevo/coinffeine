@@ -3,7 +3,7 @@ package com.coinffeine.acceptance
 import com.typesafe.config.ConfigFactory
 
 import com.coinffeine.client.app.DefaultCoinffeineApp
-import com.coinffeine.client.peer.{PeerActor, QuoteRequestActor}
+import com.coinffeine.client.peer.{DefaultPeerActor, QuoteRequestActor}
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
@@ -15,7 +15,7 @@ import com.coinffeine.common.protocol.serialization.DefaultProtocolSerialization
 class TestCoinffeineApp(
      brokerAddress: PeerConnection,
      override val protocolConstants: ProtocolConstants) extends DefaultCoinffeineApp.Component
-  with PeerActor.Component
+  with DefaultPeerActor.Component
   with QuoteRequestActor.Component
   with OrdersActor.Component
   with ProtoRpcMessageGateway.Component

@@ -5,22 +5,22 @@ import akka.testkit.TestProbe
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
+import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
 import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
-import com.coinffeine.client.peer.orders.OrdersActor
 
-class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
+class DefaultPeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   val address = new PeerInfo("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
   val gatewayProbe = TestProbe()
   val requestsProbe = TestProbe()
   val ordersProbe = TestProbe()
-  val peer = system.actorOf(Props(new PeerActor(address, brokerAddress,
+  val peer = system.actorOf(Props(new DefaultPeerActor(address, brokerAddress,
     MockActor.props(gatewayProbe), MockActor.props(requestsProbe),
     MockActor.props(ordersProbe))))
   var gatewayRef: ActorRef = _
