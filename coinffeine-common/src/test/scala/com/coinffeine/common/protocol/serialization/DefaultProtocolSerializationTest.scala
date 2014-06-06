@@ -36,8 +36,8 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
     OrderSet(
       market = Market(CurrencyCode.USD.currency),
-      bids = Seq(OrderSet.Entry(1.3.BTC, 100.USD)),
-      asks = Seq(OrderSet.Entry(0.3.BTC, 200.USD), OrderSet.Entry(0.4.BTC, 250.USD))
+      bids = VolumeByPrice(100.USD -> 1.3.BTC),
+      asks = VolumeByPrice(200.USD -> 0.3.BTC, 250.USD -> 0.4.BTC)
     ),
     QuoteRequest(CurrencyCode.USD.currency),
     Quote(fiatAmount -> fiatAmount, fiatAmount),

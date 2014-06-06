@@ -41,7 +41,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
-    val randomMessage = OrderSet(Market(CurrencyCode.EUR.currency))
+    val randomMessage = OrderSet.empty(Market(CurrencyCode.EUR.currency))
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 

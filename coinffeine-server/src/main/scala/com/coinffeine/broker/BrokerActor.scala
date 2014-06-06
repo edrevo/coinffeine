@@ -64,11 +64,10 @@ private[broker] class BrokerActor(
     }
 
     private def orderSetPositions(orders: OrderSet, requester: PeerConnection): Seq[Position[_]] = {
-      def toPositions(orderType: OrderType, entries: Seq[OrderSet.Entry]) =
-        (for (OrderSet.Entry(amount, price) <- entries)
-          yield Position(orderType, amount, price, requester)).toSeq
+      def toPositions(orderType: OrderType, volume: VolumeByPrice) =
+        for ((price, amount) <- volume.entries) yield Position(orderType, amount, price, requester)
 
-      toPositions(Bid, orders.bids) ++ toPositions(Ask, orders.asks)
+      (toPositions(Bid, orders.bids) ++ toPositions(Ask, orders.asks)).toSeq
     }
 
     private def clearMarket(): Unit = {

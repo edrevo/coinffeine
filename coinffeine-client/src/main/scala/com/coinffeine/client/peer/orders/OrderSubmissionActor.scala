@@ -45,7 +45,7 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
   }
 
   private def orderToOrderSet(order: Order) =
-    OrderSet(Market(order.price.currency)).addOrder(order.orderType, order.amount, order.price)
+    OrderSet.empty(Market(order.price.currency)).addOrder(order.orderType, order.amount, order.price)
 }
 
 private[orders] object OrderSubmissionActor {

@@ -13,7 +13,6 @@ import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
-import com.coinffeine.common.protocol.messages.brokerage.OrderSet.Entry
 
 class BrokerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("BrokerSystem")) {
@@ -49,17 +48,17 @@ class BrokerActorTest
     def shouldSpawnArbiter() = arbiterProbe.expectMsgClass(classOf[OrderMatch])
 
     def relayBid(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
-      OrderSet(market, bids = Seq(Entry(amount, price))), PeerConnection(requester))
+      OrderSet.empty(market).addOrder(Bid, amount, price), PeerConnection(requester))
 
     def relayAsk(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
-      OrderSet(market, asks = Seq(Entry(amount, price))), PeerConnection(requester))
+      OrderSet.empty(market).addOrder(Ask, amount, price), PeerConnection(requester))
   }
 
   "A broker" must "subscribe himself to relevant messages" in new WithEurBroker("subscribe") {
     val Subscribe(filter) = shouldSubscribe()
     val client: PeerConnection = PeerConnection("client1")
-    val relevantOrders = OrderSet(market, bids = Seq.empty, asks = Seq.empty)
-    val irrelevantOrders = OrderSet(Market(USD.currency), bids = Seq.empty, asks = Seq.empty)
+    val relevantOrders = OrderSet.empty(market)
+    val irrelevantOrders = OrderSet.empty(Market(USD.currency))
     filter(ReceiveMessage(relevantOrders, PeerConnection("client1"))) should be (true)
     filter(ReceiveMessage(irrelevantOrders, PeerConnection("client1"))) should be (false)
     filter(ReceiveMessage(QuoteRequest(EUR.currency), client)) should be (true)
@@ -100,7 +99,7 @@ class BrokerActorTest
     shouldSubscribe()
     relayBid(1.BTC, 900.EUR, "client1")
     relayAsk(0.8.BTC, 950.EUR, "client2")
-    gateway.relayMessage(OrderSet(market), PeerConnection("client1"))
+    gateway.relayMessage(OrderSet.empty(market), PeerConnection("client1"))
     shouldHaveQuote(Quote(EUR.currency, None -> Some(950.EUR)))
   }
 

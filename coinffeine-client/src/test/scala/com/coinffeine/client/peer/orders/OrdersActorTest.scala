@@ -21,7 +21,8 @@ class OrdersActorTest extends AkkaSpec {
   val broker = PeerConnection("broker")
   val eurOrder1 = Order(Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(Ask, 0.7.BTC, 640.EUR)
-  val firstEurOrder = OrderSet(Market(EUR.currency), bids = Seq(OrderSet.Entry(1.3.BTC, 556.EUR)))
+  val noEurOrders = OrderSet.empty(Market(EUR.currency))
+  val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC, 556.EUR)
   val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC, 640.EUR)
 
   trait Fixture {

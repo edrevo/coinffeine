@@ -67,8 +67,8 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     ).build
   val orderSet = OrderSet(
     market = Market(EUR.currency),
-    bids = Seq(OrderSet.Entry(1.BTC, 400.EUR)),
-    asks = Seq(OrderSet.Entry(2.BTC, 500.EUR))
+    bids = VolumeByPrice(400.EUR -> 1.BTC),
+    asks = VolumeByPrice(500.EUR -> 2.BTC)
   )
   "OrderSet" should behave like thereIsAMappingBetween(orderSet, orderSetMessage)
 
