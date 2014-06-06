@@ -1,6 +1,6 @@
 package com.coinffeine.client.handshake
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import com.google.bitcoin.core.Sha256Hash
@@ -9,13 +9,14 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.DefaultHandshakeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
 
-private[handshake] class DefaultHandshakeActor(handshake: Handshake, constants: ProtocolConstants)
+private[handshake] class DefaultHandshakeActor[C <: FiatCurrency](handshake: Handshake[C], constants: ProtocolConstants)
   extends Actor with ActorLogging {
 
   import constants._
@@ -164,7 +165,7 @@ private[handshake] class DefaultHandshakeActor(handshake: Handshake, constants: 
 
 object DefaultHandshakeActor {
   trait Component extends HandshakeActor.Component { this: ProtocolConstants.Component =>
-    override def handshakeActorProps(handshake: Handshake): Props =
+    override def handshakeActorProps[C <: FiatCurrency](handshake: Handshake[C]): Props =
       Props(new DefaultHandshakeActor(handshake, protocolConstants))
   }
 

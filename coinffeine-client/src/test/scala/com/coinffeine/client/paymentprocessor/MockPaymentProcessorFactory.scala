@@ -5,39 +5,39 @@ import scala.concurrent.Future
 
 import org.joda.time.DateTime
 
-import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
-import com.coinffeine.common.currency.FiatAmount
+import com.coinffeine.common._
+import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor}
+import com.coinffeine.common.paymentprocessor.Payment
 
+class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
 
-class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
-  @volatile var payments: List[Payment] = initialPayments
+  @volatile var payments: List[AnyPayment] = initialPayments
 
   private class MockPaymentProcessor(
       fiatAddress: String,
-      initialBalance: Seq[FiatAmount]) extends PaymentProcessor {
+      initialBalances: Seq[AnyFiatCurrencyAmount]) extends PaymentProcessor {
 
     override def id: String = "MockPay"
 
-    override def findPayment(paymentId: String): Future[Option[Payment]] =
+    override def findPayment(paymentId: String): Future[Option[AnyPayment]] =
       Future.successful(payments.find(_.id == paymentId))
 
-    override def currentBalance(): Future[Seq[FiatAmount]] = Future.successful {
-      val paymentGroups = payments
-        .filter(p => p.receiverId == fiatAddress || p.senderId == fiatAddress)
-        .groupBy(_.amount.currency)
-      initialBalance.map { balance =>
-        paymentGroups.getOrElse(balance.currency, List.empty).collect {
-          case Payment(_, `fiatAddress`, _, amount, _, _) => -amount
-          case Payment(_, _, `fiatAddress`, amount, _, _) => amount
-        }.foldLeft(balance)(_ + _)
+    override def currentBalance[C <: Currency](currency: C): Future[currency.Amount] = Future.successful {
+      val deltas = payments.collect {
+        case Payment(_, `fiatAddress`, `fiatAddress`, out: currency.Amount, _, _) => currency.Amount.Zero
+        case Payment(_, _, `fiatAddress`, in: currency.Amount, _, _) => in
+        case Payment(_, `fiatAddress`, _, out: currency.Amount, _, _) => -out
       }
+      val initial = initialBalances.collectFirst {
+        case a: currency.Amount => a
+      }.getOrElse(currency.Amount.Zero)
+      deltas.foldLeft(initial)(_ + _)
     }
 
-    override def sendPayment(
-        receiverId: String,
-        amount: FiatAmount,
-        comment: String): Future[Payment] =
-      if (initialBalance.map(_.currency).contains(amount.currency)) {
+    override def sendPayment[C <: FiatCurrency](receiverId: String,
+                                            amount: CurrencyAmount[C],
+                                            comment: String): Future[Payment[C]] =
+      if (initialBalances.map(_.currency).contains(amount.currency)) {
         Future.successful {
           val payment = Payment(
             UUID.randomUUID().toString,
@@ -55,6 +55,6 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
   }
 
   def newProcessor(
-      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): PaymentProcessor =
+      fiatAddress: String, initialBalance: Seq[AnyFiatCurrencyAmount] = Seq.empty): PaymentProcessor =
     new MockPaymentProcessor(fiatAddress, initialBalance)
 }

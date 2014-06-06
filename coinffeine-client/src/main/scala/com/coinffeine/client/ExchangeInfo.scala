@@ -2,7 +2,7 @@ package com.coinffeine.client
 
 import com.google.bitcoin.core.{ECKey, NetworkParameters}
 
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency, Currency, PeerConnection}
 import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
 import com.coinffeine.common.currency.Implicits._
 
@@ -22,7 +22,7 @@ import com.coinffeine.common.currency.Implicits._
   * @param steps The number of steps in which the exchange will happen
   * @param lockTime The block number which will cause the refunds transactions to be valid
   */
-case class ExchangeInfo(
+case class ExchangeInfo[C <: FiatCurrency](
     id: String,
     counterpart: PeerConnection,
     broker: PeerConnection,
@@ -31,13 +31,13 @@ case class ExchangeInfo(
     userFiatAddress: String,
     counterpartKey: ECKey,
     counterpartFiatAddress: String,
-    btcExchangeAmount: BtcAmount,
-    fiatExchangeAmount: FiatAmount,
+    btcExchangeAmount: Currency.Bitcoin.Amount,
+    fiatExchangeAmount: CurrencyAmount[C],
     steps: Int,
     lockTime: Long) {
   require(steps > 0, "Steps must be greater than zero")
-  require(btcExchangeAmount > (0 BTC), "Exchange amount must be greater than zero")
-  require(fiatExchangeAmount.amount > 0)
+  require(btcExchangeAmount.isPositive, "Exchange amount must be greater than zero")
+  require(fiatExchangeAmount.isPositive)
   require(userKey.getPrivKeyBytes != null, "Credentials do not contain private key")
   /* TODO: Verify that fiatStepAmount is something that makes sense
    * (for example, 0.0001 EUR would not be a valid result)

@@ -1,7 +1,8 @@
 package com.coinffeine.common.paymentprocessor
 
-import com.coinffeine.common.currency.FiatAmount
 import scala.concurrent.Future
+
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
 trait PaymentProcessor {
 
@@ -13,22 +14,22 @@ trait PaymentProcessor {
     * @param receiverId account id of receiver of payment
     * @param amount amount to send
     * @param comment to specify additional information
+    * @tparam C The currency the payment is specified
     * @return a Payment object containing the information of payment (receiverId and senderId
     *         properties are not provided)
     */
-  def sendPayment(receiverId: String, amount: FiatAmount, comment: String): Future[Payment]
+  def sendPayment[C <: FiatCurrency](receiverId: String, amount: CurrencyAmount[C], comment: String): Future[Payment[C]]
 
   /** Find a specific payment by id.
     *
     * @param paymentId PaymentID to search.
     * @return The payment wanted.
     */
-  def findPayment(paymentId: String): Future[Option[Payment]]
+  def findPayment(paymentId: String): Future[Option[AnyPayment]]
 
-  /** Returns the current balance
+  /** Returns the current balance in the given currency.
     *
-    * @return a List of balances, one entry for each currency type
-    *         amount in the account.
+    * @return The current balance for currency C
     */
-  def currentBalance(): Future[Seq[FiatAmount]]
+  def currentBalance[C <: FiatCurrency](currency: C): Future[currency.Amount]
 }

@@ -1,24 +1,25 @@
 package com.coinffeine.client.exchange
 
 import scala.collection.JavaConversions._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
 
-import com.google.bitcoin.core.{TransactionOutput, Transaction}
+import com.google.bitcoin.core.{Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
-import com.coinffeine.client.{MultiSigInfo, ExchangeInfo}
-import com.coinffeine.common.paymentprocessor.{PaymentProcessor, Payment}
-import com.coinffeine.common.currency.BtcAmount
+import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
+import com.coinffeine.common.{Currency, FiatCurrency}
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
-class DefaultExchange(
-    override val exchangeInfo: ExchangeInfo,
+class DefaultExchange[C <: FiatCurrency](
+    override val exchangeInfo: ExchangeInfo[C],
     paymentProcessor: PaymentProcessor,
     sellerCommitmentTx: Transaction,
-    buyerCommitmentTx: Transaction) extends Exchange {
+    buyerCommitmentTx: Transaction) extends Exchange[C] {
   this: UserRole =>
 
   private val sellerFunds = sellerCommitmentTx.getOutput(0)
@@ -38,18 +39,18 @@ class DefaultExchange(
 
   private def requireValidBuyerFunds(buyerFunds: TransactionOutput): Unit = {
     requireValidFunds(buyerFunds)
-    require(BtcAmount(buyerFunds.getValue) == exchangeInfo.btcStepAmount * 2,
+    require(Currency.Bitcoin.fromSatoshi(buyerFunds.getValue) == exchangeInfo.btcStepAmount * 2,
       "The amount of committed funds by the buyer does not match the expected amount")
   }
 
   private def requireValidSellerFunds(sellerFunds: TransactionOutput): Unit = {
     requireValidFunds(sellerFunds)
     require(
-      BtcAmount(sellerFunds.getValue) == exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
+      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) == exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  override def pay(step: Int): Future[Payment] = paymentProcessor.sendPayment(
+  override def pay(step: Int): Future[Payment[C]] = paymentProcessor.sendPayment(
     exchangeInfo.counterpartFiatAddress,
     exchangeInfo.fiatStepAmount,
     getPaymentDescription(step))

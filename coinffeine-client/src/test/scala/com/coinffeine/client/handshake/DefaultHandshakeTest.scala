@@ -7,8 +7,8 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
-import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency
+import com.coinffeine.common.Currency.Implicits._
 
 class DefaultHandshakeTest extends BitcoinjTest {
   val exchangeInfo = sampleExchangeInfo
@@ -18,31 +18,31 @@ class DefaultHandshakeTest extends BitcoinjTest {
       an [IllegalArgumentException] should be thrownBy {
         new DefaultHandshake(
           exchangeInfo = exchangeInfo,
-          amountToCommit = 2 BTC,
+          amountToCommit = Currency.Bitcoin(2),
           userWallet = createWallet()) {}
       }
     }
 
   it should "fail if the amount to commit is less or equal to zero" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 5 BTC)
+    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(5))
     an [IllegalArgumentException] should be thrownBy {
       new DefaultHandshake(
         exchangeInfo = exchangeInfo,
-        amountToCommit = 0 BTC,
+        amountToCommit = Currency.Bitcoin(0),
         userWallet = userWallet) {}
     }
   }
 
   "The commitment transaction" should
     "commit the correct amount when the input exceeds the amount needed" in {
-      val userWallet = createWallet(exchangeInfo.userKey, 1 BTC)
-      sendMoneyToWallet(userWallet, 4 BTC)
-      val commitmentAmount = 2 BTC
+      val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(1))
+      sendMoneyToWallet(userWallet, Currency.Bitcoin(4))
+      val commitmentAmount = Currency.Bitcoin(2)
       val handshake = new DefaultHandshake(
         exchangeInfo,
         commitmentAmount,
         userWallet) {}
-      BtcAmount(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
+      Currency.Bitcoin.fromSatoshi(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
     }
 
   it should "commit the correct amount when the input matches the amount needed" in {
@@ -52,7 +52,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    BtcAmount(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
+    Currency.Bitcoin.fromSatoshi(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
   }
 
   it should "be ready for broadcast and insertion into the blockchain" in {
@@ -63,7 +63,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    BtcAmount(userWallet.getBalance) should be (0 BTC)
+    Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (0 BTC)
   }
 
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
@@ -119,7 +119,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
     handshake.refundTransaction.getInput(0)
       .setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
     sendToBlockChain(handshake.refundTransaction)
-    BtcAmount(userWallet.getBalance) should be (initialAmount)
+    Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (initialAmount)
   }
 
   "The happy path" should "just work!" in {
@@ -130,7 +130,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
       userWallet) {}
 
     val counterpartWallet = createWallet(exchangeInfo.counterpartKey, 5 BTC)
-    val counterpartExchange = exchangeInfo.copy(
+    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = exchangeInfo.copy(
       userKey = exchangeInfo.counterpartKey,
       counterpartKey = exchangeInfo.userKey)
     val counterpartHandshake = new DefaultHandshake(
@@ -139,9 +139,9 @@ class DefaultHandshakeTest extends BitcoinjTest {
       counterpartWallet) {}
 
     def signRefund(
-        exchangeInfo: ExchangeInfo,
-        userHandshake: Handshake,
-        counterpartHandshake: Handshake): Unit = {
+        exchangeInfo: ExchangeInfo[Currency.Euro.type],
+        userHandshake: Handshake[Currency.Euro.type],
+        counterpartHandshake: Handshake[Currency.Euro.type]): Unit = {
       val signatures = List(
         throughWire(counterpartHandshake.signCounterpartRefundTransaction(
           throughWire(userHandshake.refundTransaction)).get),

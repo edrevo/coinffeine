@@ -3,13 +3,13 @@ package com.coinffeine.client.exchange
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.testkit.TestProbe
 import akka.actor.Props
+import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.ExchangeActor.{StartExchange, ExchangeSuccess}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
+import com.coinffeine.common.{Currency, PeerConnection}
 import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -23,7 +23,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val exchange = new MockExchange(exchangeInfo) with SellerUser
+  val exchange = new MockExchange(exchangeInfo) with SellerUser[Currency.Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(
