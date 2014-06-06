@@ -14,7 +14,8 @@ class OpenOrdersTest extends AcceptanceTest {
   val timeout = Span(3, Seconds)
 
   override val protocolConstants = ProtocolConstants.DefaultConstants.copy(
-    orderExpirationInterval = 2.seconds
+    orderExpirationInterval = 2.seconds,
+    orderResubmitInterval = 1.second
   )
 
   feature("A peer should manage its orders") {

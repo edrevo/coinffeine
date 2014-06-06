@@ -10,12 +10,8 @@ import com.coinffeine.common.protocol.messages.brokerage._
 /** Submits an order */
 class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
 
-  import OrderSubmissionActor._
-
-  private val resubmitTimeout = protocolConstants.orderExpirationInterval / 2
-
   override def receive: Receive = {
-    case Initialize(gateway, brokerAddress) =>
+    case OrderSubmissionActor.Initialize(gateway, brokerAddress) =>
       new InitializedOrderSubmission(gateway, brokerAddress).start()
   }
 
@@ -45,7 +41,7 @@ class OrderSubmissionActor(protocolConstants: ProtocolConstants) extends Actor w
 
     private def forwardOrders(orderSet: OrderSet): Unit = {
       gateway ! ForwardMessage(orderSet, broker)
-      context.setReceiveTimeout(resubmitTimeout)
+      context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
 
     private def subscribeToMessages(): Unit = {
