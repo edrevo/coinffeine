@@ -8,6 +8,7 @@ import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
 import com.coinffeine.common.Currency
+import com.coinffeine.common.Currency.Implicits._
 
 class DefaultHandshakeTest extends BitcoinjTest {
   val exchangeInfo = sampleExchangeInfo
@@ -45,8 +46,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
     }
 
   it should "commit the correct amount when the input matches the amount needed" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(2))
-    val commitmentAmount = Currency.Bitcoin(2)
+    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
@@ -55,19 +56,19 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "be ready for broadcast and insertion into the blockchain" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(2))
-    val commitmentAmount = Currency.Bitcoin(2)
+    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (Currency.Bitcoin(0))
+    Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (0 BTC)
   }
 
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(2))
-    val commitmentAmount = Currency.Bitcoin(2)
+    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
@@ -76,8 +77,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "not be broadcastable if the timelock hasn't expired yet" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(2))
-    val commitmentAmount = Currency.Bitcoin(2)
+    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
@@ -87,8 +88,8 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(2))
-    val commitmentAmount = Currency.Bitcoin(2)
+    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
@@ -99,9 +100,9 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   it should "be broadcastable after the timelock expired if is has been signed" in {
-    val initialAmount = Currency.Bitcoin(3)
+    val initialAmount = 3 BTC
     val userWallet = createWallet(exchangeInfo.userKey, initialAmount)
-    val commitmentAmount = Currency.Bitcoin(2)
+    val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
@@ -122,19 +123,19 @@ class DefaultHandshakeTest extends BitcoinjTest {
   }
 
   "The happy path" should "just work!" in {
-    val userWallet = createWallet(exchangeInfo.userKey, Currency.Bitcoin(3))
+    val userWallet = createWallet(exchangeInfo.userKey, 3 BTC)
     val userHandshake = new DefaultHandshake(
       exchangeInfo,
-      amountToCommit = Currency.Bitcoin(2),
+      amountToCommit = 2 BTC,
       userWallet) {}
 
-    val counterpartWallet = createWallet(exchangeInfo.counterpartKey, Currency.Bitcoin(5))
+    val counterpartWallet = createWallet(exchangeInfo.counterpartKey, 5 BTC)
     val counterpartExchange: ExchangeInfo[Currency.Euro.type] = exchangeInfo.copy(
       userKey = exchangeInfo.counterpartKey,
       counterpartKey = exchangeInfo.userKey)
     val counterpartHandshake = new DefaultHandshake(
       counterpartExchange,
-      Currency.Bitcoin(3),
+      3 BTC,
       counterpartWallet) {}
 
     def signRefund(

@@ -11,8 +11,7 @@ import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 
 import com.coinffeine.common.{Currency, UnitTest}
-import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
 abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {

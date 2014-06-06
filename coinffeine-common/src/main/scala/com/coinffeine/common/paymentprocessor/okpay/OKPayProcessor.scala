@@ -1,7 +1,6 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
 import java.util.{Currency => JavaCurrency}
-import scala.Some
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,8 +26,8 @@ class OKPayProcessor(
     * @return a Payment Object.
     */
   override def sendPayment[C <: FiatCurrency](receiverId: String,
-                                          amount: CurrencyAmount[C],
-                                          comment: String): Future[Payment[C]] = {
+                                              amount: CurrencyAmount[C],
+                                              comment: String): Future[Payment[C]] = {
     Future {
       val response = getResponse(service.send_Money(
         walletID = Some(Some(account)),

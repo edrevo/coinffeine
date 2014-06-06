@@ -6,10 +6,10 @@ import akka.actor._
 
 import com.coinffeine.client.{AnyExchangeInfo, MessageForwarding}
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
-import com.coinffeine.common.FiatCurrency
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm

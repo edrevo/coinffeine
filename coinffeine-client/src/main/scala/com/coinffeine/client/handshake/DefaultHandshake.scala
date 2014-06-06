@@ -11,6 +11,7 @@ import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.{Currency, FiatCurrency}
+import com.coinffeine.common.Currency.Implicits._
 
 abstract class DefaultHandshake[C <: FiatCurrency](
     val exchangeInfo: ExchangeInfo[C],

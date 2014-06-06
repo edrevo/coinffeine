@@ -12,7 +12,8 @@ import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
 import com.coinffeine.common.{Currency, FiatCurrency}
-import com.coinffeine.common.paymentprocessor.{AnyPayment, PaymentProcessor}
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
 class DefaultExchange[C <: FiatCurrency](
     override val exchangeInfo: ExchangeInfo[C],
@@ -49,7 +50,7 @@ class DefaultExchange[C <: FiatCurrency](
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  override def pay(step: Int): Future[AnyPayment] = paymentProcessor.sendPayment(
+  override def pay(step: Int): Future[Payment[C]] = paymentProcessor.sendPayment(
     exchangeInfo.counterpartFiatAddress,
     exchangeInfo.fiatStepAmount,
     getPaymentDescription(step))

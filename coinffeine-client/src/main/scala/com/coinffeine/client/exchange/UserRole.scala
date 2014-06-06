@@ -1,6 +1,7 @@
 package com.coinffeine.client.exchange
 
 import com.google.bitcoin.core.ECKey
+
 import com.coinffeine.common.FiatCurrency
 
 /** A trait that provides role-specific access to fiat and btc information for both user

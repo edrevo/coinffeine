@@ -15,6 +15,7 @@ import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.Currency
+import com.coinffeine.common.Currency.Implicits._
 
 class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
 
@@ -29,7 +30,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = paymentProcFactory.newProcessor(
-      sellerExchangeInfo.userFiatAddress, Seq(Currency.Euro(0)))
+      sellerExchangeInfo.userFiatAddress, Seq(0 EUR))
 
     val buyerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
       userKey = sellerExchangeInfo.counterpartKey,
@@ -37,10 +38,10 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
       counterpartKey = sellerExchangeInfo.userKey,
       counterpartFiatAddress = sellerExchangeInfo.userFiatAddress
     )
-    lazy val buyerWallet = createWallet(buyerExchangeInfo.userKey, Currency.Bitcoin(5))
+    lazy val buyerWallet = createWallet(buyerExchangeInfo.userKey, 5 BTC)
     lazy val buyerHandshake = new BuyerHandshake(buyerExchangeInfo, buyerWallet)
     val buyerPaymentProc = paymentProcFactory.newProcessor(
-      buyerExchangeInfo.userFiatAddress, Seq(Currency.Euro(1000)))
+      buyerExchangeInfo.userFiatAddress, Seq(1000 EUR))
   }
 
   private trait WithExchange extends WithBasicSetup {
@@ -61,7 +62,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
     val invalidFundsCommitment = new Transaction(sellerExchangeInfo.network)
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput(Currency.Bitcoin(5).asSatoshi, sellerWallet.getKeys.head)
+    invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
     sendToBlockChain(buyerHandshake.commitmentTransaction)
     sendToBlockChain(invalidFundsCommitment)
@@ -75,7 +76,7 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
   it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
     val invalidFundsCommitment = new Transaction(buyerExchangeInfo.network)
     invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput(Currency.Bitcoin(5).asSatoshi, buyerWallet.getKeys.head)
+    invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
     sendToBlockChain(sellerHandshake.commitmentTransaction)
     sendToBlockChain(invalidFundsCommitment)
@@ -99,9 +100,9 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
         sellerExchange.finalSignature._2, buyerExchange.finalSignature._2))
     sendToBlockChain(finalOffer)
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
-      Currency.Bitcoin(200) - sellerExchangeInfo.btcExchangeAmount)
+      (200 BTC) - sellerExchangeInfo.btcExchangeAmount)
     Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (
-      Currency.Bitcoin(5) + sellerExchangeInfo.btcExchangeAmount)
+      (5 BTC) + sellerExchangeInfo.btcExchangeAmount)
   }
 
   it should "validate the seller's final signature" in new WithExchange {
@@ -128,9 +129,9 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
         ScriptBuilder.createMultiSigInputScript(
           sellerExchange.signStep(step)._2, buyerExchange.signStep(step)._2))
       sendToBlockChain(stepOffer)
-      val expectedSellerBalance = Currency.Bitcoin(200) - sellerExchangeInfo.btcStepAmount * (step + 1)
+      val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
-      val expectedBuyerBalance = Currency.Bitcoin(5) + sellerExchangeInfo.btcStepAmount * (step - 2)
+      val expectedBuyerBalance = (5 BTC) + sellerExchangeInfo.btcStepAmount * (step - 2)
       Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (expectedBuyerBalance)
     }
 

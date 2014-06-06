@@ -107,10 +107,28 @@ object Currency {
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
   }
 
-  implicit class BitcoinSatoshiConverter(btc: Bitcoin.Amount) {
+  object Implicits {
+    import scala.language.implicitConversions
 
-    def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
+    implicit class BitcoinSatoshiConverter(btc: Bitcoin.Amount) {
 
+      def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
+
+    }
+
+    class UnitImplicits(i: BigDecimal) {
+      def BTC: Bitcoin.Amount = Bitcoin(i)
+
+      def EUR: Euro.Amount = Euro(i)
+
+      def USD: UsDollar.Amount = UsDollar(i)
+    }
+
+    implicit def pimpMyDouble(i: Double) = new UnitImplicits(i)
+
+    implicit def pimpMyDecimal(i: BigDecimal) = new UnitImplicits(i)
+
+    implicit def pimpMyInt(i: Int) = new UnitImplicits(BigDecimal(i))
   }
 }
 
