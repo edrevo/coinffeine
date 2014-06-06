@@ -1,5 +1,6 @@
 package com.coinffeine.client.peer.orders
 
+import java.util.Currency
 import scala.concurrent.duration._
 
 import akka.actor.Props
@@ -50,11 +51,13 @@ class OrdersActorTest extends AkkaSpec {
   it must "group orders by target market" in new Fixture {
     actor ! eurOrder1
     actor ! Order(Ask, 0.5.BTC, 500.USD)
-    gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
-      case OrderSet(Market(EUR.currency), _, _) =>
-    }
-    gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
-      case OrderSet(Market(USD.currency), _, _) =>
-    }
+
+    def currencyOfNextOrderSet(): Currency =
+      gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
+        case OrderSet(Market(currency), _, _) => currency
+      }
+
+    val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())
+    currencies should be (Set(EUR.currency, USD.currency))
   }
 }
