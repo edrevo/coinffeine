@@ -77,7 +77,7 @@ class OKPayProcessor(
     *
     * @return a Sequence of FiatAmount.
     */
-  override def currentBalance[C <: FiatCurrency](currency: C): Future[currency.Amount] = Future {
+  override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = Future {
     val token: String = buildCurrentToken()
     val response = getResponse(service.wallet_Get_Balance(
       walletID = Some(Some(this.account)),
@@ -104,7 +104,7 @@ class OKPayProcessor(
         _
       ) =>
         val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
-        val amount = currency.Amount(net).asInstanceOf[AnyFiatCurrencyAmount]
+        val amount = currency.amount(net)
         val date = DateTimeFormat.forPattern(OKPayProcessor.DateFormat).parseDateTime(rawDate)
         Some(Payment(paymentId.toString, senderId, receiverId, amount, date, description))
       case _ => None
@@ -124,12 +124,12 @@ class OKPayProcessor(
     identity
   )
 
-  private def parseArrayOfBalance[C <: FiatCurrency](balances: ArrayOfBalance,
-                                                     expectedCurrency: C): expectedCurrency.Amount = {
+  private def parseArrayOfBalance[C <: FiatCurrency](
+      balances: ArrayOfBalance, expectedCurrency: C): CurrencyAmount[C] = {
     val amounts = balances.Balance.collect {
       case Some(Balance(a, c)) if c.get.get == expectedCurrency.javaCurrency.getCurrencyCode => a.get
     }
-    expectedCurrency.Amount(amounts.reduce(_ + _))
+    expectedCurrency.amount(amounts.sum)
   }
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))

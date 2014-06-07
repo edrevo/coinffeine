@@ -1,13 +1,12 @@
 package com.coinffeine.client.peer.orders
 
-import java.util.Currency
 import scala.concurrent.duration._
 
 import akka.actor.Props
 
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
-import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
+import com.coinffeine.common.{FiatCurrency, AkkaSpec, PeerConnection}
+import com.coinffeine.common.Currency.{UsDollar, Euro}
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
@@ -22,9 +21,9 @@ class OrdersActorTest extends AkkaSpec {
   val broker = PeerConnection("broker")
   val eurOrder1 = Order(Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(Ask, 0.7.BTC, 640.EUR)
-  val noEurOrders = OrderSet.empty(Market(EUR.currency))
-  val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC, 556.EUR)
-  val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC, 640.EUR)
+  val noEurOrders = OrderSet.empty(Market(Euro))
+  val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC.toBitcoinAmount, 556.EUR.toCurrencyAmount)
+  val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC.toBitcoinAmount, 640.EUR.toCurrencyAmount)
 
   trait Fixture {
     val gateway = new GatewayProbe()
@@ -54,13 +53,13 @@ class OrdersActorTest extends AkkaSpec {
     actor ! OpenOrder(eurOrder1)
     actor ! OpenOrder(Order(Ask, 0.5.BTC, 500.USD))
 
-    def currencyOfNextOrderSet(): Currency =
+    def currencyOfNextOrderSet(): FiatCurrency =
       gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
         case OrderSet(Market(currency), _, _) => currency
       }
 
     val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())
-    currencies should be (Set(EUR.currency, USD.currency))
+    currencies should be (Set(Euro, UsDollar))
   }
 
   it must "keep resubmitting remaining orders after a cancellation" in new Fixture {

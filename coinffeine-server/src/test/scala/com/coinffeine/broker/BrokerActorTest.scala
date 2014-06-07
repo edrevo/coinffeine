@@ -6,10 +6,10 @@ import akka.actor._
 import akka.testkit._
 
 import com.coinffeine.broker.BrokerActor.BrokeringStart
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common._
+import com.coinffeine.common.Currency.{UsDollar, Euro}
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.currency.CurrencyCode.{EUR, USD}
-import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -26,7 +26,7 @@ class BrokerActorTest
   }
 
   class WithEurBroker(name: String) {
-    val market = Market(EUR.currency)
+    val market = Market(Euro)
     val arbiterProbe = TestProbe()
     val gateway = new GatewayProbe()
     val broker = system.actorOf(Props(new BrokerActor(
@@ -47,10 +47,12 @@ class BrokerActorTest
 
     def shouldSpawnArbiter() = arbiterProbe.expectMsgClass(classOf[OrderMatch])
 
-    def relayBid(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
+    def relayBid[C <: FiatCurrency](
+        amount: BitcoinAmount, price: CurrencyAmount[C], requester: String) = gateway.relayMessage(
       OrderSet.empty(market).addOrder(Bid, amount, price), PeerConnection(requester))
 
-    def relayAsk(amount: BtcAmount, price: FiatAmount, requester: String) = gateway.relayMessage(
+    def relayAsk[C <: FiatCurrency](
+        amount: BitcoinAmount, price: CurrencyAmount[C], requester: String) = gateway.relayMessage(
       OrderSet.empty(market).addOrder(Ask, amount, price), PeerConnection(requester))
   }
 
@@ -58,7 +60,7 @@ class BrokerActorTest
     val Subscribe(filter) = shouldSubscribe()
     val client: PeerConnection = PeerConnection("client1")
     val relevantOrders = OrderSet.empty(market)
-    val irrelevantOrders = OrderSet.empty(Market(USD.currency))
+    val irrelevantOrders = OrderSet.empty(Market(UsDollar))
     filter(ReceiveMessage(relevantOrders, PeerConnection("client1"))) should be (true)
     filter(ReceiveMessage(irrelevantOrders, PeerConnection("client1"))) should be (false)
     filter(ReceiveMessage(QuoteRequest(EUR.currency), client)) should be (true)
@@ -72,8 +74,8 @@ class BrokerActorTest
       relayBid(0.8.BTC, 950.EUR, "client2")
       relayAsk(0.6.BTC, 850.EUR, "client3")
       val notifiedOrderMatch = arbiterProbe.expectMsgClass(classOf[OrderMatch])
-      notifiedOrderMatch.amount should be (0.6.BTC)
-      notifiedOrderMatch.price should be (900.EUR)
+      notifiedOrderMatch.amount should be (0.6.BTC.toBtcAmount)
+      notifiedOrderMatch.price should be (900.EUR.toFiatAmount)
       notifiedOrderMatch.buyer should be (PeerConnection("client2"))
       notifiedOrderMatch.seller should be (PeerConnection("client3"))
     }
@@ -82,9 +84,9 @@ class BrokerActorTest
     shouldSubscribe()
     shouldHaveQuote(Quote.empty(EUR.currency))
     relayBid(1.BTC, 900.EUR, "client1")
-    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR) -> None))
+    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR.toFiatAmount) -> None))
     relayAsk(0.8.BTC, 950.EUR, "client2")
-    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR) -> Some(950.EUR)))
+    shouldHaveQuote(Quote(EUR.currency, Some(900.EUR.toFiatAmount) -> Some(950.EUR.toFiatAmount)))
   }
 
   it must "quote last price" in new WithEurBroker("quote-last-price") {
@@ -92,7 +94,7 @@ class BrokerActorTest
     relayBid(1.BTC, 900.EUR, "client1")
     relayAsk(1.BTC, 800.EUR, "client2")
     shouldSpawnArbiter()
-    shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(850.EUR)))
+    shouldHaveQuote(Quote(EUR.currency, lastPrice = Some(850.EUR.toFiatAmount)))
   }
 
   it must "cancel orders" in new WithEurBroker("cancel-orders") {
@@ -100,7 +102,7 @@ class BrokerActorTest
     relayBid(1.BTC, 900.EUR, "client1")
     relayAsk(0.8.BTC, 950.EUR, "client2")
     gateway.relayMessage(OrderSet.empty(market), PeerConnection("client1"))
-    shouldHaveQuote(Quote(EUR.currency, None -> Some(950.EUR)))
+    shouldHaveQuote(Quote(EUR.currency, None -> Some(950.EUR.toFiatAmount)))
   }
 
   it must "expire old orders" in new WithEurBroker("expire-orders") {

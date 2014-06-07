@@ -10,7 +10,7 @@ import org.scalatest.mock.MockitoSugar
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
 import com.coinffeine.common.{Currency, PeerConnection}
-import com.coinffeine.common.currency.CurrencyCode
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
@@ -41,7 +41,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
-    val randomMessage = OrderSet.empty(Market(CurrencyCode.EUR.currency))
+    val randomMessage = OrderSet.empty(Market(Euro))
     filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
   }
 

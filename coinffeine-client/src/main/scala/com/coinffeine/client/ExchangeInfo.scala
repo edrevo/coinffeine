@@ -2,9 +2,7 @@ package com.coinffeine.client
 
 import com.google.bitcoin.core.{ECKey, NetworkParameters}
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, Currency, PeerConnection}
-import com.coinffeine.common.currency.{FiatAmount, BtcAmount}
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
 
 /** A value class that contains all the necessary information relative to an exchange between
   * two peers
@@ -31,7 +29,7 @@ case class ExchangeInfo[C <: FiatCurrency](
     userFiatAddress: String,
     counterpartKey: ECKey,
     counterpartFiatAddress: String,
-    btcExchangeAmount: Currency.Bitcoin.Amount,
+    btcExchangeAmount: BitcoinAmount,
     fiatExchangeAmount: CurrencyAmount[C],
     steps: Int,
     lockTime: Long) {

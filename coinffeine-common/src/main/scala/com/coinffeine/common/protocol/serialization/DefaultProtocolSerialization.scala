@@ -11,6 +11,7 @@ import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.Payload._
+import com.coinffeine.common.FiatCurrency
 
 private[serialization] class DefaultProtocolSerialization(
     version: Version,
@@ -39,7 +40,7 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: OrderMatch =>
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
-      case m: OrderSet =>
+      case m: OrderSet[FiatCurrency] =>
         builder.setOrderSet(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))

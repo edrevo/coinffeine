@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import java.util.Currency
+import com.coinffeine.common.FiatCurrency
 
 /** Identifies a given market. */
-case class Market(currency: Currency)
+case class Market[+C <: FiatCurrency](currency: C)

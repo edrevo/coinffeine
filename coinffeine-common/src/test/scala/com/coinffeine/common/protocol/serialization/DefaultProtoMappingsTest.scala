@@ -7,7 +7,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
-import com.coinffeine.common.{PeerConnection, UnitTest}
+import com.coinffeine.common.{FiatCurrency, Currency, PeerConnection, UnitTest}
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.currency.Implicits._
@@ -23,6 +23,7 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
+  import testMappings.OldAmountMappings._
 
   def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
                                              (implicit mapping: ProtoMapping[T, M]): Unit = {
@@ -66,11 +67,13 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
       .setPrice(msg.FiatAmount.newBuilder.setValue(500).setScale(0).setCurrency("EUR"))
     ).build
   val orderSet = OrderSet(
-    market = Market(EUR.currency),
-    bids = VolumeByPrice(400.EUR -> 1.BTC),
-    asks = VolumeByPrice(500.EUR -> 2.BTC)
+    market = Market(Currency.Euro),
+    bids = VolumeByPrice(400.EUR.toCurrencyAmount -> 1.BTC.toBitcoinAmount),
+    asks = VolumeByPrice(500.EUR.toCurrencyAmount -> 2.BTC.toBitcoinAmount)
   )
-  "OrderSet" should behave like thereIsAMappingBetween(orderSet, orderSetMessage)
+
+  "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
+    orderSet, orderSetMessage)
 
   val commitmentNotification = CommitmentNotification(
     exchangeId = "1234",

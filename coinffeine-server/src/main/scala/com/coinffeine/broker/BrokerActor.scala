@@ -6,7 +6,7 @@ import akka.actor._
 
 import com.coinffeine.arbiter.HandshakeArbiterActor
 import com.coinffeine.broker.BrokerActor.BrokeringStart
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
 import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
@@ -23,8 +23,8 @@ private[broker] class BrokerActor(
       new InitializedBroker(market, gateway).startBrokering()
   }
 
-  private class InitializedBroker(market: Market, gateway: ActorRef) {
-    private var book = OrderBook.empty(market.currency)
+  private class InitializedBroker(market: Market[FiatCurrency], gateway: ActorRef) {
+    private var book = OrderBook.empty(market.currency.javaCurrency)
     private val orderTimeouts = new ExpirationSchedule[PeerConnection]
     private var lastPrice: Option[FiatAmount] = None
 
@@ -34,15 +34,15 @@ private[broker] class BrokerActor(
     }
 
     private def subscribeToMessages(): Unit = gateway ! Subscribe {
-      case ReceiveMessage(orders: OrderSet, _) if orders.market == market => true
+      case ReceiveMessage(orders: OrderSet[FiatCurrency], _) if orders.market == market => true
       case ReceiveMessage(quoteRequest: QuoteRequest, _)
-        if quoteRequest.currency == market.currency => true
+        if quoteRequest.currency == market.currency.javaCurrency => true
       case _ => false
     }
 
     private def processMessage: Receive = {
 
-      case ReceiveMessage(orders: OrderSet, requester: PeerConnection) =>
+      case ReceiveMessage(orders: OrderSet[FiatCurrency], requester: PeerConnection) =>
         orderTimeouts.setExpirationFor(requester, orderExpirationInterval)
         log.info(s"Updating orders of $requester")
         log.debug(s"Orders for $requester: $orders")
@@ -50,12 +50,12 @@ private[broker] class BrokerActor(
         clearMarket()
 
       case ReceiveMessage(QuoteRequest(_), requester) =>
-        gateway ! ForwardMessage(Quote(market.currency, book.spread, lastPrice), requester)
+        gateway ! ForwardMessage(Quote(market.currency.javaCurrency, book.spread, lastPrice), requester)
 
       case ReceiveTimeout => expireOrders()
     }
 
-    private def updateUserOrders(orders: OrderSet, requester: PeerConnection): Unit = {
+    private def updateUserOrders(orders: OrderSet[_ <: FiatCurrency], requester: PeerConnection): Unit = {
       val existingPositions = book.userPositions(requester)
       val currentPositions = orderSetPositions(orders, requester)
       val positionsToRemove = existingPositions.diff(currentPositions)
@@ -63,9 +63,10 @@ private[broker] class BrokerActor(
       book = book.cancelPositions(positionsToRemove).addPositions(positionsToAdd)
     }
 
-    private def orderSetPositions(orders: OrderSet, requester: PeerConnection): Seq[Position[_]] = {
-      def toPositions(orderType: OrderType, volume: VolumeByPrice) =
-        for ((price, amount) <- volume.entries) yield Position(orderType, amount, price, requester)
+    private def orderSetPositions(orders: OrderSet[_ <: FiatCurrency], requester: PeerConnection): Seq[Position[_]] = {
+      def toPositions(orderType: OrderType, volume: VolumeByPrice[_ <: FiatCurrency]) =
+        for ((price, amount) <- volume.entries)
+          yield Position(orderType, amount.toBtcAmount, price.toFiatAmount, requester)
 
       (toPositions(Bid, orders.bids) ++ toPositions(Ask, orders.asks)).toSeq
     }
@@ -103,7 +104,7 @@ private[broker] class BrokerActor(
 object BrokerActor {
 
   /** Start brokering exchanges on a given currency. */
-  case class BrokeringStart(market: Market, gateway: ActorRef)
+  case class BrokeringStart(market: Market[FiatCurrency], gateway: ActorRef)
 
   trait Component { this: HandshakeArbiterActor.Component with ProtocolConstants.Component =>
 

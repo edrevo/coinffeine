@@ -2,6 +2,10 @@ package com.coinffeine.common
 
 import java.util.{Currency => JavaCurrency}
 import java.math.BigInteger
+import scala.util.Try
+
+import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.Currency.Bitcoin
 
 /** An finite amount of currency C.
   *
@@ -13,29 +17,50 @@ import java.math.BigInteger
   *
   * @tparam C The type of currency this amount is represented in
   */
-trait CurrencyAmount[C <: Currency] {
+case class CurrencyAmount[+C <: Currency](
+    value: BigDecimal, currency: C) extends PartiallyOrdered[CurrencyAmount[C]] {
 
-  val currency: C
-  val value: BigDecimal
+  def +[B >: C <: Currency] (other: CurrencyAmount[B]): CurrencyAmount[B] =
+    copy(value = value + other.value)
+  def -[B >: C <: Currency] (other: CurrencyAmount[B]): CurrencyAmount[B] =
+    copy(value = value - other.value)
+  def * (mult: BigDecimal) = copy(value = value * mult)
+  def / (divisor: BigDecimal) = copy(value = value / divisor)
+  def unary_- = copy(value = -value)
 
-  def + (other: CurrencyAmount[C]): CurrencyAmount[C]
-  def - (other: CurrencyAmount[C]): CurrencyAmount[C]
-  def * (mult: BigDecimal): CurrencyAmount[C]
-  def / (divisor: BigDecimal): CurrencyAmount[C]
-  def unary_- : CurrencyAmount[C]
+  def min[B >: C <: Currency](that: CurrencyAmount[B]): CurrencyAmount[B] =
+    if (this.value <= that.value) this else that
+  def max[B >: C <: Currency](that: CurrencyAmount[B]): CurrencyAmount[B] =
+    if (this.value >= that.value) this else that
 
   val isPositive = value > 0
   val isNegative = value < 0
+
+  override def tryCompareTo[B >: CurrencyAmount[C] <% PartiallyOrdered[B]](that: B): Option[Int] =
+    Try {
+      val thatAmount = that.asInstanceOf[CurrencyAmount[_ <: FiatCurrency]]
+      require(thatAmount.currency == this.currency)
+      thatAmount
+    }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
+
+  @deprecated
+  def toFiatAmount = {
+    require(currency.isInstanceOf[FiatCurrency])
+    FiatAmount(value, currency.asInstanceOf[FiatCurrency].javaCurrency)
+  }
+
+  @deprecated
+  def toBtcAmount = {
+    require(currency == Bitcoin)
+    BtcAmount(value)
+  }
 }
 
 /** Representation of a currency. */
 trait Currency {
 
-  /** The type of the concrete type that extends this trait, using a curiously recurring template pattern. */
-  type SelfType <: Currency
-
   /** The instance of the concrete type that extends this trait. */
-  val self: SelfType
+  val self: this.type = this
 
   /** An amount of currency.
     *
@@ -44,31 +69,14 @@ trait Currency {
     *
     * @param value The value represented by this amount.
     */
-  case class Amount(value: BigDecimal) extends CurrencyAmount[SelfType] {
+  def amount(value: BigDecimal): CurrencyAmount[this.type] = CurrencyAmount(value, self)
 
-    def this(value: Int) = this(BigDecimal(value))
-    def this(value: Double) = this(BigDecimal(value))
-    def this(value: java.math.BigDecimal) = this(BigDecimal(value))
+  def apply(value: BigDecimal) = amount(value)
+  def apply(value: Int) = amount(value)
+  def apply(value: Double) = amount(value)
+  def apply(value: java.math.BigDecimal) = amount(BigDecimal(value))
 
-    override val currency: SelfType = self
-
-    override def + (other: CurrencyAmount[SelfType]) = Amount(value + other.value)
-    override def - (other: CurrencyAmount[SelfType]) = Amount(value - other.value)
-    override def * (mult: BigDecimal) = Amount(value * mult)
-    override def / (divisor: BigDecimal) = Amount(value / divisor)
-    override def unary_- = Amount(-value)
-  }
-
-  object Amount extends Ordering[Amount] {
-
-    val Zero = Amount(0)
-    override def compare(x: Amount, y: Amount): Int = x.value.compare(y.value)
-  }
-
-  def apply(value: BigDecimal) = Amount(value)
-  def apply(value: Int) = Amount(value)
-  def apply(value: Double) = Amount(value)
-  def apply(value: java.math.BigDecimal) = Amount(BigDecimal(value))
+  val Zero: CurrencyAmount[this.type] = apply(0)
 }
 
 /** A fiat currency. */
@@ -88,20 +96,14 @@ object FiatCurrency {
 object Currency {
 
   object UsDollar extends FiatCurrency {
-    type SelfType = UsDollar.type
-    val self = this
     val javaCurrency = JavaCurrency.getInstance("USD")
   }
 
   object Euro extends FiatCurrency {
-    type SelfType = Euro.type
-    val self = this
     val javaCurrency = JavaCurrency.getInstance("EUR")
   }
 
   object Bitcoin extends Currency {
-    type SelfType = Bitcoin.type
-    val self = this
     val OneBtcInSatoshi = BigDecimal(100000000)
 
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
@@ -110,18 +112,18 @@ object Currency {
   object Implicits {
     import scala.language.implicitConversions
 
-    implicit class BitcoinSatoshiConverter(btc: Bitcoin.Amount) {
+    implicit class BitcoinSatoshiConverter(btc: BitcoinAmount) {
 
       def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
 
     }
 
     class UnitImplicits(i: BigDecimal) {
-      def BTC: Bitcoin.Amount = Bitcoin(i)
+      def BTC: BitcoinAmount = Bitcoin(i)
 
-      def EUR: Euro.Amount = Euro(i)
+      def EUR: CurrencyAmount[Euro.type] = Euro(i)
 
-      def USD: UsDollar.Amount = UsDollar(i)
+      def USD: CurrencyAmount[UsDollar.type] = UsDollar(i)
     }
 
     implicit def pimpMyDouble(i: Double) = new UnitImplicits(i)

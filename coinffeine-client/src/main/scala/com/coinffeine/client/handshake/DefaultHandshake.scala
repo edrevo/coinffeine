@@ -10,12 +10,12 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.{Currency, FiatCurrency}
+import com.coinffeine.common.{Currency, FiatCurrency, BitcoinAmount}
 import com.coinffeine.common.Currency.Implicits._
 
 abstract class DefaultHandshake[C <: FiatCurrency](
     val exchangeInfo: ExchangeInfo[C],
-    amountToCommit: Currency.Bitcoin.Amount,
+    amountToCommit: BitcoinAmount,
     userWallet: Wallet) extends Handshake[C] {
   require(userWallet.hasKey(exchangeInfo.userKey),
     "User wallet does not contain the user's private key")
@@ -24,7 +24,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   private val inputFunds = {
     val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
     val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(Currency.Bitcoin.Amount.Zero)((accum, output) => accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+      .scanLeft(Currency.Bitcoin.Zero)((accum, output) => accum + Currency.Bitcoin.fromSatoshi(output.getValue))
       .takeWhile(_ < amountToCommit)
       .length
     inputFundCandidates.take(necessaryInputCount)

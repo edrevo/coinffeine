@@ -7,7 +7,7 @@ import com.google.bitcoin.core.{Sha256Hash, Transaction}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.reflections.Reflections
 
-import com.coinffeine.common.{PeerConnection, UnitTest}
+import com.coinffeine.common.{Currency, PeerConnection, UnitTest}
 import com.coinffeine.common.currency.CurrencyCode
 import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
@@ -35,9 +35,10 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
     OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
     OrderSet(
-      market = Market(CurrencyCode.USD.currency),
-      bids = VolumeByPrice(100.USD -> 1.3.BTC),
-      asks = VolumeByPrice(200.USD -> 0.3.BTC, 250.USD -> 0.4.BTC)
+      market = Market(Currency.UsDollar),
+      bids = VolumeByPrice(100.USD.toCurrencyAmount -> 1.3.BTC.toBitcoinAmount),
+      asks = VolumeByPrice(200.USD.toCurrencyAmount -> 0.3.BTC.toBitcoinAmount,
+        250.USD.toCurrencyAmount -> 0.4.BTC.toBitcoinAmount)
     ),
     QuoteRequest(CurrencyCode.USD.currency),
     Quote(fiatAmount -> fiatAmount, fiatAmount),

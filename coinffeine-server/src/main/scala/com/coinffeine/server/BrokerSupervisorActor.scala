@@ -15,6 +15,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError
 import com.coinffeine.common.protocol.messages.brokerage.Market
 import com.coinffeine.common.system.ActorSystemBootstrap
 import com.coinffeine.server.BrokerSupervisorActor.InitializedBroker
+import com.coinffeine.common.FiatCurrency
 
 class BrokerSupervisorActor(
     tradedCurrencies: Set[Currency],
@@ -40,7 +41,7 @@ class BrokerSupervisorActor(
 
     case BoundTo(_) =>
       tradedCurrencies.foreach { currency =>
-        context.actorOf(brokerProps) ! BrokeringStart(Market(currency), gateway)
+        context.actorOf(brokerProps) ! BrokeringStart(Market(FiatCurrency(currency)), gateway)
       }
       listener ! InitializedBroker
   }
