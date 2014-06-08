@@ -30,7 +30,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
         getOrCreateDelegate(marketOf(order)) forward message
     }
 
-    private def marketOf(order: Order) = Market(currency = FiatCurrency(order.price.currency))
+    private def marketOf(order: Order) = Market(currency = order.price.currency)
 
     private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
       delegatesByMarket.getOrElse(market, createDelegate(market))

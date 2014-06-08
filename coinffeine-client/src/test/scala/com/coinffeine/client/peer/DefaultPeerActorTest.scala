@@ -10,7 +10,7 @@ import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
 import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
 

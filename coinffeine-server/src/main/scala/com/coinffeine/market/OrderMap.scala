@@ -98,7 +98,7 @@ object OrderMap {
 
   /** Empty order map */
   def empty[T <: OrderType](orderType: T, currency: Currency): OrderMap[T] =
-    OrderMap(orderType, currency, TreeMap.empty(orderType.priceOrdering))
+    OrderMap(orderType, currency, TreeMap.empty(orderType.legacyPriceOrdering))
 
   def apply[T <: OrderType](first: Position[T], other: Position[T]*): OrderMap[T] = {
     val positions = first +: other

@@ -34,13 +34,13 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
     private def keepingOpenOrders(orderSet: OrderSet[_ <: FiatCurrency]): Receive = {
       case OpenOrder(order) =>
         val mergedOrderSet = orderSet.addOrder(
-          order.orderType, order.amount.toBitcoinAmount, order.price.toCurrencyAmount)
+          order.orderType, order.amount, order.price)
         forwardOrders(mergedOrderSet)
         context.become(keepingOpenOrders(mergedOrderSet))
 
       case CancelOrder(order) =>
         val reducedOrderSet = orderSet.cancelOrder(
-          order.orderType, order.amount.toBitcoinAmount, order.price.toCurrencyAmount)
+          order.orderType, order.amount, order.price)
         forwardOrders(reducedOrderSet)
         context.become(
           if (reducedOrderSet.isEmpty) waitingForOrders
@@ -58,8 +58,8 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
   }
 
   private def orderToOrderSet(order: Order) =
-    OrderSet.empty(Market(FiatCurrency(order.price.currency))).addOrder(
-      order.orderType, order.amount.toBitcoinAmount, order.price.toCurrencyAmount)
+    OrderSet.empty(Market(order.price.currency)).addOrder(
+      order.orderType, order.amount, order.price)
 }
 
 private[orders] object OrderSubmissionActor {

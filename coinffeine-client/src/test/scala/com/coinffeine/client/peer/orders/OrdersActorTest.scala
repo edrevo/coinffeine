@@ -7,7 +7,7 @@ import akka.actor.Props
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.{FiatCurrency, AkkaSpec, PeerConnection}
 import com.coinffeine.common.Currency.{UsDollar, Euro}
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -22,8 +22,8 @@ class OrdersActorTest extends AkkaSpec {
   val eurOrder1 = Order(Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(Ask, 0.7.BTC, 640.EUR)
   val noEurOrders = OrderSet.empty(Market(Euro))
-  val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC.toBitcoinAmount, 556.EUR.toCurrencyAmount)
-  val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC.toBitcoinAmount, 640.EUR.toCurrencyAmount)
+  val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC, 556.EUR)
+  val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC, 640.EUR)
 
   trait Fixture {
     val gateway = new GatewayProbe()

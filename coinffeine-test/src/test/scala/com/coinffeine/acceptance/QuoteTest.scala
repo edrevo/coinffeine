@@ -4,7 +4,7 @@ import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.api.CoinffeineNetwork.Connected
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.messages.brokerage.Quote
 
 class QuoteTest extends AcceptanceTest {
@@ -41,7 +41,8 @@ class QuoteTest extends AcceptanceTest {
 
         Then("he should get the current spread")
         eventually {
-          quote.futureValue should be(Quote(EUR.currency, Some(50.EUR) -> Some(180.EUR)))
+          quote.futureValue should be(Quote(
+            EUR.currency, Some(50.EUR.toFiatAmount) -> Some(180.EUR.toFiatAmount)))
         }
       }
     }

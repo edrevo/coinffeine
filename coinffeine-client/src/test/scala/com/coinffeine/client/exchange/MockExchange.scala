@@ -9,9 +9,8 @@ import com.google.bitcoin.crypto.TransactionSignature
 import org.joda.time.DateTime
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.currency.Implicits._
-import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.Currency
+import com.coinffeine.common.paymentprocessor.Payment
 
 class MockExchange(override val exchangeInfo: ExchangeInfo[Currency.Euro.type]) extends Exchange[Currency.Euro.type] {
   this: UserRole =>

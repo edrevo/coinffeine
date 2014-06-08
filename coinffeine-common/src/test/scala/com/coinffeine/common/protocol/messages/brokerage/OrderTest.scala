@@ -1,50 +1,49 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.UnitTest
 
 class OrderTest extends UnitTest {
 
   "An order" should "correspond to a non-negative amount" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      Order(Bid, BtcAmount(0), EUR(550))
+      Order(Bid, 0 BTC, 550 EUR)
     }
     ex.getMessage should include ("Amount ordered must be strictly positive")
   }
 
   it should "have non-negative price" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      Order(Bid, BtcAmount(10), EUR(0))
+      Order(Bid, 10 BTC, 0 EUR)
     }
     ex.getMessage should include ("Price must be strictly positive")
   }
 
   "A bid" should "be sorted only by decreasing price" in {
     Seq(
-      Order(Bid, BtcAmount(0.5), EUR(980)),
-      Order(Bid, BtcAmount(10), EUR(950)),
-      Order(Bid, BtcAmount(0.5), EUR(980)),
-      Order(Bid, BtcAmount(1), EUR(950))
+      Order(Bid, 0.5 BTC, 980 EUR),
+      Order(Bid, 10 BTC, 950 EUR),
+      Order(Bid, 0.5 BTC, 980 EUR),
+      Order(Bid, 1 BTC, 950 EUR)
     ).sorted should equal (Seq(
-      Order(Bid, BtcAmount(0.5), EUR(980)),
-      Order(Bid, BtcAmount(0.5), EUR(980)),
-      Order(Bid, BtcAmount(10), EUR(950)),
-      Order(Bid, BtcAmount(1), EUR(950))
+      Order(Bid, 0.5 BTC, 980 EUR),
+      Order(Bid, 0.5 BTC, 980 EUR),
+      Order(Bid, 10 BTC, 950 EUR),
+      Order(Bid, 1 BTC, 950 EUR)
     ))
   }
 
   "An ask" should "be sorted only by increasing price" in {
     Seq(
-      Order(Ask, BtcAmount(0.5), EUR(930)),
-      Order(Ask, BtcAmount(10), EUR(940)),
-      Order(Ask, BtcAmount(0.5), EUR(930)),
-      Order(Ask, BtcAmount(1), EUR(940))
+      Order(Ask, 0.5 BTC, 930 EUR),
+      Order(Ask, 10 BTC, 940 EUR),
+      Order(Ask, 0.5 BTC, 930 EUR),
+      Order(Ask, 1 BTC, 940 EUR)
     ).sorted should equal (Seq(
-      Order(Ask, BtcAmount(0.5), EUR(930)),
-      Order(Ask, BtcAmount(0.5), EUR(930)),
-      Order(Ask, BtcAmount(10), EUR(940)),
-      Order(Ask, BtcAmount(1), EUR(940))
+      Order(Ask, 0.5 BTC, 930 EUR),
+      Order(Ask, 0.5 BTC, 930 EUR),
+      Order(Ask, 10 BTC, 940 EUR),
+      Order(Ask, 1 BTC, 940 EUR)
     ))
   }
 }
