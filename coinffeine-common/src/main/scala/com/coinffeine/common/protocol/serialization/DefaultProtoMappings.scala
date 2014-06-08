@@ -196,23 +196,31 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val quoteMapping = new ProtoMapping[Quote, msg.Quote] {
-    import OldAmountMappings._
+  implicit val quoteMapping = new ProtoMapping[Quote[FiatCurrency], msg.Quote] {
+    import NewAmountMappings._
 
-    override def fromProtobuf(quote: msg.Quote): Quote = {
+    override def fromProtobuf(quote: msg.Quote): Quote[FiatCurrency] = {
       val bidOption =
         if (quote.hasHighestBid) Some(ProtoMapping.fromProtobuf(quote.getHighestBid)) else None
       val askOption =
         if (quote.hasLowestAsk) Some(ProtoMapping.fromProtobuf(quote.getLowestAsk)) else None
       val lastPriceOption =
         if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
-      Quote(Currency.getInstance(quote.getCurrency), bidOption -> askOption, lastPriceOption)
+      val currency = FiatCurrency(Currency.getInstance(quote.getCurrency))
+      def requireCorrectCurrency(amount: Option[CurrencyAmount[FiatCurrency]]): Unit = {
+        require(amount.map(_.currency).map(_ == currency).getOrElse(true),
+          s"Incorrect currency. Expected $currency, received ${amount.get.currency}")
+      }
+      requireCorrectCurrency(bidOption)
+      requireCorrectCurrency(askOption)
+      requireCorrectCurrency(lastPriceOption)
+      Quote(currency, bidOption -> askOption, lastPriceOption)
     }
 
-    override def toProtobuf(quote: Quote): msg.Quote = {
+    override def toProtobuf(quote: Quote[FiatCurrency]): msg.Quote = {
       val Quote(currency, (bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder
-        .setCurrency(currency.getCurrencyCode)
+        .setCurrency(currency.javaCurrency.getCurrencyCode)
       bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid)))
       askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask)))
       lastPriceOption.foreach(lastPrice => builder.setLastPrice(ProtoMapping.toProtobuf(lastPrice)))
@@ -223,10 +231,10 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val quoteRequestMapping = new ProtoMapping[QuoteRequest, msg.QuoteRequest] {
 
     override def fromProtobuf(request: msg.QuoteRequest): QuoteRequest =
-      QuoteRequest(Currency.getInstance(request.getCurrency))
+      QuoteRequest(FiatCurrency(Currency.getInstance(request.getCurrency)))
 
     override def toProtobuf(request: QuoteRequest): msg.QuoteRequest = msg.QuoteRequest.newBuilder
-      .setCurrency(request.currency.getCurrencyCode)
+      .setCurrency(request.currency.javaCurrency.getCurrencyCode)
       .build
   }
 

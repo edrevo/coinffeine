@@ -8,8 +8,8 @@ import com.google.bitcoin.crypto.TransactionSignature
 import org.reflections.Reflections
 
 import com.coinffeine.common.{Currency, PeerConnection, UnitTest}
-import com.coinffeine.common.currency.CurrencyCode
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.UsDollar
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -33,14 +33,15 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     ExchangeAborted(exchangeId, "reason"),
     ExchangeCommitment(exchangeId, transaction),
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
-    OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
+    OrderMatch(
+      exchangeId, btcAmount.toBtcAmount, fiatAmount.toFiatAmount, peerConnection, peerConnection),
     OrderSet(
       market = Market(Currency.UsDollar),
-      bids = VolumeByPrice(100.USD.toCurrencyAmount -> 1.3.BTC.toBitcoinAmount),
-      asks = VolumeByPrice(200.USD.toCurrencyAmount -> 0.3.BTC.toBitcoinAmount,
-        250.USD.toCurrencyAmount -> 0.4.BTC.toBitcoinAmount)
+      bids = VolumeByPrice(100.USD -> 1.3.BTC),
+      asks = VolumeByPrice(200.USD -> 0.3.BTC,
+        250.USD -> 0.4.BTC)
     ),
-    QuoteRequest(CurrencyCode.USD.currency),
+    QuoteRequest(UsDollar),
     Quote(fiatAmount -> fiatAmount, fiatAmount),
     ExchangeRejection(exchangeId, "reason"),
     RefundTxSignatureRequest(exchangeId, transaction),

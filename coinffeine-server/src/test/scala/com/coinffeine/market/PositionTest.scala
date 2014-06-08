@@ -1,7 +1,7 @@
 package com.coinffeine.market
 
 import com.coinffeine.common.{PeerConnection, UnitTest}
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
 
 class PositionTest extends UnitTest {
 

@@ -8,9 +8,10 @@ import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
 import com.coinffeine.common.{FiatCurrency, Currency, PeerConnection, UnitTest}
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.arbitration._
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -68,8 +69,8 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     ).build
   val orderSet = OrderSet(
     market = Market(Currency.Euro),
-    bids = VolumeByPrice(400.EUR.toCurrencyAmount -> 1.BTC.toBitcoinAmount),
-    asks = VolumeByPrice(500.EUR.toCurrencyAmount -> 2.BTC.toBitcoinAmount)
+    bids = VolumeByPrice(400.EUR -> 1.BTC),
+    asks = VolumeByPrice(500.EUR -> 2.BTC)
   )
 
   "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
@@ -134,18 +135,20 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 
   val emptyQuoteMessage = msg.Quote.newBuilder.setCurrency(EUR.currency.getCurrencyCode).build
-  val emptyQuote = Quote.empty(EUR.currency)
-  "Empty quota" must behave like thereIsAMappingBetween(emptyQuote, emptyQuoteMessage)
+  val emptyQuote = Quote.empty(Euro)
+  "Empty quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
+    emptyQuote, emptyQuoteMessage)
 
   val quoteMessage = emptyQuoteMessage.toBuilder
     .setHighestBid(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(20)))
     .setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(30)))
     .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](EUR(22)))
     .build
-  val quote = Quote(EUR(20) -> EUR(30), EUR(22))
-  "Quota" must behave like thereIsAMappingBetween(quote, quoteMessage)
+  val quote = Quote(20.EUR -> 30.EUR, 22 EUR)
+  "Quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
+    quote, quoteMessage)
 
-  val quoteRequest = QuoteRequest(EUR.currency)
+  val quoteRequest = QuoteRequest(Euro)
   val quoteRequestMessage = msg.QuoteRequest.newBuilder
     .setCurrency("EUR")
     .build

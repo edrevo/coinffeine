@@ -44,7 +44,7 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setOrderSet(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
-      case m: Quote =>
+      case m: Quote[FiatCurrency] =>
         builder.setQuote(ProtoMapping.toProtobuf(m))
       case m: ExchangeRejection =>
         builder.setExchangeRejection(ProtoMapping.toProtobuf(m))

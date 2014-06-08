@@ -9,8 +9,8 @@ import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
 import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
-import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
 
@@ -58,9 +58,9 @@ class DefaultPeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate quote requests" in {
-    peer ! QuoteRequest(EUR.currency)
+    peer ! QuoteRequest(Euro)
     val requestRef = requestsProbe.expectMsgClass(classOf[MockStarted]).ref
-    val expectedInitialization = StartRequest(EUR.currency, gatewayRef, brokerAddress)
+    val expectedInitialization = StartRequest(Euro, gatewayRef, brokerAddress)
     requestsProbe.expectMsg(MockReceived(requestRef, self, expectedInitialization))
   }
 

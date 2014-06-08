@@ -1,9 +1,8 @@
 package com.coinffeine.client.api
 
-import java.util.Currency
 import scala.concurrent.Future
 
-import com.coinffeine.common.{BitcoinAmount, FiatAmount}
+import com.coinffeine.common.{FiatCurrency, BitcoinAmount, FiatAmount}
 import com.coinffeine.common.protocol.messages.brokerage.{Ask, Bid, Order, Quote}
 
 /** Represents how the app takes part on the P2P network */
@@ -30,7 +29,7 @@ trait CoinffeineNetwork {
   def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
 
   /** Check current prices for a given payment form */
-  def currentQuote(currency: Currency): Future[Quote]
+  def currentQuote[C <: FiatCurrency](currency: C): Future[Quote[C]]
 
   /** Submit an order to buy bitcoins.
     *

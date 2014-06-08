@@ -43,6 +43,8 @@ case class CurrencyAmount[+C <: Currency](
       thatAmount
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
+  override def toString = value.toString() + " " + currency.toString
+
   @deprecated
   def toFiatAmount = {
     require(currency.isInstanceOf[FiatCurrency])
@@ -76,6 +78,8 @@ trait Currency {
   def apply(value: Double) = amount(value)
   def apply(value: java.math.BigDecimal) = amount(BigDecimal(value))
 
+  def toString: String
+
   val Zero: CurrencyAmount[this.type] = apply(0)
 }
 
@@ -97,14 +101,17 @@ object Currency {
 
   object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
+    override val toString = "USD"
   }
 
   object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
+    override val toString = "EUR"
   }
 
   object Bitcoin extends Currency {
     val OneBtcInSatoshi = BigDecimal(100000000)
+    override val toString = "BTC"
 
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
   }

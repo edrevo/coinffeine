@@ -1,6 +1,5 @@
 package com.coinffeine.client.app
 
-import java.util.Currency
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -14,6 +13,7 @@ import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.PeerActor
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.messages.brokerage._
 
 class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
@@ -43,8 +43,8 @@ class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def currentQuote(currency: Currency): Future[Quote] =
-    (peer ? QuoteRequest(currency)).mapTo[Quote]
+  override def currentQuote[C <: FiatCurrency](currency: C): Future[Quote[C]] =
+    (peer ? QuoteRequest(currency)).mapTo[Quote[C]]
 
   override def exchanges: Set[Exchange] = Set.empty
 
