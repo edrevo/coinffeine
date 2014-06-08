@@ -10,12 +10,12 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.broker.BrokerActor
 import com.coinffeine.broker.BrokerActor.BrokeringStart
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.Market
 import com.coinffeine.common.system.ActorSystemBootstrap
 import com.coinffeine.server.BrokerSupervisorActor.InitializedBroker
-import com.coinffeine.common.FiatCurrency
 
 class BrokerSupervisorActor(
     tradedCurrencies: Set[Currency],

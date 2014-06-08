@@ -2,6 +2,7 @@ package com.coinffeine.common.currency
 
 import java.util.Currency
 import scala.math.Ordering
+
 import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
 @Deprecated

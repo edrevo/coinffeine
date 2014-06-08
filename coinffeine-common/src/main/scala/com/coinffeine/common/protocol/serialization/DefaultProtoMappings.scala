@@ -208,7 +208,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
       val currency = FiatCurrency(Currency.getInstance(quote.getCurrency))
       def requireCorrectCurrency(amount: Option[CurrencyAmount[FiatCurrency]]): Unit = {
-        require(amount.map(_.currency).map(_ == currency).getOrElse(true),
+        require(amount.forall(_.currency == currency),
           s"Incorrect currency. Expected $currency, received ${amount.get.currency}")
       }
       requireCorrectCurrency(bidOption)

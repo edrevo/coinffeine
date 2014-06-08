@@ -86,6 +86,7 @@ trait Currency {
 /** A fiat currency. */
 trait FiatCurrency extends Currency {
   val javaCurrency: JavaCurrency
+  override lazy val toString = javaCurrency.getCurrencyCode
 }
 
 object FiatCurrency {
@@ -101,12 +102,10 @@ object Currency {
 
   object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
-    override val toString = "USD"
   }
 
   object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
-    override val toString = "EUR"
   }
 
   object Bitcoin extends Currency {
