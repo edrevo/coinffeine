@@ -9,7 +9,7 @@ import com.google.protobuf.ByteString
 
 import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
 import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._

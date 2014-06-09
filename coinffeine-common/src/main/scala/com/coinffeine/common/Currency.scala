@@ -1,11 +1,10 @@
 package com.coinffeine.common
 
-import java.util.{Currency => JavaCurrency}
 import java.math.BigInteger
+import java.util.{Currency => JavaCurrency}
 import scala.util.Try
 
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
-import com.coinffeine.common.Currency.Bitcoin
+import com.coinffeine.common.currency.FiatAmount
 
 /** An finite amount of currency C.
   *
@@ -49,12 +48,6 @@ case class CurrencyAmount[+C <: Currency](
   def toFiatAmount = {
     require(currency.isInstanceOf[FiatCurrency])
     FiatAmount(value, currency.asInstanceOf[FiatCurrency].javaCurrency)
-  }
-
-  @deprecated
-  def toBtcAmount = {
-    require(currency == Bitcoin)
-    BtcAmount(value)
   }
 }
 

@@ -4,7 +4,6 @@ object Implicits {
   import scala.language.implicitConversions
 
   class CurrencyImplicits(i: BigDecimal) {
-    def BTC: BtcAmount = BtcAmount(i)
     def EUR: FiatAmount = CurrencyCode.EUR(i)
     def USD: FiatAmount = CurrencyCode.USD(i)
   }
