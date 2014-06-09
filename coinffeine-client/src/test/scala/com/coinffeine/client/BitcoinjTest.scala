@@ -2,6 +2,7 @@ package com.coinffeine.client
 
 import java.io.File
 import java.math.BigInteger
+import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.collection.JavaConversions._
 import scala.util.Try
 
@@ -10,7 +11,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 
-import com.coinffeine.common.{Currency, UnitTest, BitcoinAmount}
+import com.coinffeine.common.{BitcoinAmount, Currency, UnitTest}
 import com.coinffeine.common.Currency.Implicits._
 
 /** Base class for testing against an in-memory, validated blockchain.  */
@@ -21,6 +22,7 @@ abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
   var chain: FullPrunedBlockChain = _
 
   before{
+    BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()
     Wallet.SendRequest.DEFAULT_FEE_PER_KB = BigInteger.ZERO
     createH2BlockStore()
@@ -28,9 +30,13 @@ abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
   }
 
   after {
-    blockStore.close()
-    destroyH2BlockStore()
-    Wallet.SendRequest.DEFAULT_FEE_PER_KB = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
+    try {
+      blockStore.close()
+      destroyH2BlockStore()
+      Wallet.SendRequest.DEFAULT_FEE_PER_KB = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
+    } finally {
+      BitcoinjTest.ExecutionLock.unlock()
+    }
   }
 
   def withFees[A](body: => A) = {
@@ -117,4 +123,10 @@ abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
     files.foreach(recursiveDelete)
     file.delete()
   }
+}
+
+private object BitcoinjTest {
+  /** Bitcoinj uses global state such as the TX fees than cannot be changed in isolation so we
+    * need to serialize test executions. */
+  val ExecutionLock: Lock = new ReentrantLock()
 }
