@@ -4,7 +4,7 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 
-import com.coinffeine.client.{AnyExchangeInfo, MessageForwarding}
+import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -26,7 +26,7 @@ class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser
       override val messageGateway: ActorRef,
       listeners: Set[ActorRef]) extends MessageForwarding {
 
-    override val exchangeInfo: AnyExchangeInfo = exchange.exchangeInfo
+    override val exchangeInfo = exchange.exchangeInfo
 
     def startExchange(): Unit = {
       subscribeToMessages()
