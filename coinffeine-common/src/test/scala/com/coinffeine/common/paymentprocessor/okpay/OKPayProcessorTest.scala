@@ -9,7 +9,6 @@ import org.mockito.Matchers.any
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.common.{Currency, UnitTest}
-import com.coinffeine.common.currency.CurrencyCode.USD
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessorTest extends UnitTest with MockitoSugar {

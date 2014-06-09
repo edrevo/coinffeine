@@ -4,8 +4,6 @@ import java.math.BigInteger
 import java.util.{Currency => JavaCurrency}
 import scala.util.Try
 
-import com.coinffeine.common.currency.FiatAmount
-
 /** An finite amount of currency C.
   *
   * This trait is used to grant polymorphism to currency amounts. You may combine it with a type parameter in any
@@ -43,12 +41,6 @@ case class CurrencyAmount[+C <: Currency](
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
   override def toString = value.toString() + " " + currency.toString
-
-  @deprecated
-  def toFiatAmount = {
-    require(currency.isInstanceOf[FiatCurrency])
-    FiatAmount(value, currency.asInstanceOf[FiatCurrency].javaCurrency)
-  }
 }
 
 /** Representation of a currency. */

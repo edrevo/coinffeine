@@ -9,7 +9,6 @@ import com.google.protobuf.ByteString
 
 import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
 import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.currency.FiatAmount
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._
@@ -76,19 +75,6 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   }
 
   object OldAmountMappings {
-    implicit val fiatAmountMapping = new ProtoMapping[FiatAmount, msg.FiatAmount] {
-
-      override def fromProtobuf(amount: msg.FiatAmount): FiatAmount = FiatAmount(
-        BigDecimal.valueOf(amount.getValue, amount.getScale),
-        Currency.getInstance(amount.getCurrency)
-      )
-
-      override def toProtobuf(amount: FiatAmount): msg.FiatAmount = msg.FiatAmount.newBuilder
-        .setValue(amount.amount.underlying().unscaledValue.longValue)
-        .setScale(amount.amount.scale)
-        .setCurrency(amount.currency.getCurrencyCode)
-        .build
-    }
   }
 
   object NewAmountMappings {
