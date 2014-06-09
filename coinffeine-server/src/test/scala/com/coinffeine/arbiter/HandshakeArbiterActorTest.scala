@@ -9,9 +9,8 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.arbiter.HandshakeArbiterActor.HandshakeStart
 import com.coinffeine.common.{AkkaSpec, PeerConnection}
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.blockchain.BlockchainActor.PublishTransaction
-import com.coinffeine.common.currency.BtcAmount
-import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.network.CoinffeineUnitTestParams
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway._
@@ -30,7 +29,7 @@ class HandshakeArbiterActorTest
     val buyerTx = MockTransaction()
     val sellerTx = MockTransaction()
     val invalidCommitmentTx = MockTransaction()
-    val orderMatch = OrderMatch(exchangeId, BtcAmount(1), EUR(500), buyer, seller)
+    val orderMatch = OrderMatch(exchangeId, 1 BTC, 500 EUR, buyer, seller)
 
     object TestCommitmentValidation extends CommitmentValidation {
       override def isValidCommitment(committer: PeerConnection, tx: Transaction): Boolean =

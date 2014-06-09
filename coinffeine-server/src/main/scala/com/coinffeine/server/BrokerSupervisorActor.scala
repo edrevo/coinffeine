@@ -18,7 +18,7 @@ import com.coinffeine.common.system.ActorSystemBootstrap
 import com.coinffeine.server.BrokerSupervisorActor.InitializedBroker
 
 class BrokerSupervisorActor(
-    tradedCurrencies: Set[Currency],
+    tradedCurrencies: Set[FiatCurrency],
     gatewayProps: Props,
     brokerProps: Props) extends Actor {
 
@@ -41,7 +41,7 @@ class BrokerSupervisorActor(
 
     case BoundTo(_) =>
       tradedCurrencies.foreach { currency =>
-        context.actorOf(brokerProps) ! BrokeringStart(Market(FiatCurrency(currency)), gateway)
+        context.actorOf(brokerProps) ! BrokeringStart(Market(currency), gateway)
       }
       listener ! InitializedBroker
   }
@@ -62,7 +62,7 @@ object BrokerSupervisorActor {
   trait Component {
     this: BrokerActor.Component with MessageGateway.Component =>
 
-    def brokerSupervisorProps(tradedCurrencies: Set[Currency]): Props =
+    def brokerSupervisorProps(tradedCurrencies: Set[FiatCurrency]): Props =
       Props(new BrokerSupervisorActor(tradedCurrencies, messageGatewayProps, brokerActorProps))
   }
 }

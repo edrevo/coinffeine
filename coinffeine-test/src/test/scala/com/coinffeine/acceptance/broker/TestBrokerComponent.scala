@@ -5,8 +5,8 @@ import com.google.bitcoin.core.Transaction
 import com.coinffeine.acceptance.IntegrationTestNetworkComponent
 import com.coinffeine.arbiter.{CommitmentValidation, HandshakeArbiterActor}
 import com.coinffeine.broker.BrokerActor
-import com.coinffeine.common.{DefaultTcpPortAllocator, PeerConnection}
-import com.coinffeine.common.currency.CurrencyCode
+import com.coinffeine.common.{FiatCurrency, DefaultTcpPortAllocator, PeerConnection}
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway
 import com.coinffeine.common.protocol.serialization.DefaultProtocolSerializationComponent
@@ -30,7 +30,7 @@ class TestBrokerComponent(override val protocolConstants: ProtocolConstants)
 
   lazy val broker: TestBroker = {
     val port = DefaultTcpPortAllocator.allocatePort()
-    val tradedCurrencies = Set(CurrencyCode.EUR.currency)
+    val tradedCurrencies: Set[FiatCurrency] = Set(Euro)
     new TestBroker(brokerSupervisorProps(tradedCurrencies), port)
   }
 }

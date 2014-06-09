@@ -10,7 +10,6 @@ import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.{AkkaSpec, MockActor}
 import com.coinffeine.common.MockActor._
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.Market
 import com.coinffeine.common.system.ActorSystemBootstrap
@@ -24,7 +23,7 @@ class BrokerSupervisorActorTest extends AkkaSpec {
   val brokerProps = MockActor.props(brokerProbe)
 
   val server = system.actorOf(Props(
-    new BrokerSupervisorActor(Set(EUR.currency), gatewayProps, brokerProps)))
+    new BrokerSupervisorActor(Set(Euro), gatewayProps, brokerProps)))
   var brokerRef: ActorRef = _
   var gatewayRef: ActorRef = _
 

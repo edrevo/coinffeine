@@ -33,8 +33,7 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     ExchangeAborted(exchangeId, "reason"),
     ExchangeCommitment(exchangeId, transaction),
     CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
-    OrderMatch(
-      exchangeId, btcAmount.toBtcAmount, fiatAmount.toFiatAmount, peerConnection, peerConnection),
+    OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
     OrderSet(
       market = Market(Currency.UsDollar),
       bids = VolumeByPrice(100.USD -> 1.3.BTC),

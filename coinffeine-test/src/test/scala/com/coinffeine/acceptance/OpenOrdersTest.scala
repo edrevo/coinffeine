@@ -5,7 +5,6 @@ import org.scalatest.time.{Seconds, Span}
 import scala.concurrent.duration._
 
 import com.coinffeine.client.api.CoinffeineNetwork.Connected
-import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.Currency.Euro

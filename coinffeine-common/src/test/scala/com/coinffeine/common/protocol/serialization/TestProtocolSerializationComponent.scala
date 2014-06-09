@@ -1,10 +1,9 @@
 package com.coinffeine.common.protocol.serialization
-
-import java.util.Currency
 import scala.util.Random
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.Currency.Bitcoin
+import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
@@ -25,15 +24,15 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   def randomMessage(): OrderMatch = OrderMatch(
     exchangeId = s"exchange-${Random.nextLong().toHexString}",
-    amount = new BtcAmount(BigDecimal(randomSatoshi())),
-    price = new FiatAmount(BigDecimal(Random.nextDouble()), Currency.getInstance("EUR")),
+    amount = randomSatoshi() BTC,
+    price = Random.nextDouble() EUR,
     buyer = PeerConnection("bob", randomPort()),
     seller = PeerConnection("sam", randomPort())
   )
 
   private def randomSatoshi() =
-    Math.round(Random.nextDouble() * BtcAmount.OneBtcInSatoshi.doubleValue()) /
-      BtcAmount.OneBtcInSatoshi.doubleValue()
+    Math.round(Random.nextDouble() * Bitcoin.OneBtcInSatoshi.doubleValue()) /
+      Bitcoin.OneBtcInSatoshi.doubleValue()
 
   private def randomPort() = Random.nextInt(50000) + 10000
 }

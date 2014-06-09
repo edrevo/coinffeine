@@ -73,8 +73,8 @@ class BrokerActorTest
       relayBid(0.8.BTC, 950.EUR, "client2")
       relayAsk(0.6.BTC, 850.EUR, "client3")
       val notifiedOrderMatch = arbiterProbe.expectMsgClass(classOf[OrderMatch])
-      notifiedOrderMatch.amount should be (0.6.BTC.toBtcAmount)
-      notifiedOrderMatch.price should be (900.EUR.toFiatAmount)
+      notifiedOrderMatch.amount should be (0.6.BTC)
+      notifiedOrderMatch.price should be (900.EUR)
       notifiedOrderMatch.buyer should be (PeerConnection("client2"))
       notifiedOrderMatch.seller should be (PeerConnection("client3"))
     }
