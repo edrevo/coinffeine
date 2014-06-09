@@ -5,5 +5,5 @@ import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 
 case class Cross(amount: BitcoinAmount, price: FiatAmount, buyer: ClientId, seller: ClientId) {
   def toOrderMatch(exchangeId: String) = OrderMatch(
-    exchangeId, amount.toBtcAmount, price.toFiatAmount, buyer, seller)
+    exchangeId, amount, price, buyer, seller)
 }

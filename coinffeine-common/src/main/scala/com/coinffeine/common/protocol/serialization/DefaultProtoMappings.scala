@@ -89,17 +89,6 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         .setCurrency(amount.currency.getCurrencyCode)
         .build
     }
-
-    implicit val btcAmountMapping = new ProtoMapping[BtcAmount, msg.BtcAmount] {
-
-      override def fromProtobuf(amount: msg.BtcAmount): BtcAmount =
-        BtcAmount(BigDecimal.valueOf(amount.getValue, amount.getScale))
-
-      override def toProtobuf(amount: BtcAmount): msg.BtcAmount = msg.BtcAmount.newBuilder
-        .setValue(amount.amount.underlying().unscaledValue.longValue)
-        .setScale(amount.amount.scale)
-        .build
-    }
   }
 
   object NewAmountMappings {
@@ -177,7 +166,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
-    import OldAmountMappings._
+    import NewAmountMappings._
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
       exchangeId = orderMatch.getExchangeId,

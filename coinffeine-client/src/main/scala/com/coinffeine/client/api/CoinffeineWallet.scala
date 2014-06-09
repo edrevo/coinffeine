@@ -1,15 +1,15 @@
 package com.coinffeine.client.api
 
 import java.security.interfaces.ECKey
-
 import scala.concurrent.Future
 
-import com.coinffeine.common.currency.BtcAmount
 import com.google.bitcoin.core.{Address, Sha256Hash}
+
+import com.coinffeine.common.BitcoinAmount
 
 trait CoinffeineWallet {
 
-  def currentBalance(): BtcAmount
+  def currentBalance(): BitcoinAmount
 
   /** Where to transfer BTC funds to top-up Coinffeine */
   def depositAddress: Address
@@ -22,11 +22,11 @@ trait CoinffeineWallet {
     * @param address  Destination address
     * @return         TX id if transfer is possible, TransferException otherwise
     */
-  def transfer(amount: BtcAmount, address: Address): Future[Sha256Hash]
+  def transfer(amount: BitcoinAmount, address: Address): Future[Sha256Hash]
 }
 
 object CoinffeineWallet {
 
-  case class TransferException(amount: BtcAmount, address: Address, cause: Throwable)
+  case class TransferException(amount: BitcoinAmount, address: Address, cause: Throwable)
     extends Exception(s"Cannot transfer $amount to $address", cause)
 }
