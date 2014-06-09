@@ -1,39 +1,29 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import java.util.Currency
-
-import com.coinffeine.common.currency.FiatAmount
+import com.coinffeine.common.{FiatCurrency, CurrencyAmount}
 import com.coinffeine.common.protocol.Spread
 import com.coinffeine.common.protocol.messages.PublicMessage
 
-case class Quote(
-    currency: Currency,
-    spread: Spread = (None, None),
-    lastPrice: Option[FiatAmount] = None) extends PublicMessage {
-  requireCurrency(spread._1)
-  requireCurrency(spread._2)
-  requireCurrency(lastPrice)
-
+case class Quote[+C <: FiatCurrency](
+    currency: C,
+    spread: Spread[C] = (None, None),
+    lastPrice: Option[CurrencyAmount[C]] = None) extends PublicMessage {
   override def toString = "Quote(spread = (%s, %s), last = %s)".format(
     spread._1.getOrElse("--"),
     spread._2.getOrElse("--"),
     lastPrice.getOrElse("--")
   )
-
-  private def requireCurrency(amount: Option[FiatAmount]): Unit = require(
-    amount.filter(_.currency != currency).isEmpty,
-    s"Inconsistent price ${amount.get}, $currency was expected"
-  )
 }
 
 object Quote {
-
-  def empty(currency: Currency): Quote = Quote(currency)
+  def empty[C <: FiatCurrency](currency: C): Quote[C] = Quote(currency)
 
   /** Utility constructor for the case of having all prices defined */
-  def apply(spread: (FiatAmount, FiatAmount), lastPrice: FiatAmount): Quote = Quote(
-    currency = lastPrice.currency,
-    spread = Some(spread._1) -> Some(spread._2),
-    lastPrice = Some(lastPrice)
-  )
+  def apply[C <: FiatCurrency](
+      spread: (CurrencyAmount[C], CurrencyAmount[C]), lastPrice: CurrencyAmount[C]): Quote[C] =
+    Quote(
+      currency = lastPrice.currency,
+      spread = Some(spread._1) -> Some(spread._2),
+      lastPrice = Some(lastPrice)
+    )
 }

@@ -7,7 +7,8 @@ import scala.collection.JavaConverters._
 import com.google.bitcoin.core.Sha256Hash
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
+import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -17,17 +18,6 @@ import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
 /** Implicit conversion mappings for the protocol messages */
 private[serialization] class DefaultProtoMappings(txSerialization: TransactionSerialization) {
-
-  implicit val btcAmountMapping = new ProtoMapping[BtcAmount, msg.BtcAmount] {
-
-    override def fromProtobuf(amount: msg.BtcAmount): BtcAmount =
-      BtcAmount(BigDecimal.valueOf(amount.getValue, amount.getScale))
-
-    override def toProtobuf(amount: BtcAmount): msg.BtcAmount = msg.BtcAmount.newBuilder
-      .setValue(amount.amount.underlying().unscaledValue.longValue)
-      .setScale(amount.amount.scale)
-      .build
-  }
 
   implicit val commitmentNotificationMapping =
     new ProtoMapping[CommitmentNotification, msg.CommitmentNotification] {
@@ -85,37 +75,78 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val fiatAmountMapping = new ProtoMapping[FiatAmount, msg.FiatAmount] {
+  object OldAmountMappings {
+    implicit val fiatAmountMapping = new ProtoMapping[FiatAmount, msg.FiatAmount] {
 
-    override def fromProtobuf(amount: msg.FiatAmount): FiatAmount = FiatAmount(
-      BigDecimal.valueOf(amount.getValue, amount.getScale),
-      Currency.getInstance(amount.getCurrency)
-    )
+      override def fromProtobuf(amount: msg.FiatAmount): FiatAmount = FiatAmount(
+        BigDecimal.valueOf(amount.getValue, amount.getScale),
+        Currency.getInstance(amount.getCurrency)
+      )
 
-    override def toProtobuf(amount: FiatAmount): msg.FiatAmount = msg.FiatAmount.newBuilder
-      .setValue(amount.amount.underlying().unscaledValue.longValue)
-      .setScale(amount.amount.scale)
-      .setCurrency(amount.currency.getCurrencyCode)
+      override def toProtobuf(amount: FiatAmount): msg.FiatAmount = msg.FiatAmount.newBuilder
+        .setValue(amount.amount.underlying().unscaledValue.longValue)
+        .setScale(amount.amount.scale)
+        .setCurrency(amount.currency.getCurrencyCode)
+        .build
+    }
+
+    implicit val btcAmountMapping = new ProtoMapping[BtcAmount, msg.BtcAmount] {
+
+      override def fromProtobuf(amount: msg.BtcAmount): BtcAmount =
+        BtcAmount(BigDecimal.valueOf(amount.getValue, amount.getScale))
+
+      override def toProtobuf(amount: BtcAmount): msg.BtcAmount = msg.BtcAmount.newBuilder
+        .setValue(amount.amount.underlying().unscaledValue.longValue)
+        .setScale(amount.amount.scale)
+        .build
+    }
+  }
+
+  object NewAmountMappings {
+    implicit val fiatAmountMapping = new ProtoMapping[CurrencyAmount[FiatCurrency], msg.FiatAmount] {
+
+      override def fromProtobuf(amount: msg.FiatAmount): CurrencyAmount[FiatCurrency] =
+        FiatCurrency(Currency.getInstance(amount.getCurrency)).amount(
+          BigDecimal.valueOf(amount.getValue, amount.getScale))
+
+      override def toProtobuf(amount: CurrencyAmount[FiatCurrency]): msg.FiatAmount = msg.FiatAmount.newBuilder
+        .setValue(amount.value.underlying().unscaledValue.longValue)
+        .setScale(amount.value.scale)
+        .setCurrency(amount.currency.javaCurrency.getCurrencyCode)
+        .build
+    }
+
+    implicit val btcAmountMapping = new ProtoMapping[BitcoinAmount, msg.BtcAmount] {
+
+      override def fromProtobuf(amount: msg.BtcAmount): BitcoinAmount =
+        Bitcoin.amount(BigDecimal.valueOf(amount.getValue, amount.getScale))
+
+      override def toProtobuf(amount: BitcoinAmount): msg.BtcAmount = msg.BtcAmount.newBuilder
+        .setValue(amount.value.underlying().unscaledValue.longValue)
+        .setScale(amount.value.scale)
+        .build
+    }
+  }
+
+  implicit val marketMapping = new ProtoMapping[Market[FiatCurrency], msg.Market] {
+
+    override def fromProtobuf(market: msg.Market): Market[FiatCurrency] =
+      Market(FiatCurrency(Currency.getInstance(market.getCurrency)))
+
+    override def toProtobuf(market: Market[FiatCurrency]): msg.Market = msg.Market.newBuilder
+      .setCurrency(market.currency.javaCurrency.getCurrencyCode)
       .build
   }
 
-  implicit val marketMapping = new ProtoMapping[Market, msg.Market] {
+  implicit val orderSetMapping = new ProtoMapping[OrderSet[FiatCurrency], msg.OrderSet] {
 
-    override def fromProtobuf(market: msg.Market): Market =
-      Market(currency = Currency.getInstance(market.getCurrency))
+    import NewAmountMappings._
 
-    override def toProtobuf(market: Market): msg.Market = msg.Market.newBuilder
-      .setCurrency(market.currency.getCurrencyCode)
-      .build
-  }
-
-  implicit val orderSetMapping = new ProtoMapping[OrderSet, msg.OrderSet] {
-
-    override def fromProtobuf(orderSet: msg.OrderSet): OrderSet = {
+    override def fromProtobuf(orderSet: msg.OrderSet): OrderSet[FiatCurrency] = {
       val market = ProtoMapping.fromProtobuf(orderSet.getMarket)
 
-      def volumeFromProtobuf(entries: Seq[msg.Order]): VolumeByPrice = {
-        val accum = VolumeByPrice.empty(market.currency)
+      def volumeFromProtobuf(entries: Seq[msg.Order]): VolumeByPrice[FiatCurrency] = {
+        val accum = VolumeByPrice.empty[FiatCurrency]
         entries.foldLeft(accum) { (volume, entry) => volume.increase(
             ProtoMapping.fromProtobuf(entry.getPrice),
             ProtoMapping.fromProtobuf(entry.getAmount)
@@ -129,7 +160,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       )
     }
 
-    override def toProtobuf(orderSet: OrderSet): msg.OrderSet = {
+    override def toProtobuf(orderSet: OrderSet[FiatCurrency]): msg.OrderSet = {
       msg.OrderSet.newBuilder
         .setMarket(ProtoMapping.toProtobuf(orderSet.market))
         .addAllBids(volumeToProtobuf(orderSet.bids).asJava)
@@ -137,7 +168,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         .build
     }
 
-    private def volumeToProtobuf(volume: VolumeByPrice) = for {
+    private def volumeToProtobuf(volume: VolumeByPrice[FiatCurrency]) = for {
       (price, amount) <- volume.entries
     } yield msg.Order.newBuilder
         .setPrice(ProtoMapping.toProtobuf(price))
@@ -146,6 +177,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   }
 
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
+    import OldAmountMappings._
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
       exchangeId = orderMatch.getExchangeId,
@@ -164,22 +196,31 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val quoteMapping = new ProtoMapping[Quote, msg.Quote] {
+  implicit val quoteMapping = new ProtoMapping[Quote[FiatCurrency], msg.Quote] {
+    import NewAmountMappings._
 
-    override def fromProtobuf(quote: msg.Quote): Quote = {
+    override def fromProtobuf(quote: msg.Quote): Quote[FiatCurrency] = {
       val bidOption =
         if (quote.hasHighestBid) Some(ProtoMapping.fromProtobuf(quote.getHighestBid)) else None
       val askOption =
         if (quote.hasLowestAsk) Some(ProtoMapping.fromProtobuf(quote.getLowestAsk)) else None
       val lastPriceOption =
         if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
-      Quote(Currency.getInstance(quote.getCurrency), bidOption -> askOption, lastPriceOption)
+      val currency = FiatCurrency(Currency.getInstance(quote.getCurrency))
+      def requireCorrectCurrency(amount: Option[CurrencyAmount[FiatCurrency]]): Unit = {
+        require(amount.forall(_.currency == currency),
+          s"Incorrect currency. Expected $currency, received ${amount.get.currency}")
+      }
+      requireCorrectCurrency(bidOption)
+      requireCorrectCurrency(askOption)
+      requireCorrectCurrency(lastPriceOption)
+      Quote(currency, bidOption -> askOption, lastPriceOption)
     }
 
-    override def toProtobuf(quote: Quote): msg.Quote = {
+    override def toProtobuf(quote: Quote[FiatCurrency]): msg.Quote = {
       val Quote(currency, (bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder
-        .setCurrency(currency.getCurrencyCode)
+        .setCurrency(currency.javaCurrency.getCurrencyCode)
       bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid)))
       askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask)))
       lastPriceOption.foreach(lastPrice => builder.setLastPrice(ProtoMapping.toProtobuf(lastPrice)))
@@ -190,10 +231,10 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val quoteRequestMapping = new ProtoMapping[QuoteRequest, msg.QuoteRequest] {
 
     override def fromProtobuf(request: msg.QuoteRequest): QuoteRequest =
-      QuoteRequest(Currency.getInstance(request.getCurrency))
+      QuoteRequest(FiatCurrency(Currency.getInstance(request.getCurrency)))
 
     override def toProtobuf(request: QuoteRequest): msg.QuoteRequest = msg.QuoteRequest.newBuilder
-      .setCurrency(request.currency.getCurrencyCode)
+      .setCurrency(request.currency.javaCurrency.getCurrencyCode)
       .build
   }
 

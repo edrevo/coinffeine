@@ -9,6 +9,7 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.coinffeine.broker.BrokerActor.BrokeringStart
 import com.coinffeine.common.{AkkaSpec, MockActor}
 import com.coinffeine.common.MockActor._
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.currency.CurrencyCode.EUR
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.Market
@@ -43,7 +44,7 @@ class BrokerSupervisorActorTest extends AkkaSpec {
   it should "initialize brokers" in {
     brokerRef = brokerProbe.expectMsgClass(classOf[MockStarted]).ref
     brokerProbe.expectMsgPF() {
-      case MockReceived(_, _, BrokeringStart(Market(EUR.currency), _)) =>
+      case MockReceived(_, _, BrokeringStart(Market(Euro), _)) =>
     }
   }
 

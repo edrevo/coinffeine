@@ -1,7 +1,9 @@
 package com.coinffeine
 
+import com.coinffeine.common.Currency.Bitcoin
+
 package object common {
 
-  type AnyCurrencyAmount = CurrencyAmount[_ <: Currency]
-  type AnyFiatCurrencyAmount = CurrencyAmount[_ <: FiatCurrency]
+  type BitcoinAmount = CurrencyAmount[Bitcoin.type]
+  type FiatAmount = CurrencyAmount[FiatCurrency]
 }

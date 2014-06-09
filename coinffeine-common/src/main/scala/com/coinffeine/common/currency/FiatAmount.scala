@@ -3,6 +3,8 @@ package com.coinffeine.common.currency
 import java.util.Currency
 import scala.math.Ordering
 
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
+
 @Deprecated
 case class FiatAmount(amount: BigDecimal, currency: Currency) {
 
@@ -25,6 +27,9 @@ case class FiatAmount(amount: BigDecimal, currency: Currency) {
   def / (divisor: BigDecimal): FiatAmount = copy(amount = amount / divisor)
 
   override def toString = "%s %s".format(amount.underlying().toPlainString, currency)
+
+  def toCurrencyAmount[C <: FiatCurrency]: CurrencyAmount[C] =
+    FiatCurrency(currency).amount(amount).asInstanceOf[CurrencyAmount[C]]
 }
 
 @Deprecated

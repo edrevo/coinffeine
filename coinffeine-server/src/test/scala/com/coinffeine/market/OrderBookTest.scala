@@ -1,8 +1,8 @@
 package com.coinffeine.market
 
 import com.coinffeine.common.{PeerConnection, UnitTest}
-import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.Currency.Euro
 
 class OrderBookTest extends UnitTest {
 
@@ -15,18 +15,8 @@ class OrderBookTest extends UnitTest {
   val buyer = PeerConnection("buyer")
   val seller = PeerConnection("seller")
 
-  "An order book" should "require prices to be in one currency" in {
-    val ex = the [IllegalArgumentException] thrownBy {
-      OrderBook(
-        ask(btc = 1, eur = 20, by = "seller1"),
-        Position.ask(1.BTC, 10.USD, seller)
-      )
-    }
-    ex.toString should include ("Cannot mix EUR with USD")
-  }
-
-  it should "detect a cross when a bid price is greater than an ask one" in {
-    OrderBook.empty(EUR.currency) should not be 'crossed
+  "An order book" should "detect a cross when a bid price is greater than an ask one" in {
+    OrderBook.empty(Euro) should not be 'crossed
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
@@ -38,11 +28,11 @@ class OrderBookTest extends UnitTest {
   }
 
   it should "quote a spread" in {
-    OrderBook.empty(EUR.currency).spread should be ((None, None))
+    OrderBook.empty(Euro).spread should be ((None, None))
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
-    ).spread should be (Some(EUR(20)), Some(EUR(25)))
+    ).spread should be (Some(20 EUR), Some(25 EUR))
   }
 
   it should "keep previous unresolved orders when inserting a new one" in {

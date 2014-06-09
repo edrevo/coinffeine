@@ -3,8 +3,8 @@ package com.coinffeine.acceptance
 import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.api.CoinffeineNetwork.Connected
-import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.messages.brokerage.Quote
 
 class QuoteTest extends AcceptanceTest {
@@ -19,10 +19,10 @@ class QuoteTest extends AcceptanceTest {
         peer.network.connect().futureValue should be (Connected)
 
         When("a peer asks for the current quote on a currency")
-        val quote = peer.network.currentQuote(EUR.currency)
+        val quote = peer.network.currentQuote(Euro)
 
         Then("he should get an empty quote")
-        quote.futureValue should be(Quote.empty(EUR.currency))
+        quote.futureValue should be(Quote.empty(Euro))
       }
     }
 
@@ -37,11 +37,12 @@ class QuoteTest extends AcceptanceTest {
         sam.network.submitSellOrder(0.3.BTC, 180.EUR)
 
         When("Bob asks for the current quote on a currency")
-        def quote = bob.network.currentQuote(EUR.currency)
+        def quote = bob.network.currentQuote(Euro)
 
         Then("he should get the current spread")
         eventually {
-          quote.futureValue should be(Quote(EUR.currency, Some(50.EUR) -> Some(180.EUR)))
+          quote.futureValue should be(Quote(
+            Euro, Some(50.EUR) -> Some(180.EUR)))
         }
       }
     }

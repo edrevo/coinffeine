@@ -1,33 +1,14 @@
 package com.coinffeine.market
 
 import com.coinffeine.common.{PeerConnection, UnitTest}
-import com.coinffeine.common.currency.CurrencyCode._
-import com.coinffeine.common.currency.Implicits._
-import com.coinffeine.common.protocol.messages.brokerage.Bid
+import com.coinffeine.common.Currency.Implicits._
 
 class OrderMapTest extends UnitTest {
 
   val client1 = PeerConnection("client1")
   val client2 = PeerConnection("client2")
 
-  "An order map" should "allow only a FIAT currency" in {
-    val ex = the [IllegalArgumentException] thrownBy {
-      OrderMap(
-        Position.bid(2.BTC, 3.EUR, client1),
-        Position.bid(1.BTC, 5.USD, client2)
-      )
-    }
-    ex.toString should include ("Cannot mix EUR and USD values")
-  }
-
-  it should "reject positions placed with other currencies" in {
-    val map = OrderMap.empty(Bid, EUR.currency)
-    an [IllegalArgumentException] should be thrownBy {
-      map.addPosition(Position.bid(2.BTC, 3.USD, client1))
-    }
-  }
-
-  it should "remove the first order when clearing its exact amount of bitcoins" in {
+  "An order map" should "remove the first order when clearing its exact amount of bitcoins" in {
     val map = OrderMap(
       Position.bid(2.BTC, 3.EUR, client1),
       Position.bid(3.BTC, 2.9.EUR, client2),

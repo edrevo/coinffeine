@@ -1,11 +1,9 @@
 package com.coinffeine.client.peer
 
-import java.util.Currency
-
 import akka.actor._
 
 import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage.{Quote, QuoteRequest}
 
@@ -21,13 +19,13 @@ class QuoteRequestActor extends Actor with ActorLogging {
 
   private def waitForResponse(
       gateway: ActorRef, broker: PeerConnection, listener: ActorRef): Receive = {
-    case ReceiveMessage(quote: Quote, _) =>
+    case ReceiveMessage(quote: Quote[FiatCurrency], _) =>
       listener ! quote
   }
 
   private def subscribeToMessages(gateway: ActorRef, broker: PeerConnection): Unit = {
     gateway ! Subscribe {
-      case ReceiveMessage(quote: Quote, `broker`) => true
+      case ReceiveMessage(quote: Quote[FiatCurrency], `broker`) => true
       case _ => false
     }
   }
@@ -35,7 +33,7 @@ class QuoteRequestActor extends Actor with ActorLogging {
 
 object QuoteRequestActor {
 
-  case class StartRequest(currency: Currency, gateway: ActorRef, brokerAddress: PeerConnection)
+  case class StartRequest(currency: FiatCurrency, gateway: ActorRef, brokerAddress: PeerConnection)
 
   trait Component {
     lazy val quoteRequestProps = Props(new QuoteRequestActor())

@@ -1,26 +1,15 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.UnitTest
-import com.coinffeine.common.currency.CurrencyCode.EUR
-import com.coinffeine.common.currency.Implicits._
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.Currency.Implicits._
 
 class OrderSetTest extends UnitTest {
 
-  val eurMarket = Market(EUR.currency)
+  val eurMarket = Market(Euro)
   val volume = VolumeByPrice(100.EUR -> 1.BTC)
 
-  "An order set" should "use only one currency" in {
-    the [IllegalArgumentException] thrownBy {
-      OrderSet(eurMarket, bids = VolumeByPrice(100.USD -> 1.BTC),
-        asks = VolumeByPrice.empty(EUR.currency))
-    } should have message "requirement failed: Mixed currencies"
-    the [IllegalArgumentException] thrownBy {
-      OrderSet(eurMarket, asks = VolumeByPrice(100.USD -> 1.BTC),
-        bids = VolumeByPrice.empty(EUR.currency))
-    } should have message "requirement failed: Mixed currencies"
-  }
-
-  it should "have its highest bid lower than its lowest ask" in {
+  "An order set" should "have its highest bid lower than its lowest ask" in {
     the [IllegalArgumentException] thrownBy {
       OrderSet(eurMarket, bids = volume, asks = volume)
     } should have message "requirement failed: Bids and asks are crossed"

@@ -31,5 +31,5 @@ trait PaymentProcessor {
     *
     * @return The current balance for currency C
     */
-  def currentBalance[C <: FiatCurrency](currency: C): Future[currency.Amount]
+  def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]]
 }

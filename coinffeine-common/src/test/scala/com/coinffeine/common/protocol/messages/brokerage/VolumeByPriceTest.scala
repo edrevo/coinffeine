@@ -1,7 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.currency.Implicits._
-import com.coinffeine.common.currency.CurrencyCode.EUR
+import com.coinffeine.common.Currency.Implicits._
 
 import com.coinffeine.common.UnitTest
 
@@ -21,14 +20,8 @@ class VolumeByPriceTest extends UnitTest {
     ex.getMessage should include ("Price must be strictly positive")
   }
 
-  it should "use only one currency" in {
-    the [IllegalArgumentException] thrownBy {
-      VolumeByPrice(100.USD -> 1.BTC, 100.EUR -> 1.BTC)
-    } should have message "requirement failed: Mixed currencies"
-  }
-
   it should "be empty when having no volume at all" in {
-    VolumeByPrice.empty(EUR.currency) should be ('empty)
+    VolumeByPrice.empty should be ('empty)
     VolumeByPrice(100.EUR -> 0.1.BTC) should not be 'empty
   }
 
@@ -39,7 +32,7 @@ class VolumeByPriceTest extends UnitTest {
   }
 
   it should "have no highest and lowest prices when empty" in {
-    val empty = VolumeByPrice.empty(EUR.currency)
+    val empty = VolumeByPrice.empty
     empty.lowestPrice should be ('empty)
     empty.highestPrice should be ('empty)
   }

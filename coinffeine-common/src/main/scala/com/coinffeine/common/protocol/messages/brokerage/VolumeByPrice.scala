@@ -1,36 +1,40 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import java.util.Currency
+import com.coinffeine.common.BitcoinAmount
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
-import com.coinffeine.common.currency.Implicits._
+case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], BitcoinAmount)]) {
 
-case class VolumeByPrice(currency: Currency, entries: Map[FiatAmount, BtcAmount]) {
+  val prices = entries.map(_._1)
+  require(prices.toSet.size == entries.size, s"Repeated prices: ${prices.mkString(",")}")
 
-  require(entries.keys.forall(_.currency == currency), "Mixed currencies")
+  def entryMap[B >: C <: FiatCurrency] = entries.toMap[CurrencyAmount[B], BitcoinAmount]
+
   requirePositiveValues()
 
-  def highestPrice: Option[FiatAmount] = entries.keys.reduceOption(_ max _)
-  def lowestPrice: Option[FiatAmount] = entries.keys.reduceOption(_ min _)
+  def highestPrice: Option[CurrencyAmount[C]] = prices.reduceOption(_ max _)
+  def lowestPrice: Option[CurrencyAmount[C]] = prices.reduceOption(_ min _)
 
   def isEmpty = entries.isEmpty
 
   /** Volume at a given price */
-  def volumeAt(price: FiatAmount): BtcAmount = entries.getOrElse(price, 0.BTC)
+  def volumeAt[B >: C <: FiatCurrency](price: CurrencyAmount[B]): BitcoinAmount = entryMap.getOrElse(price, 0.BTC)
 
-  def increase(price: FiatAmount, amount: BtcAmount): VolumeByPrice =
-    copy(entries = entries.updated(price, volumeAt(price) + amount))
+  def increase[B >: C <: FiatCurrency](price: CurrencyAmount[B], amount: BitcoinAmount): VolumeByPrice[B] =
+    copy(entries = entryMap.updated(price, volumeAt(price) + amount).toSeq)
 
-  def decrease(price: FiatAmount, amount: BtcAmount): VolumeByPrice = {
+  def decrease[B >: C <: FiatCurrency](price: CurrencyAmount[B], amount: BitcoinAmount): VolumeByPrice[B] = {
     val previousAmount = volumeAt(price)
-    if (previousAmount > amount) copy(entries = entries.updated(price, previousAmount - amount))
-    else copy(entries = entries - price)
+    if (previousAmount > amount) copy(entries = entryMap.updated(price, previousAmount - amount).toSeq)
+    else copy(entries = (entryMap - price).toSeq)
   }
+
 
   private def requirePositiveValues(): Unit = {
     entries.foreach { case (price, amount) =>
-        require(amount.amount > 0, "Amount ordered must be strictly positive")
-        require(price.amount > 0, "Price must be strictly positive")
+        require(amount.isPositive, "Amount ordered must be strictly positive")
+        require(price.isPositive, "Price must be strictly positive")
     }
   }
 
@@ -39,13 +43,13 @@ case class VolumeByPrice(currency: Currency, entries: Map[FiatAmount, BtcAmount]
 object VolumeByPrice {
 
   /** Convenience factory method */
-  def apply(pair: (FiatAmount, BtcAmount), otherPairs: (FiatAmount, BtcAmount)*): VolumeByPrice = {
+  def apply[C <: FiatCurrency](
+      pair: (CurrencyAmount[C], BitcoinAmount),
+      otherPairs: (CurrencyAmount[C], BitcoinAmount)*): VolumeByPrice[C] = {
     val pairs = pair +: otherPairs
-    val prices = pairs.map(_._1)
-    require(prices.toSet.size == pairs.size, s"Repeated prices: ${prices.mkString(",")}")
-    VolumeByPrice(pair._1.currency, pairs.toMap)
+    VolumeByPrice(pairs)
   }
 
-  def empty(currency: Currency): VolumeByPrice =
-    VolumeByPrice(currency, Map.empty[FiatAmount, BtcAmount])
+  def empty[C <: FiatCurrency]: VolumeByPrice[C] =
+    VolumeByPrice(Seq.empty[(CurrencyAmount[C], BitcoinAmount)])
 }

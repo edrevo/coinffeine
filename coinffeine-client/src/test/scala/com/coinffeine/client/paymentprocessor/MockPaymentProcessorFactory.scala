@@ -6,7 +6,7 @@ import scala.concurrent.Future
 import org.joda.time.DateTime
 
 import com.coinffeine.common._
-import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor}
+import com.coinffeine.common.paymentprocessor.{AnyPayment, PaymentProcessor}
 import com.coinffeine.common.paymentprocessor.Payment
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
@@ -15,22 +15,22 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
 
   private class MockPaymentProcessor(
       fiatAddress: String,
-      initialBalances: Seq[AnyFiatCurrencyAmount]) extends PaymentProcessor {
+      initialBalances: Seq[FiatAmount]) extends PaymentProcessor {
 
     override def id: String = "MockPay"
 
     override def findPayment(paymentId: String): Future[Option[AnyPayment]] =
       Future.successful(payments.find(_.id == paymentId))
 
-    override def currentBalance[C <: Currency](currency: C): Future[currency.Amount] = Future.successful {
-      val deltas = payments.collect {
-        case Payment(_, `fiatAddress`, `fiatAddress`, out: currency.Amount, _, _) => currency.Amount.Zero
-        case Payment(_, _, `fiatAddress`, in: currency.Amount, _, _) => in
-        case Payment(_, `fiatAddress`, _, out: currency.Amount, _, _) => -out
+    override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = Future.successful {
+      val deltas: List[CurrencyAmount[C]] = payments.collect {
+        case Payment(_, `fiatAddress`, `fiatAddress`, out: CurrencyAmount[C], _, _) => currency.Zero
+        case Payment(_, _, `fiatAddress`, in: CurrencyAmount[C], _, _) => in
+        case Payment(_, `fiatAddress`, _, out: CurrencyAmount[C], _, _) => -out
       }
       val initial = initialBalances.collectFirst {
-        case a: currency.Amount => a
-      }.getOrElse(currency.Amount.Zero)
+        case a: CurrencyAmount[C] => a
+      }.getOrElse(currency.Zero)
       deltas.foldLeft(initial)(_ + _)
     }
 
@@ -55,6 +55,6 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
   }
 
   def newProcessor(
-      fiatAddress: String, initialBalance: Seq[AnyFiatCurrencyAmount] = Seq.empty): PaymentProcessor =
+      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): PaymentProcessor =
     new MockPaymentProcessor(fiatAddress, initialBalance)
 }

@@ -3,7 +3,7 @@ package com.coinffeine.client.peer.orders
 import akka.actor._
 
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage._
 
@@ -17,7 +17,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
   private class InitializedOrdersActor(gateway: ActorRef, broker: PeerConnection) {
 
-    private var delegatesByMarket = Map.empty[Market, ActorRef]
+    private var delegatesByMarket = Map.empty[Market[FiatCurrency], ActorRef]
 
     def start(): Unit = {
       context.become(waitingForOrders)
@@ -32,10 +32,10 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
     private def marketOf(order: Order) = Market(currency = order.price.currency)
 
-    private def getOrCreateDelegate(market: Market): ActorRef =
+    private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
       delegatesByMarket.getOrElse(market, createDelegate(market))
 
-    private def createDelegate(market: Market): ActorRef = {
+    private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(OrderSubmissionActor.props(protocolConstants))
       newDelegate ! OrderSubmissionActor.Initialize(market, gateway, broker)

@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.currency.{BtcAmount, FiatAmount}
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency, BitcoinAmount}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** Represents the set of orders placed by a peer.
@@ -9,31 +9,29 @@ import com.coinffeine.common.protocol.messages.PublicMessage
   * @param bids     Bid orders
   * @param asks     Ask orders
   */
-case class OrderSet(market: Market, bids: VolumeByPrice, asks: VolumeByPrice) extends PublicMessage {
+case class OrderSet[+C <: FiatCurrency](
+    market: Market[C], bids: VolumeByPrice[C], asks: VolumeByPrice[C]) extends PublicMessage {
 
-  requireSingleCurrency()
   requireNotCrossed()
 
-  def highestBid: Option[FiatAmount] = bids.highestPrice
-  def lowestAsk: Option[FiatAmount] = asks.lowestPrice
+  def highestBid: Option[CurrencyAmount[C]] = bids.highestPrice
+  def lowestAsk: Option[CurrencyAmount[C]] = asks.lowestPrice
 
   def isEmpty = bids.isEmpty && asks.isEmpty
 
-  def addOrder(orderType: OrderType, amount: BtcAmount, price: FiatAmount): OrderSet =
+  def addOrder[B >: C <: FiatCurrency](
+      orderType: OrderType, amount: BitcoinAmount, price: CurrencyAmount[B]): OrderSet[B] =
     orderType match {
       case Bid => copy(bids = bids.increase(price, amount))
       case Ask => copy(asks = asks.increase(price, amount))
     }
 
-  def cancelOrder(orderType: OrderType, amount: BtcAmount, price: FiatAmount): OrderSet =
+  def cancelOrder[B >: C <: FiatCurrency](
+      orderType: OrderType, amount: BitcoinAmount, price: CurrencyAmount[B]): OrderSet[B] =
     orderType match {
       case Bid => copy(bids = bids.decrease(price, amount))
       case Ask => copy(asks = asks.decrease(price, amount))
     }
-
-  private def requireSingleCurrency(): Unit = {
-    require(bids.currency == asks.currency && asks.currency == market.currency, "Mixed currencies")
-  }
 
   private def requireNotCrossed(): Unit = {
     val priceCrossed = (highestBid, lowestAsk) match {
@@ -45,6 +43,6 @@ case class OrderSet(market: Market, bids: VolumeByPrice, asks: VolumeByPrice) ex
 }
 
 object OrderSet {
-  def empty(market: Market): OrderSet =
-    OrderSet(market, VolumeByPrice.empty(market.currency), VolumeByPrice.empty(market.currency))
+  def empty[C <: FiatCurrency](market: Market[C]): OrderSet[C] =
+    OrderSet(market, VolumeByPrice.empty, VolumeByPrice.empty)
 }

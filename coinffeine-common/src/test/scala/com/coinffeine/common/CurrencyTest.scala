@@ -13,33 +13,35 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
   private def validCurrency(currency: Currency): Unit =  {
 
     it must "represent amounts in its own currency" in {
-      currency.Amount(7).currency should be(currency)
+      currency.amount(7).currency should be(currency)
     }
 
     it must "compare amounts of its own currency" in {
-      currency.Amount.compare(currency.Amount(7), currency.Amount(10)) should be < 0
-      currency.Amount.compare(currency.Amount(7.5), currency.Amount(7)) should be > 0
-      currency.Amount.compare(currency.Amount(2), currency.Amount(2)) should be (0)
+      currency.amount(7).tryCompareTo(currency.amount(10)).get should be < 0
+      currency.amount(7.5).tryCompareTo(currency.amount(7)).get should be > 0
+      currency.amount(2).tryCompareTo(currency.amount(2)).get should be (0)
+      object FakeCurrency extends Currency
+      currency.amount(3).tryCompareTo(FakeCurrency.amount(4)) should be (None)
     }
 
     it must "add amounts of its own currency" in {
-      currency.Amount(2) + currency.Amount(3) should be (currency.Amount(5))
+      currency.amount(2) + currency.amount(3) should be (currency.amount(5))
     }
 
     it must "subtract amounts of its own currency" in {
-      currency.Amount(2) - currency.Amount(3) should be (currency.Amount(-1))
+      currency.amount(2) - currency.amount(3) should be (currency.amount(-1))
     }
 
     it must "multiply amounts of its own currency" in {
-      currency.Amount(2) * BigDecimal(4) should be (currency.Amount(8))
+      currency.amount(2) * BigDecimal(4) should be (currency.amount(8))
     }
 
     it must "divide amounts of its own currency" in {
-      currency.Amount(2) / BigDecimal(4) should be (currency.Amount(0.5))
+      currency.amount(2) / BigDecimal(4) should be (currency.amount(0.5))
     }
 
     it must "invert amounts of its own currency" in {
-      -currency.Amount(2) should be (currency.Amount(-2))
+      -currency.amount(2) should be (currency.amount(-2))
     }
   }
 

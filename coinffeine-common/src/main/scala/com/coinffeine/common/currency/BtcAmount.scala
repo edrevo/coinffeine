@@ -1,5 +1,7 @@
 package com.coinffeine.common.currency
 
+import com.coinffeine.common.Currency
+
 @Deprecated
 case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
   lazy val asSatoshi = (amount * BtcAmount.OneBtcInSatoshi).toBigIntExact().get.underlying()
@@ -18,6 +20,8 @@ case class BtcAmount(amount: BigDecimal) extends Ordered[BtcAmount] {
   override def compare(that: BtcAmount): Int = this.amount.compare(that.amount)
 
   override def toString = amount.underlying().toPlainString + " BTC"
+
+  def toBitcoinAmount = Currency.Bitcoin.amount(amount)
 }
 
 @Deprecated

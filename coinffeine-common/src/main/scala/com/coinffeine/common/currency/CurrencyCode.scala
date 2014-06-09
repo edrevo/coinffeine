@@ -2,6 +2,7 @@ package com.coinffeine.common.currency
 
 import java.util.Currency
 
+@deprecated
 class CurrencyCode(symbol: String) {
 
   val currency: Currency = Currency.getInstance(symbol)
@@ -10,6 +11,6 @@ class CurrencyCode(symbol: String) {
 }
 
 object CurrencyCode {
-  val EUR = new CurrencyCode("EUR")
-  val USD = new CurrencyCode("USD")
+  @deprecated val EUR = new CurrencyCode("EUR")
+  @deprecated val USD = new CurrencyCode("USD")
 }
