@@ -22,7 +22,6 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
-  import testMappings.NewAmountMappings._
 
   def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
                                              (implicit mapping: ProtoMapping[T, M]): Unit = {
