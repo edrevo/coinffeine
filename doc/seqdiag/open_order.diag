@@ -1,0 +1,13 @@
+seqdiag {
+  activation = none;
+
+  UI                  ->>  DefaultPeerActor [label = "OpenOrder(order)"];
+  DefaultPeerActor    ->>  OrdersActor [label = "OpenOrder(order)"];
+                           OrdersActor         ->>  OrderSubmitterActor [label = "OpenOrder(order)"];
+  OrderSubmitterActor =>   OrderSubmitterActor [label = "updateOrderSet(order)"];
+  OrderSubmitterActor ->>  MessageGateway [label = "Forward(orderSet, broker)"];
+
+  ... every order resubmit interval ...
+
+  OrderSubmitterActor ->>  MessageGateway [label = "Forward(orderSet, broker)"];
+}
