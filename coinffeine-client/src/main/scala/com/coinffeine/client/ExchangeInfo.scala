@@ -37,9 +37,6 @@ case class ExchangeInfo[C <: FiatCurrency](
   require(btcExchangeAmount.isPositive, "Exchange amount must be greater than zero")
   require(fiatExchangeAmount.isPositive)
   require(userKey.getPrivKeyBytes != null, "Credentials do not contain private key")
-  /* TODO: Verify that fiatStepAmount is something that makes sense
-   * (for example, 0.0001 EUR would not be a valid result)
-   */
   val fiatStepAmount = fiatExchangeAmount / steps
   val btcStepAmount = btcExchangeAmount / steps
 

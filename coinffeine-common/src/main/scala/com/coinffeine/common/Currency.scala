@@ -17,6 +17,9 @@ import scala.util.Try
 case class CurrencyAmount[+C <: Currency](
     value: BigDecimal, currency: C) extends PartiallyOrdered[CurrencyAmount[C]] {
 
+  require(currency.isValidAmount(value),
+    "Tried to create a currency amount which is invalid for that currency: " + this.toString)
+
   def +[B >: C <: Currency] (other: CurrencyAmount[B]): CurrencyAmount[B] =
     copy(value = value + other.value)
   def -[B >: C <: Currency] (other: CurrencyAmount[B]): CurrencyAmount[B] =
@@ -58,6 +61,8 @@ trait Currency {
     */
   def amount(value: BigDecimal): CurrencyAmount[this.type] = CurrencyAmount(value, self)
 
+  def isValidAmount(value: BigDecimal): Boolean
+
   def apply(value: BigDecimal) = amount(value)
   def apply(value: Int) = amount(value)
   def apply(value: Double) = amount(value)
@@ -65,7 +70,7 @@ trait Currency {
 
   def toString: String
 
-  val Zero: CurrencyAmount[this.type] = apply(0)
+  lazy val Zero: CurrencyAmount[this.type] = apply(0)
 }
 
 /** A fiat currency. */
@@ -87,10 +92,12 @@ object Currency {
 
   object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
+    override def isValidAmount(amount: BigDecimal) = (amount * 100).isWhole()
   }
 
   object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
+    override def isValidAmount(amount: BigDecimal) = (amount * 100).isWhole()
   }
 
   object Bitcoin extends Currency {
@@ -98,6 +105,9 @@ object Currency {
     override val toString = "BTC"
 
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
+
+    override def isValidAmount(amount: BigDecimal) =
+      (amount * OneBtcInSatoshi).isWhole()
   }
 
   object Implicits {
