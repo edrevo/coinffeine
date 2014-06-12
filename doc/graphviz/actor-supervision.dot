@@ -1,0 +1,26 @@
+digraph {
+	node[shape=rectangle];
+
+	ProtoRpcMessageGateway1[label="ProtoRpcMessageGateway"];
+	ProtoRpcMessageGateway2[label="ProtoRpcMessageGateway"];
+
+	# Client side
+	DefaultPeerActor -> ProtoRpcMessageGateway1, OrderSupervisorActor;	
+
+	# Client order book
+	OrderSupervisorActor -> OrderSubmissionActor;
+	OrderSubmissionActor -> ProtoRpcMessageGateway1[style=dotted];
+
+	# Client exchange
+	DefaultPeerActor -> ExchangeSupervisorActor;
+	ExchangeSupervisorActor -> BuyerExchangeActor, SellerExchangeActor;
+	BuyerExchangeActor -> ProtoRpcMessageGateway1[style=dotted];
+	SellerExchangeActor -> ProtoRpcMessageGateway1[style=dotted];
+
+	# Server side
+	BrokerSupervisorActor -> BrokerActor, ProtoRpcMessageGateway2, BlockchainActor;
+	BrokerActor -> ProtoRpcMessageGateway2[style=dotted];
+	BrokerActor -> HandshakeArbiterActor;
+	HandshakeArbiterActor -> ProtoRpcMessageGateway2[style=dotted];
+	HandshakeArbiterActor -> BlockchainActor[style=dotted];
+}
