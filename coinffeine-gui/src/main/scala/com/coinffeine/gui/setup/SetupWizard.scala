@@ -4,7 +4,7 @@ import com.coinffeine.gui.wizard.Wizard
 
 /** Wizard to collect the initial configuration settings */
 class SetupWizard(walletAddress: String, validator: CredentialsValidator) extends Wizard[SetupConfig](
-  title = "Initial setup",
+  wizardTitle = "Initial setup",
   steps = Seq(
     new PasswordStepPane,
     new OkPayCredentialsStepPane(validator),

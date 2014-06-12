@@ -7,27 +7,27 @@ import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
 import scalafx.scene.text.Font
-import scalafx.stage.Stage
+import scalafx.stage.{StageStyle, Stage}
 
 /** Step-by-step wizard that accumulates information of type Data.
   *
   * @param steps        Sequence of wizard steps
   * @param initialData  Initial value for the wizard
-  * @param title        Wizard title
+  * @param wizardTitle  Wizard title
   * @param width        Window width
   * @param height       Window height
   * @tparam Data        Type of the wizard result
   */
-class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
-                   width: Double = 540, height: Double = 320) {
+class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: String,
+                   width: Double = 540, height: Double = 320) extends Stage(StageStyle.UTILITY) {
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
   private val stepNumber = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
   private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
-  def show(): Data = {
+  def run(): Data = {
     initializeSteps()
-    stage.showAndWait()
+    showAndWait()
     data.value
   }
 
@@ -54,7 +54,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
     text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
     disable = true
     handleEvent(ActionEvent.ACTION) { () =>
-      if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else stage.close()
+      if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else close()
     }
   }
 
@@ -77,11 +77,10 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
     bottom = wizardFooter
   }
 
-  private val stage = new Stage {
-    title = Wizard.this.title
-    scene = new Scene(Wizard.this.width, Wizard.this.height) {
-      root = rootWizardPane
-    }
+  title = Wizard.this.wizardTitle
+  resizable = false
+  scene = new Scene(Wizard.this.width, Wizard.this.height) {
+    root = rootWizardPane
   }
 
   private def initializeSteps(): Unit = {

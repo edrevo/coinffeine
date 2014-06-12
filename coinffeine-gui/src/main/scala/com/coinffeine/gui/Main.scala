@@ -22,7 +22,7 @@ object Main extends JFXApp {
     }
   }
   val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
-  val setupConfig = new SetupWizard(sampleAddress, validator).show()
+  val setupConfig = new SetupWizard(sampleAddress, validator).run()
 
   stage = new PrimaryStage {
     title = "Coinffeine"
