@@ -21,7 +21,8 @@ object Main extends JFXApp {
       else CredentialsValidator.InvalidCredentials("Random failure")
     }
   }
-  val setupConfig = new SetupWizard(validator).show()
+  val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
+  val setupConfig = new SetupWizard(sampleAddress, validator).show()
 
   stage = new PrimaryStage {
     title = "Coinffeine"
