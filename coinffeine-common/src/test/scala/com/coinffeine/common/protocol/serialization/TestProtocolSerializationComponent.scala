@@ -25,7 +25,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
   def randomMessage(): OrderMatch = OrderMatch(
     exchangeId = s"exchange-${Random.nextLong().toHexString}",
     amount = randomSatoshi() BTC,
-    price = Random.nextDouble() EUR,
+    price = randomEuros() EUR,
     buyer = PeerConnection("bob", randomPort()),
     seller = PeerConnection("sam", randomPort())
   )
@@ -33,6 +33,9 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
   private def randomSatoshi() =
     Math.round(Random.nextDouble() * Bitcoin.OneBtcInSatoshi.doubleValue()) /
       Bitcoin.OneBtcInSatoshi.doubleValue()
+
+  private def randomEuros() =
+    Math.round(Random.nextDouble() * 100) / 100
 
   private def randomPort() = Random.nextInt(50000) + 10000
 }
