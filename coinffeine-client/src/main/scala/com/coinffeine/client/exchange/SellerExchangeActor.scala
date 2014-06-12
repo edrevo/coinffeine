@@ -23,18 +23,18 @@ class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUs
       new InitializedSellerExchange(messageGateway, resultListeners)
   }
 
-  private class InitializedSellerExchange(
-      override protected val messageGateway: ActorRef,
-      listeners: Set[ActorRef]) extends MessageForwarding {
+  private class InitializedSellerExchange(messageGateway: ActorRef, listeners: Set[ActorRef]) {
 
-    override protected val exchangeInfo = exchange.exchangeInfo
+    private val exchangeInfo = exchange.exchangeInfo
+    private val forwarding = new MessageForwarding(
+      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
 
     messageGateway ! Subscribe {
       case ReceiveMessage(PaymentProof(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true
       case _ => false
     }
     log.info(s"Exchange ${exchangeInfo.id}: Exchange started")
-    forwardToCounterpart(StepSignatures(
+    forwarding.forwardToCounterpart(StepSignatures(
       exchangeInfo.id,
       exchange.signStep(1)))
     context.become(waitForPaymentProof(1))
@@ -61,7 +61,7 @@ class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUs
 
     private def transitionToNextStep(currentStep: Int): Unit = {
       unstashAll()
-      forwardToCounterpart(StepSignatures(
+      forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
         exchange.signStep(currentStep)))
       context.become(waitForPaymentProof(currentStep + 1))
@@ -69,7 +69,7 @@ class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUs
 
     private def finishExchange(): Unit = {
       log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
-      forwardToCounterpart(StepSignatures(
+      forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
         exchange.finalSignature))
       listeners.foreach { _ ! ExchangeSuccess }

@@ -22,11 +22,11 @@ class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser
       new InitializedBuyerExchange(messageGateway, resultListeners).startExchange()
   }
 
-  private class InitializedBuyerExchange(
-      override val messageGateway: ActorRef,
-      listeners: Set[ActorRef]) extends MessageForwarding {
+  private class InitializedBuyerExchange(messageGateway: ActorRef, listeners: Set[ActorRef]) {
 
-    override val exchangeInfo = exchange.exchangeInfo
+    private val exchangeInfo = exchange.exchangeInfo
+    private val forwarding = new MessageForwarding(
+      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
 
     def startExchange(): Unit = {
       subscribeToMessages()
@@ -57,7 +57,7 @@ class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser
         exchange.validateSellersSignature(step, signature0, signature1) match {
           case Success(_) =>
             import context.dispatcher
-            forwardToCounterpart(
+            forwarding.forwardToCounterpart(
               exchange.pay(step).map(payment => PaymentProof (exchangeInfo.id, payment.id)))
             context.become(nextWait(step))
           case Failure(cause) =>
