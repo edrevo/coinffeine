@@ -4,7 +4,6 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.scene.layout.Pane
 
 /** An step of a wizard */
-trait Step[Data] {
-  def pane: Pane
+trait StepPane[Data] extends Pane {
   def bindTo(data: ObjectProperty[Data]): Unit
 }

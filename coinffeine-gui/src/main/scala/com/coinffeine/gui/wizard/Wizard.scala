@@ -18,7 +18,7 @@ import scalafx.stage.Stage
   * @param height       Window height
   * @tparam Data        Type of the wizard result
   */
-class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
+class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
                    width: Double = 540, height: Double = 320) {
 
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
@@ -74,7 +74,7 @@ class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
 
   private val rootWizardPane: BorderPane = new BorderPane {
     top = wizardHeader
-    center = steps.head.pane
+    center = steps.head
     bottom = wizardFooter
   }
 
@@ -87,7 +87,7 @@ class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
 
   private def changeToStep(index: Int): Unit = {
     currentStep.value = index
-    rootWizardPane.center = steps(index - 1).pane
+    rootWizardPane.center = steps(index - 1)
   }
 }
 
