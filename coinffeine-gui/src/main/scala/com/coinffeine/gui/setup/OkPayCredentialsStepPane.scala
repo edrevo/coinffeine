@@ -16,7 +16,7 @@ import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.concurrent.ScalaFxImplicits._
 import com.coinffeine.gui.wizard.StepPane
 
-private[setup] class OkPayCredentialsStepPane(tester: CredentialsTester)
+private[setup] class OkPayCredentialsStepPane(credentialsValidator: CredentialsValidator)
   extends StackPane with StepPane[SetupConfig] {
 
   private val emailProperty = new StringProperty(this, "email", "")
@@ -87,19 +87,18 @@ private[setup] class OkPayCredentialsStepPane(tester: CredentialsTester)
   private def startTest(): Unit = {
     testing.value = true
     testMessage.value = ""
-
-    tester(OkPayCredentials(emailProperty.value, passwordProperty.value)).onComplete {
-      case Success(CredentialsTester.ValidCredentials) =>
+    val validation =
+      credentialsValidator(OkPayCredentials(emailProperty.value, passwordProperty.value))
+    validation.onComplete {
+      case Success(CredentialsValidator.ValidCredentials) =>
         testMessage.value = "OK"
-        testing.value = false
-      case Success(CredentialsTester.InvalidCredentials(message)) =>
+      case Success(CredentialsValidator.InvalidCredentials(message)) =>
         testMessage.value = message
-        testing.value = false
       case Failure(NonFatal(cause)) =>
         OkPayCredentialsStepPane.Log.error("Unexpected error when testing credentials", cause)
         testMessage.value = "unexpected error"
-        testing.value = false
     }
+    validation.onComplete { case _ => testing.value = false }
   }
 
   private def updateCredentials(): Unit = {
