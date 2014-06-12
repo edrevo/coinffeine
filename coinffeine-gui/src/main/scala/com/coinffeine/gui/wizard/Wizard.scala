@@ -20,14 +20,13 @@ import scalafx.stage.Stage
   */
 class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
                    width: Double = 540, height: Double = 320) {
-
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
   private val stepNumber = steps.size
-  private val currentStep = new IntegerProperty(this, "currentStep", 1)
-
-  steps.foreach(page => page.bindTo(data))
+  private val currentStep = new IntegerProperty(this, "currentStep", 0)
+  private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
   def show(): Data = {
+    initializeSteps()
     stage.showAndWait()
     data.value
   }
@@ -46,23 +45,23 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
     }
   }
 
+  private val backButton = new Button("< Back") {
+    visible <== currentStep =!= 1
+    handleEvent(ActionEvent.ACTION) { () => changeToStep(currentStep.value - 1) }
+  }
+
+  private val nextButton = new Button {
+    text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
+    disable = true
+    handleEvent(ActionEvent.ACTION) { () =>
+      if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else stage.close()
+    }
+  }
+
   private val wizardFooter = {
-    val backButton = new Button("< Back") {
-      visible <== currentStep =!= 1
-      handleEvent(ActionEvent.ACTION) { () => changeToStep(currentStep.value - 1) }
-    }
-
-    val nextButton = new Button {
-      text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
-      handleEvent(ActionEvent.ACTION) { () =>
-        if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else stage.close()
-      }
-    }
-
     val buttonBox = new HBox(spacing = 5) {
       content = Seq(backButton, nextButton)
     }
-
     new AnchorPane {
       prefHeight = 44
       prefWidth = Wizard.this.width
@@ -85,9 +84,19 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, title: String,
     }
   }
 
+  private def initializeSteps(): Unit = {
+    steps.foreach(page => page.bindTo(data))
+    currentStep.onChange {
+      val stepPane = steps(currentStep.value - 1)
+      currentStepPane.value = stepPane
+      rootWizardPane.center = stepPane
+      nextButton.disable <== stepPane.canContinue.not()
+    }
+    currentStep.value = 1
+  }
+
   private def changeToStep(index: Int): Unit = {
     currentStep.value = index
-    rootWizardPane.center = steps(index - 1)
   }
 }
 
