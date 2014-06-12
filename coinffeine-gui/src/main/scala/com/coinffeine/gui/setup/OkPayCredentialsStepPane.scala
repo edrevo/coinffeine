@@ -7,7 +7,8 @@ import scalafx.scene.layout.StackPane
 import com.coinffeine.gui.wizard.StepPane
 
 /** TODO: write a real implementation for this wizard step */
-private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[SetupConfig] {
+private[setup] class OkPayCredentialsStepPane(tester: CredentialsTester)
+  extends StackPane with StepPane[SetupConfig] {
 
   content = new Label("OKPay credentials")
 
