@@ -2,7 +2,9 @@ name := "Coinffeine GUI"
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
 
-libraryDependencies ++= Dependencies.scalafx
+libraryDependencies ++= Dependencies.scalafx ++ Seq(
+  Dependencies.zxing
+)
 
 unmanagedJars in Compile += Attributed.blank(file(scala.util.Properties.javaHome) / "/lib/jfxrt.jar")
 

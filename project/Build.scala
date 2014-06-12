@@ -34,6 +34,7 @@ object Build extends sbt.Build {
     )
     lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.7"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
+    lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
