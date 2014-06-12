@@ -1,15 +1,18 @@
 package com.coinffeine.gui
 
-import javafx.scene.Scene
-import scalafx.Includes._
+import com.coinffeine.gui.setup.SetupWizard
+
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
-import scalafxml.core.{FXMLView, NoDependencyResolver}
 
 object Main extends JFXApp {
-  val root = FXMLView(getClass.getResource("main.fxml"), NoDependencyResolver)
+  JFXApp.AUTO_SHOW = false
+
+  val setupConfig = new SetupWizard().show()
+
   stage = new PrimaryStage {
-    title = "ScalaFX Hello World"
-    scene = new Scene(root)
+    title = "Coinffeine"
+    scene = new MainScene
   }
+  stage.show()
 }

@@ -29,8 +29,8 @@ object Build extends sbt.Build {
     lazy val protobufRpc = "com.googlecode.protobuf-rpc-pro" % "protobuf-rpc-pro-duplex" % "3.0.8"
     lazy val reflections = "org.reflections" % "reflections" % "0.9.9-RC1"
     lazy val scalafx = Seq(
-      "org.scalafx" % "scalafx_2.10" % "1.0.0-R8",
-      "org.scalafx" % "scalafxml-core_2.10" % "0.2"
+      "org.scalafx" %% "scalafx" % "8.0.0-R4",
+      "org.controlsfx" % "controlsfx" % "8.0.6"
     )
     lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.7"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
