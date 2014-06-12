@@ -66,6 +66,6 @@ object Build extends sbt.Build {
 
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn client
+    dependsOn(client, commonTest)
   )
 }
