@@ -11,7 +11,7 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
-import com.coinffeine.common.Currency
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRequest, RefundTxSignatureResponse}
@@ -20,7 +20,7 @@ import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureReque
 abstract class DefaultHandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with MockitoSugar {
 
-  class MockHandshake extends Handshake[Currency.Euro.type] {
+  class MockHandshake extends Handshake[Euro.type] {
     override val exchangeInfo = sampleExchangeInfo
     override val commitmentTransaction = MockTransaction()
     override val refundTransaction = MockTransaction()
@@ -46,12 +46,11 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   override val broker = handshake.exchangeInfo.broker
   val listener = TestProbe()
   val blockchain = TestProbe()
-  val actor = system.actorOf(
-    Props(new DefaultHandshakeActor(handshake, protocolConstants)), "handshake-actor")
+  val actor = system.actorOf(Props[DefaultHandshakeActor[Euro.type]], "handshake-actor")
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit =
-    actor ! StartHandshake(gateway.ref, blockchain.ref, Set(listener.ref))
+    actor ! StartHandshake(handshake, protocolConstants, gateway.ref, blockchain.ref, Set(listener.ref))
 
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest = RefundTxSignatureRequest("id", handshake.refundTransaction)

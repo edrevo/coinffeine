@@ -8,7 +8,8 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.{Currency, PeerConnection}
+import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 
@@ -20,8 +21,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser[Currency.Euro.type]
-  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser[Currency.Euro.type]
+  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
+  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
 
   class MessageForwarder(to: ActorRef) extends Actor {
     override val receive: Receive = {
@@ -36,19 +37,13 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
 
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
-  val buyer = system.actorOf(
-    Props(new BuyerExchangeActor(buyerExchange, protocolConstants)),
-    "buyer-exchange-actor"
-  )
+  val buyer = system.actorOf(Props[BuyerExchangeActor[Euro.type]], "buyer-exchange-actor")
 
-  val seller = system.actorOf(
-    Props(new SellerExchangeActor(sellerExchange, protocolConstants)),
-    "seller-exchange-actor"
-  )
+  val seller = system.actorOf(Props[SellerExchangeActor[Euro.type]], "seller-exchange-actor")
 
   "The buyer and seller actors" should "be able to perform an exchange" in {
-    buyer ! StartExchange(MessageForwarder("fw-to-seller", seller), Set(buyerListener.ref))
-    seller ! StartExchange(MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
+    buyer ! StartExchange(buyerExchange, protocolConstants, MessageForwarder("fw-to-seller", seller), Set(buyerListener.ref))
+    seller ! StartExchange(sellerExchange, protocolConstants, MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
     buyerListener.expectMsg(ExchangeSuccess)
     sellerListener.expectMsg(ExchangeSuccess)
   }

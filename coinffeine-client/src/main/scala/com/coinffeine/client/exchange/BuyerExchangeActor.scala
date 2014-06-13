@@ -14,15 +14,15 @@ import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSigna
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser[C], constants: ProtocolConstants)
-  extends Actor with ActorLogging  {
+class BuyerExchangeActor[C <: FiatCurrency] extends Actor with ActorLogging  {
 
   override def receive: Receive = {
-    case StartExchange(messageGateway, resultListeners) =>
-      new InitializedBuyerExchange(messageGateway, resultListeners).startExchange()
+    case init: StartExchange[C, BuyerUser[C]] =>
+      new InitializedBuyerExchange(init).startExchange()
   }
 
-  private class InitializedBuyerExchange(messageGateway: ActorRef, listeners: Set[ActorRef]) {
+  private class InitializedBuyerExchange(init: StartExchange[C, BuyerUser[C]]) {
+    import init._
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
@@ -45,7 +45,7 @@ class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser
           case Success(_) =>
             log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
             // TODO: Publish transaction to blockchain
-            listeners.foreach { _ ! ExchangeSuccess }
+            resultListeners.foreach { _ ! ExchangeSuccess }
             context.stop(self)
           case Failure(cause) =>
             log.warning(s"Received invalid final signature: ($signature0, $signature1). Reason: $cause")
@@ -73,7 +73,6 @@ class BuyerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser
 
 object BuyerExchangeActor {
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps[C <: FiatCurrency](exchange: Exchange[C] with BuyerUser[C]): Props =
-      Props(new BuyerExchangeActor(exchange, protocolConstants))
+    def exchangeActorProps[C <: FiatCurrency]: Props = Props[BuyerExchangeActor[C]]
   }
 }
