@@ -7,6 +7,7 @@ import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
   * transaction signed and relying on the broker to publish the commitment TX.
@@ -16,11 +17,15 @@ object HandshakeActor {
   /** Sent to the actor to start the handshake
     *
     * @constructor
+    * @param handshake        Class that contains the logic to perform the handshake
+    * @param constants        Protocol constants
     * @param messageGateway   Communications gateway
     * @param blockchain       Actor to ask for TX confirmations for
     * @param resultListeners  Actors to be notified of the handshake result
     */
-  case class StartHandshake(
+  case class StartHandshake[C <: FiatCurrency](
+      handshake: Handshake[C],
+      constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,
       resultListeners: Set[ActorRef])
@@ -45,9 +50,8 @@ object HandshakeActor {
   trait Component {
     /** Create the properties of a handshake actor.
       *
-      * @param handshake        Class that contains the logic to perform the handshake
       * @return                 Actor properties
       */
-    def handshakeActorProps[C <: FiatCurrency](handshake: Handshake[C]): Props
+    def handshakeActorProps[C <: FiatCurrency]: Props
   }
 }

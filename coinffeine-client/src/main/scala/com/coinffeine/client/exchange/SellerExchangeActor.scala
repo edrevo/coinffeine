@@ -4,26 +4,26 @@ import scala.util.{Try, Failure}
 
 import akka.actor._
 
-import com.coinffeine.client.{ExchangeInfo, MessageForwarding}
+import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.ExchangeActor.{StartExchange, ExchangeSuccess}
 import com.coinffeine.client.exchange.SellerExchangeActor.PaymentValidationResult
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
-import com.coinffeine.common.FiatCurrency
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUser[C], constants: ProtocolConstants)
+class SellerExchangeActor[C <: FiatCurrency]
   extends Actor with ActorLogging with Stash {
 
   override def receive: Receive = {
-    case StartExchange(messageGateway, resultListeners) =>
-      new InitializedSellerExchange(messageGateway, resultListeners)
+    case init: StartExchange[C, SellerUser[C]] => new InitializedSellerExchange(init)
   }
 
-  private class InitializedSellerExchange(messageGateway: ActorRef, listeners: Set[ActorRef]) {
+  private class InitializedSellerExchange(init: StartExchange[C, SellerUser[C]]) {
+    import init._
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
@@ -72,7 +72,7 @@ class SellerExchangeActor[C <: FiatCurrency](exchange: Exchange[C] with SellerUs
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
         exchange.finalSignature))
-      listeners.foreach { _ ! ExchangeSuccess }
+      resultListeners.foreach { _ ! ExchangeSuccess }
       context.stop(self)
     }
   }
@@ -82,7 +82,6 @@ object SellerExchangeActor {
   private case class PaymentValidationResult(result: Try[Unit])
 
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps[C <: FiatCurrency](exchange: Exchange[C] with SellerUser[C]): Props =
-      Props(new SellerExchangeActor(exchange, protocolConstants))
+    def exchangeActorProps[C <: FiatCurrency]: Props = Props[SellerExchangeActor[C]]
   }
 }

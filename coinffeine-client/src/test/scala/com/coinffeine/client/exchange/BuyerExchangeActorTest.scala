@@ -9,7 +9,7 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.{Currency, PeerConnection}
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -23,19 +23,16 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val exchange = new MockExchange(exchangeInfo) with BuyerUser[Currency.Euro.type]
+  val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
-  val actor = system.actorOf(
-    Props(new BuyerExchangeActor(exchange, protocolConstants)),
-    "buyer-exchange-actor"
-  )
+  val actor = system.actorOf(Props[BuyerExchangeActor[Euro.type]], "buyer-exchange-actor")
   val dummySig = TransactionSignature.dummy
   listener.watch(actor)
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartExchange(gateway.ref, Set(listener.ref))
+    actor ! StartExchange(exchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val relevantOfferAccepted = StepSignatures("id", dummySig, dummySig)
     val irrelevantOfferAccepted = StepSignatures("another-id", dummySig, dummySig)
