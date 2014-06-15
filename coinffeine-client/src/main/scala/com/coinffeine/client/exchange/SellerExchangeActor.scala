@@ -36,6 +36,7 @@ class SellerExchangeActor[C <: FiatCurrency]
     log.info(s"Exchange ${exchangeInfo.id}: Exchange started")
     forwarding.forwardToCounterpart(StepSignatures(
       exchangeInfo.id,
+      1,
       exchange.signStep(1)))
     context.become(waitForPaymentProof(1))
 
@@ -61,16 +62,19 @@ class SellerExchangeActor[C <: FiatCurrency]
 
     private def transitionToNextStep(currentStep: Int): Unit = {
       unstashAll()
+      val nextStep = currentStep + 1
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
+        nextStep,
         exchange.signStep(currentStep)))
-      context.become(waitForPaymentProof(currentStep + 1))
+      context.become(waitForPaymentProof(nextStep))
     }
 
     private def finishExchange(): Unit = {
       log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
+        exchangeInfo.steps + 1,
         exchange.finalSignature))
       resultListeners.foreach { _ ! ExchangeSuccess }
       context.stop(self)

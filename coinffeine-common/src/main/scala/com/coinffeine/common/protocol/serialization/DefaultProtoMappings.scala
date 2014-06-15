@@ -238,12 +238,14 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def fromProtobuf(message: msg.StepSignature) = StepSignatures(
       exchangeId = message.getExchangeId,
+      step = message.getStep,
       idx0Signature = txSerialization.deserializeSignature(message.getIdx0Signature),
       idx1Signature = txSerialization.deserializeSignature(message.getIdx1Signature)
     )
 
     override def toProtobuf(obj: StepSignatures) = msg.StepSignature.newBuilder
       .setExchangeId(obj.exchangeId)
+      .setStep(obj.step)
       .setIdx0Signature(txSerialization.serialize(obj.idx0Signature))
       .setIdx1Signature(txSerialization.serialize(obj.idx1Signature))
       .build()

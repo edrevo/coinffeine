@@ -5,7 +5,7 @@ import scala.util.{Failure, Success}
 import akka.actor._
 
 import com.coinffeine.client.MessageForwarding
-import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
+import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -35,25 +35,33 @@ class BuyerExchangeActor[C <: FiatCurrency] extends Actor with ActorLogging  {
     }
 
     private def subscribeToMessages(): Unit = messageGateway ! Subscribe {
-      case ReceiveMessage(StepSignatures(exchangeInfo.`id`, _, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(StepSignatures(exchangeInfo.`id`, _, _, _), exchangeInfo.`counterpart`) => true
       case _ => false
     }
 
     private val waitForFinalSignature: Receive = {
-      case ReceiveMessage(StepSignatures(_, signature0, signature1), _) =>
-        exchange.validateSellersFinalSignature(signature0, signature1) match {
-          case Success(_) =>
-            log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
-            // TODO: Publish transaction to blockchain
-            resultListeners.foreach { _ ! ExchangeSuccess }
-            context.stop(self)
-          case Failure(cause) =>
-            log.warning(s"Received invalid final signature: ($signature0, $signature1). Reason: $cause")
-        }
+      val finalStep = exchangeInfo.steps + 1
+
+      {
+        case ReceiveMessage(StepSignatures(_, `finalStep`, signature0, signature1), _) =>
+          exchange.validateSellersFinalSignature(signature0, signature1) match {
+            case Success(_) =>
+              log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
+              // TODO: Publish transaction to blockchain
+              finishWith(ExchangeSuccess)
+            case Failure(cause) =>
+              log.warning(s"Received invalid final signature: ($signature0, $signature1). Reason: $cause")
+          }
+      }
+    }
+
+    private def finishWith(result: Any): Unit = {
+      resultListeners.foreach { _ ! result }
+      context.stop(self)
     }
 
     private def waitForNextStepSignature(step: Int): Receive = {
-      case ReceiveMessage(StepSignatures(_, signature0, signature1), _) =>
+      case ReceiveMessage(StepSignatures(_, `step`, signature0, signature1), _) =>
         exchange.validateSellersSignature(step, signature0, signature1) match {
           case Success(_) =>
             import context.dispatcher

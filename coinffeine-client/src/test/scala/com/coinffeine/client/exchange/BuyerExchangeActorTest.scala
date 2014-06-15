@@ -34,8 +34,8 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     gateway.expectNoMsg()
     actor ! StartExchange(exchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOfferAccepted = StepSignatures("id", dummySig, dummySig)
-    val irrelevantOfferAccepted = StepSignatures("another-id", dummySig, dummySig)
+    val relevantOfferAccepted = StepSignatures("id", 5, dummySig, dummySig)
+    val irrelevantOfferAccepted = StepSignatures("another-id", 2, dummySig, dummySig)
     val anotherPeer = PeerConnection("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
@@ -47,7 +47,7 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
   it should "respond to step signature messages by sending a payment until all " +
     "steps have are done" in {
       for (i <- 1 to exchangeInfo.steps) {
-        actor ! fromCounterpart(StepSignatures(exchangeInfo.id, dummySig, dummySig))
+        actor ! fromCounterpart(StepSignatures(exchangeInfo.id, i, dummySig, dummySig))
         val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId")
         shouldForward(paymentMsg) to counterpart
         gateway.expectNoMsg(100 milliseconds)
@@ -55,7 +55,8 @@ class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with 
     }
 
   it should "send a notification to the listeners once the exchange has finished" in {
-    actor ! fromCounterpart(StepSignatures(exchangeInfo.id, dummySig, dummySig))
+    actor ! fromCounterpart(
+      StepSignatures(exchangeInfo.id, exchangeInfo.steps + 1, dummySig, dummySig))
     listener.expectMsg(ExchangeSuccess)
   }
 }
