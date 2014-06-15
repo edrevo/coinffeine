@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.testkit.TestProbe
 import com.google.bitcoin.crypto.TransactionSignature
-import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
@@ -16,13 +15,10 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Su
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
-class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
+class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") {
   val listener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
-  val protocolConstants = ProtocolConstants(
-    commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
-    refundSignatureAbortTimeout = 1 minute)
+  val protocolConstants = ProtocolConstants()
   val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart

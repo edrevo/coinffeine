@@ -1,7 +1,5 @@
 package com.coinffeine.client.exchange
 
-import scala.concurrent.duration._
-
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
@@ -17,10 +15,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val buyerListener = TestProbe()
   val sellerListener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
-  val protocolConstants = ProtocolConstants(
-    commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
-    refundSignatureAbortTimeout = 1 minute)
+  val protocolConstants = ProtocolConstants()
   val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   val sellerExchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
 
