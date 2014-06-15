@@ -37,4 +37,9 @@ class MockExchange(override val exchangeInfo: ExchangeInfo[Currency.Euro.type]) 
     tx.setLockTime(1500L)
     tx
   }
+
+  override def getSignedOffer(
+      step: Int,
+      counterpartSignatures: (TransactionSignature, TransactionSignature)): Transaction =
+    getOffer(step)
 }

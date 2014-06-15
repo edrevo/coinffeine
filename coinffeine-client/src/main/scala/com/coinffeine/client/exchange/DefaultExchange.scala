@@ -160,4 +160,19 @@ class DefaultExchange[C <: FiatCurrency](
       signature),
       s"Invalid signature for input $inputIndex: $validationErrorMessage")
   }
+
+  /** Returns a signed transaction ready to be broadcast */
+  override def getSignedOffer(
+      step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)): Transaction = {
+    val tx = getOffer(step)
+    val userSignatures = sign(tx)
+    val (idx0InputSignatures, idx1InputSignatures) =
+      if (userInputIndex == 0) (Seq(counterpartSignatures._1, userSignatures._1), Seq(userSignatures._2, counterpartSignatures._2))
+      else (Seq(userSignatures._1, counterpartSignatures._1), Seq(counterpartSignatures._2, userSignatures._2))
+    tx.getInput(0).setScriptSig(
+      ScriptBuilder.createMultiSigInputScript(idx0InputSignatures))
+    tx.getInput(1).setScriptSig(
+      ScriptBuilder.createMultiSigInputScript(idx1InputSignatures))
+    tx
+  }
 }
