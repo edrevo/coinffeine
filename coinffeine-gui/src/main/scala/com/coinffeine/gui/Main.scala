@@ -1,6 +1,7 @@
 package com.coinffeine.gui
 
 import com.coinffeine.gui.application.ApplicationScene
+import com.coinffeine.gui.application.main.MainView
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,7 +29,7 @@ object Main extends JFXApp {
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new ApplicationScene
+    scene = new ApplicationScene(views = Seq(new MainView))
   }
   stage.show()
 }
