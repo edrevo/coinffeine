@@ -6,7 +6,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 
-trait WithSampleExchangeInfo extends UnitTestNetworkComponent {
+trait SampleExchangeInfo extends UnitTestNetworkComponent {
   val sampleExchangeInfo = ExchangeInfo(
     "id",
     PeerConnection("counterpart"),

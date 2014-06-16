@@ -7,7 +7,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, Re
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with WithSampleExchangeInfo with ImplicitSender {
+  extends AkkaSpec(systemName) with SampleExchangeInfo with ImplicitSender {
 
   val gateway = TestProbe()
   val counterpart: PeerConnection
