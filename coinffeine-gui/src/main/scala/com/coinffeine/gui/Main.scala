@@ -1,5 +1,7 @@
 package com.coinffeine.gui
 
+import com.coinffeine.gui.application.ApplicationScene
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
@@ -26,7 +28,7 @@ object Main extends JFXApp {
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new MainScene
+    scene = new ApplicationScene
   }
   stage.show()
 }

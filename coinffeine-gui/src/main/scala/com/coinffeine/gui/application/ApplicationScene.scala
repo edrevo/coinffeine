@@ -1,4 +1,4 @@
-package com.coinffeine.gui
+package com.coinffeine.gui.application
 
 import scalafx.geometry.Insets
 import scalafx.scene.Scene
@@ -7,7 +7,9 @@ import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.layout.StackPane
 import scalafx.scene.text.Font
 
-class MainScene extends Scene(width = 600, height = 400) {
+import com.coinffeine.gui.application.ApplicationScene._
+
+class ApplicationScene extends Scene(width = DefaultWidth, height = DefaultHeight) {
   root = new StackPane {
     prefWidth = 200
     prefHeight = 150
@@ -22,4 +24,9 @@ class MainScene extends Scene(width = 600, height = 400) {
       }
     )
   }
+}
+
+object ApplicationScene {
+  val DefaultWidth = 600
+  val DefaultHeight = 400
 }
