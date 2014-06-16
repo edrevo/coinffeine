@@ -18,6 +18,9 @@ trait Exchange[C <: FiatCurrency] {
   /** Returns the bitcoin transaction that corresponds with the offer for the passed in step */
   def getOffer(step: Int): Transaction
 
+  /** Returns a signed transaction ready to be broadcast */
+  def getSignedOffer(step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)): Transaction
+
   /** Returns the transaction signature for the corresponding step */
   def signStep(step: Int): (TransactionSignature, TransactionSignature) = sign(getOffer(step))
 

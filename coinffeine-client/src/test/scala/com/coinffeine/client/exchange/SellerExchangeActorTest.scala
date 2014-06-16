@@ -45,7 +45,7 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   it should "send the first step signature as soon as the exchange starts" in {
     val offerSignature = exchange.signStep(1)
-    shouldForward(StepSignatures(exchangeInfo.id, offerSignature)) to counterpart
+    shouldForward(StepSignatures(exchangeInfo.id, 1, offerSignature)) to counterpart
   }
 
   it should "not send the second step signature until payment proof has been provided" in {
@@ -54,19 +54,20 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
-    shouldForward(StepSignatures(exchangeInfo.id, exchange.signStep(2))) to counterpart
+    shouldForward(StepSignatures(exchangeInfo.id, 2, exchange.signStep(2))) to counterpart
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
     for (i <- 3 to exchangeInfo.steps) {
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
-      shouldForward(StepSignatures(exchangeInfo.id, exchange.signStep(i))) to counterpart
+      shouldForward(StepSignatures(exchangeInfo.id, i, exchange.signStep(i))) to counterpart
     }
   }
 
   it should "send the final signature" in {
-    shouldForward(StepSignatures(exchangeInfo.id, exchange.finalSignature)) to counterpart
+    shouldForward(StepSignatures(
+      exchangeInfo.id, exchangeInfo.steps + 1, exchange.finalSignature)) to counterpart
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

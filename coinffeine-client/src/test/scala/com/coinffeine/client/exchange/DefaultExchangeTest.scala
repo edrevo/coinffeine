@@ -122,13 +122,8 @@ class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
         addAmounts(stepOffer.getOutputs) - (sellerExchangeInfo.btcStepAmount * 3)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should be
         sellerExchangeInfo.btcExchangeAmount + (sellerExchangeInfo.btcStepAmount * 3)
-      stepOffer.getInput(0).setScriptSig(
-        ScriptBuilder.createMultiSigInputScript(
-          buyerExchange.signStep(step)._1, sellerExchange.signStep(step)._1))
-      stepOffer.getInput(1).setScriptSig(
-        ScriptBuilder.createMultiSigInputScript(
-          sellerExchange.signStep(step)._2, buyerExchange.signStep(step)._2))
-      sendToBlockChain(stepOffer)
+      val signedStepOffer = sellerExchange.getSignedOffer(step, buyerExchange.signStep(step))
+      sendToBlockChain(signedStepOffer)
       val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
       val expectedBuyerBalance = (5 BTC) + sellerExchangeInfo.btcStepAmount * (step - 2)
