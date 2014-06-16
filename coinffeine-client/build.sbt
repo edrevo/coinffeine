@@ -1,7 +1,7 @@
 name := "Coinffeine Client"
 
 libraryDependencies ++= Seq(
+  Dependencies.h2 % "test",
   Dependencies.jcommander,
-  Dependencies.netty,
-  "com.h2database" % "h2" % "1.3.175" % "test"
+  Dependencies.netty
 )

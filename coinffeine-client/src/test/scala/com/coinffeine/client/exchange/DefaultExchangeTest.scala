@@ -147,7 +147,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with Scal
           _ <- sellerExchange.validatePayment(step, payment.id)
         } yield ()
         if (currentStep == step)
-          validation.futureValue should be ()
+          validation.futureValue should be (())
         else
           validation.map(_ => false).recover {
             case _: IllegalArgumentException => true

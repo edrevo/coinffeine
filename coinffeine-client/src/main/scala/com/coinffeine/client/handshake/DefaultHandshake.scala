@@ -10,8 +10,8 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.{Currency, FiatCurrency, BitcoinAmount}
-import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
+import com.coinffeine.common.exchange.impl.TransactionProcessor
 
 abstract class DefaultHandshake[C <: FiatCurrency](
     val exchangeInfo: ExchangeInfo[C],
@@ -19,37 +19,12 @@ abstract class DefaultHandshake[C <: FiatCurrency](
     userWallet: Wallet) extends Handshake[C] {
   require(userWallet.hasKey(exchangeInfo.userKey),
     "User wallet does not contain the user's private key")
-  require(amountToCommit.isPositive, "Amount to commit must be greater than zero")
 
-  private val inputFunds = {
-    val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
-    val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(Currency.Bitcoin.Zero)((accum, output) => accum + Currency.Bitcoin.fromSatoshi(output.getValue))
-      .takeWhile(_ < amountToCommit)
-      .length
-    inputFundCandidates.take(necessaryInputCount)
-  }
-  private val totalInputFunds = inputFunds.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).reduce(_ + _)
-  require(totalInputFunds >= amountToCommit,
-    "Input funds must cover the amount of funds to commit")
+  override val commitmentTransaction: Transaction = TransactionProcessor.createMultisignTransaction(
+    userWallet, amountToCommit, Seq(exchangeInfo.counterpartKey, exchangeInfo.userKey),
+    exchangeInfo.network
+  )
 
-  override val commitmentTransaction: Transaction = {
-    val tx = new Transaction(exchangeInfo.network)
-    inputFunds.foreach(tx.addInput)
-    val changeAmount = totalInputFunds - amountToCommit
-    require(!changeAmount.isNegative)
-    tx.addOutput(
-      amountToCommit.asSatoshi,
-      ScriptBuilder.createMultiSigOutputScript(
-        2, List(exchangeInfo.counterpartKey, exchangeInfo.userKey)))
-    if (changeAmount.isPositive) {
-      tx.addOutput(
-        (totalInputFunds - amountToCommit).asSatoshi,
-        userWallet.getChangeAddress)
-    }
-    tx.signInputs(SigHash.ALL, userWallet)
-    tx
-  }
   private val committedFunds = commitmentTransaction.getOutput(0)
   override val refundTransaction: Transaction = {
     val tx = new Transaction(exchangeInfo.network)

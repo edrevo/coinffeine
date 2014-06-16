@@ -5,6 +5,7 @@ ScoverageKeys.excludedPackages in ScoverageCompile :=
 
 libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.bitcoinj,
+  Dependencies.h2 % "test",
   Dependencies.dispatch,
   Dependencies.jodaConvert,
   Dependencies.netty,

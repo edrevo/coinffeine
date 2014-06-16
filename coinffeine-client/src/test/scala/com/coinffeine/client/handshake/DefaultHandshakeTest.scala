@@ -23,49 +23,6 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       }
     }
 
-  it should "fail if the amount to commit is less or equal to zero" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 5 BTC)
-    an [IllegalArgumentException] should be thrownBy {
-      new DefaultHandshake(
-        exchangeInfo = exchangeInfo,
-        amountToCommit = 0 BTC,
-        userWallet = userWallet) {}
-    }
-  }
-
-  "The commitment transaction" should
-    "commit the correct amount when the input exceeds the amount needed" in {
-      val userWallet = createWallet(exchangeInfo.userKey, 1 BTC)
-      sendMoneyToWallet(userWallet, 4 BTC)
-      val commitmentAmount = 2 BTC
-      val handshake = new DefaultHandshake(
-        exchangeInfo,
-        commitmentAmount,
-        userWallet) {}
-      Currency.Bitcoin.fromSatoshi(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
-    }
-
-  it should "commit the correct amount when the input matches the amount needed" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
-    val commitmentAmount = 2 BTC
-    val handshake = new DefaultHandshake(
-      exchangeInfo,
-      commitmentAmount,
-      userWallet) {}
-    Currency.Bitcoin.fromSatoshi(handshake.commitmentTransaction.getValue(userWallet)) should be (-commitmentAmount)
-  }
-
-  it should "be ready for broadcast and insertion into the blockchain" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
-    val commitmentAmount = 2 BTC
-    val handshake = new DefaultHandshake(
-      exchangeInfo,
-      commitmentAmount,
-      userWallet) {}
-    sendToBlockChain(handshake.commitmentTransaction)
-    Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (0 BTC)
-  }
-
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
     val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
     val commitmentAmount = 2 BTC

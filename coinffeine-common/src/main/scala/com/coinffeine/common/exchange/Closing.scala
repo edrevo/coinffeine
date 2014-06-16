@@ -10,5 +10,4 @@ abstract class Closing[C <: FiatCurrency](val exchange: Exchange[C]) {
 
   def closingTransaction: exchange.Transaction
   def signTransaction: exchange.TransactionSignature
-
 }
