@@ -1,4 +1,4 @@
-package com.coinffeine.client
+package com.coinffeine.common
 
 import java.io.File
 import java.math.BigInteger
@@ -11,11 +11,11 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 
-import com.coinffeine.common.{BitcoinAmount, Currency, UnitTest}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.network.UnitTestNetworkComponent
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
+abstract class BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
@@ -89,7 +89,7 @@ abstract class BitcoinjTest extends UnitTest with WithSampleExchangeInfo {
   def sendToBlockChain(miner: ECKey, txs: Transaction*): Unit = {
     val lastBlock = blockStore.getChainHead
     val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
-      miner.getPubKey, (50 BTC).asSatoshi)
+      miner.getPubKey, 50.BTC.asSatoshi)
     txs.foreach(newBlock.addTransaction)
     newBlock.solve()
     chain.add(newBlock)

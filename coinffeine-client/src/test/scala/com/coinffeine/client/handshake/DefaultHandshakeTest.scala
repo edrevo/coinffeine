@@ -6,11 +6,11 @@ import com.google.bitcoin.core.VerificationException
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
-import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
-import com.coinffeine.common.Currency
+import com.coinffeine.client.{SampleExchangeInfo, ExchangeInfo}
+import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 
-class DefaultHandshakeTest extends BitcoinjTest {
+class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   val exchangeInfo = sampleExchangeInfo
 
   "The DefaultExchangeHandshake constructor" should

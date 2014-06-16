@@ -11,13 +11,13 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
-import com.coinffeine.client.{BitcoinjTest, ExchangeInfo}
+import com.coinffeine.client.{SampleExchangeInfo, ExchangeInfo}
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
-import com.coinffeine.common.Currency
+import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 
-class DefaultExchangeTest extends BitcoinjTest with ScalaFutures {
+class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with ScalaFutures {
 
   private trait WithBasicSetup {
     val sellerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
