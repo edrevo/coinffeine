@@ -1,29 +1,31 @@
-package com.coinffeine.client
+package com.coinffeine.client.exchange
 
 import java.util.concurrent.LinkedBlockingDeque
 import scala.concurrent.duration._
 
-import akka.actor.{ActorRef, Terminated, Props}
-import akka.testkit.{TestActor, TestProbe}
+import akka.actor.{ActorRef, Props, Terminated}
 import akka.testkit.TestActor.Message
+import akka.testkit.{TestActor, TestProbe}
 import akka.util.Timeout
-import com.google.bitcoin.core.{Sha256Hash, Wallet, Transaction}
+import com.google.bitcoin.core.{Sha256Hash, Transaction, Wallet}
 import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
-import com.coinffeine.client.ExchangeSupervisorActor._
-import com.coinffeine.client.exchange._
+import com.coinffeine.client.exchange.ExchangeActor._
+import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.handshake.{Handshake, MockHandshake}
-import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, StartHandshake, HandshakeSuccess}
+import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.blockchain.BlockchainActor.{TransactionNotFoundWith, GetTransactionFor, TransactionFor}
+import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.Currency.Euro
 
-class BuyerExchangeSupervisorActorTest extends CoinffeineClientTest("buyerExchange")
+
+class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with UnitTestNetworkComponent with ScalaFutures with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
@@ -66,7 +68,7 @@ class BuyerExchangeSupervisorActorTest extends CoinffeineClientTest("buyerExchan
     val listener = TestProbe()
     val blockchain = TestProbe()
     val actor = system.actorOf(
-      Props(new ExchangeSupervisorActor[Euro.type, BuyerUser[Euro.type]](
+      Props(new ExchangeActor[Euro.type, BuyerUser[Euro.type]](
         handshakeProps,
         exchangeProps,
         handshakeFactory,
@@ -84,7 +86,7 @@ class BuyerExchangeSupervisorActorTest extends CoinffeineClientTest("buyerExchan
     }
   }
 
-  "The exchange supervisor actor" should "report an exchange success if both handshake " +
+  "The exchange actor" should "report an exchange success if both handshake " +
       "and exchange work as expected" in new Fixture {
     actor ! StartExchange(
       exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
@@ -100,12 +102,12 @@ class BuyerExchangeSupervisorActorTest extends CoinffeineClientTest("buyerExchan
     blockchain.reply(TransactionFor(dummyTxId, dummyTx))
     blockchain.reply(TransactionFor(dummyTxId, dummyTx))
 
-    withActor(ExchangeActorName) { exchangeActor =>
+    withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
-      queueItem.msg should be (ExchangeActor.StartExchange(
+      queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
         exchange, protocolConstants, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(ExchangeActor.ExchangeSuccess)(exchangeActor)
+      actor.!(MicroPaymentChannelActor.ExchangeSuccess)(exchangeActor)
     }
     listener.expectMsg(ExchangeSuccess)
     listener.expectMsgClass(classOf[Terminated])
@@ -165,12 +167,12 @@ class BuyerExchangeSupervisorActorTest extends CoinffeineClientTest("buyerExchan
     blockchain.reply(TransactionFor(dummyTxId, dummyTx))
 
     val error = new Error("exchange failure")
-    withActor(ExchangeActorName) { exchangeActor =>
+    withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
-      queueItem.msg should be (ExchangeActor.StartExchange(
+      queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
         exchange, protocolConstants, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(ExchangeActor.ExchangeFailure(error, None))(exchangeActor)
+      actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }
     listener.expectMsg(ExchangeFailure(error))
     listener.expectMsgClass(classOf[Terminated])

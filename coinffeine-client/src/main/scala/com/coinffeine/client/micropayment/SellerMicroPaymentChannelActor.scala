@@ -1,28 +1,30 @@
-package com.coinffeine.client.exchange
+package com.coinffeine.client.micropayment
 
-import scala.util.{Try, Failure}
+import scala.util.{Failure, Try}
 
 import akka.actor._
 
 import com.coinffeine.client.MessageForwarding
-import com.coinffeine.client.exchange.ExchangeActor.{StartExchange, ExchangeSuccess}
-import com.coinffeine.client.exchange.SellerExchangeActor.PaymentValidationResult
+import com.coinffeine.client.exchange.SellerUser
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
 
+
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerExchangeActor[C <: FiatCurrency]
+class SellerMicroPaymentChannelActor[C <: FiatCurrency]
   extends Actor with ActorLogging with Stash {
 
   override def receive: Receive = {
-    case init: StartExchange[C, SellerUser[C]] => new InitializedSellerExchange(init)
+    case init: StartMicroPaymentChannel[C, SellerUser[C]] => new InitializedSellerExchange(init)
   }
 
-  private class InitializedSellerExchange(init: StartExchange[C, SellerUser[C]]) {
+  private class InitializedSellerExchange(init: StartMicroPaymentChannel[C, SellerUser[C]]) {
     import init._
 
     private val exchangeInfo = exchange.exchangeInfo
@@ -82,10 +84,10 @@ class SellerExchangeActor[C <: FiatCurrency]
   }
 }
 
-object SellerExchangeActor {
+object SellerMicroPaymentChannelActor {
   private case class PaymentValidationResult(result: Try[Unit])
 
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps[C <: FiatCurrency]: Props = Props[SellerExchangeActor[C]]
+    def exchangeActorProps[C <: FiatCurrency]: Props = Props[SellerMicroPaymentChannelActor[C]]
   }
 }

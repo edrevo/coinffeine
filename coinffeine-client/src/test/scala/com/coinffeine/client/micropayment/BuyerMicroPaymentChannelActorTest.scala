@@ -1,34 +1,34 @@
-package com.coinffeine.client.exchange
-
-import scala.concurrent.duration._
+package com.coinffeine.client.micropayment
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.client.exchange.{BuyerUser, MockExchange}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
+import com.google.bitcoin.crypto.TransactionSignature
 
-class BuyerExchangeActorTest extends CoinffeineClientTest("buyerExchange") {
+import scala.concurrent.duration._
+
+class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange") {
   val listener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants()
   val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
-  val actor = system.actorOf(Props[BuyerExchangeActor[Euro.type]], "buyer-exchange-actor")
+  val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")
   val dummySig = TransactionSignature.dummy
   listener.watch(actor)
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartExchange(exchange, protocolConstants, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(exchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val relevantOfferAccepted = StepSignatures("id", 5, dummySig, dummySig)
     val irrelevantOfferAccepted = StepSignatures("another-id", 2, dummySig, dummySig)
