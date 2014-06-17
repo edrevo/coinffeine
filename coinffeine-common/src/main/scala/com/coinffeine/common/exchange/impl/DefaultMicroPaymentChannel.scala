@@ -12,11 +12,13 @@ case class DefaultMicroPaymentChannel[C <: FiatCurrency](
   extends MicroPaymentChannel[C](exchange) {
 
   override val currentTransaction: Transaction =
-    TransactionProcessor.createTransaction(
+    TransactionProcessor.createUnsignedTransaction(
       inputs = deposits.toSeq,
       outputs = Seq(
         exchange.buyer.bitcoinKey -> buyerFundsAfterCurrentStep._1,
-        exchange.seller.bitcoinKey -> sellerFundsAfterCurrentStep._1))
+        exchange.seller.bitcoinKey -> sellerFundsAfterCurrentStep._1),
+      network = exchange.parameters.network
+    )
 
   override def validateCurrentTransactionSignatures(
       buyerSignature: exchange.TransactionSignature,

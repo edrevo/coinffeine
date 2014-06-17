@@ -26,11 +26,13 @@ case class DefaultClosing[C <: FiatCurrency](
     * returned every time as the Transaction class is mutable.
     */
   def closingTransaction: exchange.Transaction =
-    TransactionProcessor.createTransaction(
+    TransactionProcessor.createUnsignedTransaction(
       inputs = deposits.toSeq,
       outputs = Seq(
         exchange.buyer.bitcoinKey -> buyerFundsAfter._1,
-        exchange.seller.bitcoinKey -> sellerFundsAfter._1))
+        exchange.seller.bitcoinKey -> sellerFundsAfter._1),
+      network = exchange.parameters.network
+    )
 
   override def validateTransactionSignatures(
       buyerSignature: exchange.TransactionSignature,

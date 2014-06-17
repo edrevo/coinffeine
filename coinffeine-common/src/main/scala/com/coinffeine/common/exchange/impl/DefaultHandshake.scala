@@ -9,15 +9,16 @@ import com.coinffeine.common.exchange.{Deposits, Handshake}
 case class DefaultHandshake[C <: FiatCurrency](
    override val exchange: DefaultExchange[C],
    override val myDeposit: Transaction,
-   override val myRefund: Transaction) extends Handshake[C](exchange) {
+   override val myRefund: Transaction,
+   herSignatureOfMyRefund: Option[TransactionSignature]) extends Handshake[C](exchange) {
 
-  override val myRefundIsSigned = ???
+  override val myRefundIsSigned = herSignatureOfMyRefund.isDefined
 
   override def withHerSignatureOfMyRefund(signature: TransactionSignature): DefaultHandshake[C] = {
     if (!TransactionProcessor.isValidSignature(myRefund, 0, signature)) {
       throw InvalidRefundSignature(myRefund, signature)
     }
-    copy(myRefund = TransactionProcessor.addSignatures(myRefund, 0 -> signature))
+    copy(herSignatureOfMyRefund = Some(signature))
   }
 
   override def startExchange(herDeposit: exchange.Transaction): DefaultMicroPaymentChannel[C] = {

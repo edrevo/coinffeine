@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange
 
+import com.google.bitcoin.core.NetworkParameters
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
@@ -35,7 +37,8 @@ object Exchange {
       lockTime: Long,
       commitmentConfirmations: Int,
       resubmitRefundSignatureTimeout: FiniteDuration,
-      refundSignatureAbortTimeout: FiniteDuration)
+      refundSignatureAbortTimeout: FiniteDuration,
+      network: NetworkParameters)
 
   case class StepNumber(value: Int) {
     require(value >= 0, s"Step number must be positive or zero ($value given)")
@@ -83,7 +86,9 @@ object Exchange {
     val stepBitcoinAmount: BitcoinAmount = bitcoinAmount / totalSteps.toBigDecimal
     val stepFiatAmount: CurrencyAmount[C] = fiatAmount / totalSteps.toBigDecimal
     val buyerDeposit: BitcoinAmount = stepBitcoinAmount * BigDecimal(2)
-    val sellerDeposit: BitcoinAmount = stepBitcoinAmount
+    val buyerRefund: BitcoinAmount = buyerDeposit - stepBitcoinAmount
+    val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
+    val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
     val buyerInitialBitcoinAmount: BitcoinAmount = buyerDeposit
     val sellerInitialBitcoinAmount: BitcoinAmount = bitcoinAmount + sellerDeposit
 

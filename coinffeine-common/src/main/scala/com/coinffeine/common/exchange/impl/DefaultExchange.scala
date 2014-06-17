@@ -24,13 +24,16 @@ case class DefaultExchange[C <: FiatCurrency]  (
     *                   object **should not be modified** once this method is called.
     * @return           A new handshake
     */
-  override def startHandshake(role: Role, myDeposit: Transaction): Handshake[C] = DefaultHandshake(
+  override def startHandshake(role: Role, myDeposit: Transaction) = DefaultHandshake(
     exchange = this,
     myDeposit,
-    myRefund = TransactionProcessor.createTransaction(
+    myRefund = TransactionProcessor.createUnsignedTransaction(
       inputs = Seq(myDeposit.getOutput(0)),
-      outputs = Seq(role.me(this).bitcoinKey -> role.myDepositAmount(amounts))
-    )
+      outputs = Seq(role.me(this).bitcoinKey -> role.myRefundAmount(amounts)),
+      network = parameters.network,
+      lockTime = Some(parameters.lockTime)
+    ),
+    herSignatureOfMyRefund = None
   )
 }
 

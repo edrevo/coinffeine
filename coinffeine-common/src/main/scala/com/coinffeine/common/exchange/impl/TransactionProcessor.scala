@@ -13,10 +13,10 @@ import com.coinffeine.common.Currency.Implicits._
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
 
-  def createMultisignTransaction(userWallet: Wallet,
-                                 amountToCommit: BitcoinAmount,
-                                 requiredSignatures: Seq[ECKey],
-                                 network: NetworkParameters): Transaction = {
+  def createMultisignDeposit(userWallet: Wallet,
+                             amountToCommit: BitcoinAmount,
+                             requiredSignatures: Seq[ECKey],
+                             network: NetworkParameters): Transaction = {
     require(amountToCommit.isPositive, "Amount to commit must be greater than zero")
 
     val inputFunds = collectFunds(userWallet, amountToCommit)
@@ -61,9 +61,18 @@ object TransactionProcessor {
     )
   }
 
-  def createTransaction(inputs: Seq[TransactionOutput],
-                        outputs: Seq[(ECKey, BitcoinAmount)],
-                        lockTime: Option[Long] = None): Transaction = ???
+  def createUnsignedTransaction(inputs: Seq[TransactionOutput],
+                                outputs: Seq[(ECKey, BitcoinAmount)],
+                                network: NetworkParameters,
+                                lockTime: Option[Long] = None): Transaction = {
+    val tx = new Transaction(network)
+    lockTime.foreach(tx.setLockTime)
+    for (input <- inputs) { tx.addInput(input).setSequenceNumber(0) }
+    for ((pubKey, amount) <- outputs) {
+      tx.addOutput(amount.asSatoshi, pubKey)
+    }
+    tx
+  }
 
   def addSignatures(tx: Transaction, signatures: (Int, TransactionSignature)*): Transaction = ???
 
