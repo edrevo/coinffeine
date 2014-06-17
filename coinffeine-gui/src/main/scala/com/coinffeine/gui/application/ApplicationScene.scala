@@ -17,6 +17,8 @@ import com.coinffeine.gui.application.ApplicationScene._
 class ApplicationScene(views: Seq[ApplicationView])
   extends Scene(width = DefaultWidth, height = DefaultHeight) {
 
+  require(views.nonEmpty, "At least one view is required")
+
   stylesheets.add("/css/main.css")
 
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)
