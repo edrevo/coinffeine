@@ -7,6 +7,8 @@ sealed trait Role {
   def her(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo[exchange.KeyPair]
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
+  def buyer[A](mine: A, her: A): A
+  def seller[A](mine: A, her: A): A
 }
 
 object BuyerRole extends Role {
@@ -24,6 +26,10 @@ object BuyerRole extends Role {
 
   override def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount =
     amounts.buyerRefund
+
+  override def buyer[A](mine: A, her: A): A = mine
+
+  override def seller[A](mine: A, her: A): A = her
 }
 
 object SellerRole extends Role {
@@ -41,4 +47,8 @@ object SellerRole extends Role {
 
   override def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount =
     amounts.sellerRefund
+
+  override def buyer[A](mine: A, her: A): A = her
+
+  override def seller[A](mine: A, her: A): A = mine
 }

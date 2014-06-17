@@ -9,13 +9,19 @@ abstract class Handshake[C <: FiatCurrency](val exchange: Exchange[C]) {
       invalidSignature: exchange.TransactionSignature) extends IllegalArgumentException(
     s"invalid signature $invalidSignature for refund transaction $refundTx")
 
-  def myDeposit: exchange.Transaction
-  def myRefund: exchange.Transaction
+  case class InvalidRefundTransaction(invalidTransaction: exchange.Transaction)
+    extends IllegalArgumentException(s"invalid refund transaction: $invalidTransaction")
 
-  def myRefundIsSigned: Boolean
+  /** Ready to be broadcasted deposit */
+  def myDeposit: exchange.Transaction
+
+  def myUnsignedRefund: exchange.Transaction
 
   @throws[InvalidRefundSignature]
-  def withHerSignatureOfMyRefund(signature: exchange.TransactionSignature): Handshake[C]
+  def signMyRefund(herSignature: exchange.TransactionSignature): exchange.Transaction
 
-  def startExchange(herDeposit: exchange.Transaction): MicroPaymentChannel[C]
+  @throws[InvalidRefundTransaction]
+  def signHerRefund(herRefund: exchange.Transaction): exchange.TransactionSignature
+
+  def createMicroPaymentChannel(herDeposit: exchange.Transaction): MicroPaymentChannel[C]
 }

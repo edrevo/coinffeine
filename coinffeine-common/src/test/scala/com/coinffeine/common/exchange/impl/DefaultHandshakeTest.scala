@@ -1,0 +1,53 @@
+package com.coinffeine.common.exchange.impl
+
+import com.coinffeine.common.BitcoinjTest
+import com.coinffeine.common.Currency.Bitcoin
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.exchange.{BuyerRole, SellerRole}
+
+class DefaultHandshakeTest extends BitcoinjTest {
+
+  import com.coinffeine.common.exchange.impl.Samples.exchange
+
+  "A handshake" should "create a refund of the right amount for the buyer" in new BuyerHandshake {
+    Bitcoin.fromSatoshi(buyerHandshake.myUnsignedRefund.get.getValueSentToMe(buyerWallet)) should be (0.1.BTC)
+  }
+
+  it should "create a refund of the right amount for the seller" in new SellerHandshake {
+    Bitcoin.fromSatoshi(sellerHandshake.myUnsignedRefund.get.getValueSentToMe(sellerWallet)) should be (1.BTC)
+  }
+
+  it should "produce a signature for the counterpart to get a refund" in
+    new BuyerHandshake with SellerHandshake {
+      val signature = sellerHandshake.signHerRefund(buyerHandshake.myUnsignedRefund)
+      val signedBuyerRefund = buyerHandshake.signMyRefund(signature).get
+      sendToBlockChain(buyerHandshake.myDeposit.get)
+      while(signedBuyerRefund.getLockTime > blockStore.getChainHead.getHeight) {
+        mineBlock()
+      }
+      sendToBlockChain(signedBuyerRefund)
+      Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (0.1.BTC)
+    }
+
+  // TODO: check that #signHerRefund throws on invalid refund transactions
+
+  it should "create a micropayment channel" in new BuyerHandshake with SellerHandshake {
+    val channel = buyerHandshake.createMicroPaymentChannel(sellerHandshake.myDeposit)
+    channel.deposits.buyerDeposit.get should be (buyerHandshake.myDeposit.get)
+    channel.deposits.sellerDeposit.get should be (sellerHandshake.myDeposit.get)
+  }
+
+  trait BuyerHandshake {
+    val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
+    val buyerFunds = TransactionProcessor.collectFunds(buyerWallet, 0.2.BTC)
+      .toSeq.map(exchange.UnspentOutput(_, exchange.buyer.bitcoinKey))
+    val buyerHandshake = exchange.startHandshake(BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
+  }
+
+  trait SellerHandshake {
+    val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
+    val sellerFunds = TransactionProcessor.collectFunds(sellerWallet, 0.2.BTC)
+      .toSeq.map(exchange.UnspentOutput(_, exchange.seller.bitcoinKey))
+    val sellerHandshake = exchange.startHandshake(SellerRole, sellerFunds, sellerWallet.getChangeAddress)
+  }
+}

@@ -10,6 +10,8 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 trait Exchange[C <: FiatCurrency] {
   type KeyPair
+  type TransactionOutput
+  type Address
   type Transaction
   type TransactionSignature
 
@@ -20,7 +22,21 @@ trait Exchange[C <: FiatCurrency] {
   def broker: Exchange.BrokerInfo
   def amounts: Exchange.Amounts[C]
 
-  def startHandshake(as: Role, deposit: Transaction): Handshake[C]
+  /** An output not yet spent and the key to spend it. */
+  case class UnspentOutput(output: TransactionOutput, key: KeyPair) {
+    def toTuple: (TransactionOutput, KeyPair) = (output, key)
+  }
+
+  /** Start a handshake for this exchange.
+    *
+    * @param role            Role played in the handshake
+    * @param unspentOutputs  Inputs for the deposit to create during the handshake
+    * @param changeAddress   Address to return the excess of funds in unspentOutputs
+    * @return                A new handshake
+    */
+  @throws[IllegalArgumentException]("when funds are insufficient")
+  def startHandshake(role: Role, unspentOutputs: Seq[UnspentOutput],
+                     changeAddress: Address): Handshake[C]
 }
 
 object Exchange {
@@ -68,12 +84,10 @@ object Exchange {
 
     override def toString = s"$value total steps"
     def toBigDecimal = BigDecimal(value)
-    def pendingStepsAfter(step: StepNumber): TotalSteps = new TotalSteps(lastStep.value - step.value)
     def isLastStep(step: StepNumber): Boolean = step == lastStep
   }
 
-  case class Amounts[C <: FiatCurrency](
-                                        bitcoinAmount: BitcoinAmount,
+  case class Amounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                         fiatAmount: CurrencyAmount[C],
                                         totalSteps: Exchange.TotalSteps) {
     require(totalSteps.isPositive,
@@ -95,12 +109,12 @@ object Exchange {
     def buyerFundsAfter(step: Exchange.StepNumber): (BitcoinAmount, CurrencyAmount[C]) = (
       stepBitcoinAmount * step.count,
       fiatAmount - (stepFiatAmount * step.count)
-      )
+    )
 
     def sellerFundsAfter(step: Exchange.StepNumber): (BitcoinAmount, CurrencyAmount[C]) = (
       bitcoinAmount - (stepBitcoinAmount * step.count),
       stepFiatAmount * step.count
-      )
+    )
   }
 
   trait Component {

@@ -1,25 +1,29 @@
 package com.coinffeine.common.exchange
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.impl.DefaultClosing
 
 abstract class MicroPaymentChannel[C <: FiatCurrency](val exchange: Exchange[C]) {
 
-  def deposits: Deposits
+  /** Signatures for a step transaction of both deposits. */
+  case class StepSignatures(buyerDepositSignature: exchange.TransactionSignature,
+                            sellerDepositSignature: exchange.TransactionSignature)
+
   def currentStep: Exchange.StepNumber
-  def currentTransaction: exchange.Transaction
 
-  def buyerFundsAfterCurrentStep = exchange.amounts.buyerFundsAfter(currentStep)
-  def sellerFundsAfterCurrentStep = exchange.amounts.sellerFundsAfter(currentStep)
-  def isLastStep = exchange.amounts.totalSteps.isLastStep(currentStep)
+  def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean
 
-  def validateCurrentTransactionSignatures(
-    buyerSignature: exchange.TransactionSignature,
-    sellerSignature: exchange.TransactionSignature): Boolean
-
-  def signCurrentTransaction: exchange.TransactionSignature
+  def signCurrentTransaction: StepSignatures
 
   def nextStep: MicroPaymentChannel[C]
 
-  def close(): Closing[C]
+  /** Given valid counterpart signatures it generates the closing transaction.
+    *
+    * The resulting transaction contains the following funds:
+    *
+    *  * For the last transaction in the happy path scenario it contains both the exchanged
+    *    amount for the buyer and the deposits for each participant.
+    *  * For an intermediate step, just the confirmed steps amounts for the buyer and the
+    *    rest of the amount to exchange for the seller. Note that deposits are lost as fees.
+    */
+  def closingTransaction(herSignatures: StepSignatures): exchange.Transaction
 }
