@@ -1,12 +1,11 @@
 package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
-import scala.util.Success
 
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.client.handshake.HandshakeActor.HandshakeResult
+import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
@@ -89,7 +88,10 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "wait until commitments are confirmed" in {
     listener.expectNoMsg(100 millis)
     publishedTransactions.foreach(tx => blockchain.send(actor, TransactionConfirmed(tx, 1)))
-    listener.expectMsg(HandshakeResult(Success(handshake.refundSignature)))
+    val result = listener.expectMsgClass(classOf[HandshakeSuccess])
+    result.refundSig should be (handshake.refundSignature)
+    result.buyerCommitmentTxId should be (handshake.commitmentTransaction.getHash)
+    result.sellerCommitmentTxId should be (handshake.counterpartCommitmentTransaction.getHash)
   }
 
   it should "finally terminate himself" in {

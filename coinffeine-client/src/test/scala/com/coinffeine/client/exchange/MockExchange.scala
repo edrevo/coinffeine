@@ -9,10 +9,10 @@ import com.google.bitcoin.crypto.TransactionSignature
 import org.joda.time.DateTime
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.Currency
+import com.coinffeine.common.{FiatCurrency, Currency}
 import com.coinffeine.common.paymentprocessor.Payment
 
-class MockExchange(override val exchangeInfo: ExchangeInfo[Currency.Euro.type]) extends Exchange[Currency.Euro.type] {
+class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]) extends Exchange[C] {
   this: UserRole =>
 
   private val offers = (1 to exchangeInfo.steps).map(idx => {
@@ -25,8 +25,8 @@ class MockExchange(override val exchangeInfo: ExchangeInfo[Currency.Euro.type]) 
       signature0: TransactionSignature,
       signature1: TransactionSignature): Try[Unit] = Try()
   override def getOffer(step: Int): Transaction = offers(step - 1)
-  override def pay(step: Int): Future[Payment[Currency.Euro.type]] = Future.successful(Payment(
-    "paymentId", "sender", "receiver", Currency.Euro(0.1), DateTime.now(), "description"))
+  override def pay(step: Int): Future[Payment[C]] = Future.successful(Payment(
+    "paymentId", "sender", "receiver", exchangeInfo.fiatStepAmount, DateTime.now(), "description"))
   override def validatePayment(step: Int, paymentId: String): Future[Unit] = Future()
   override protected def sign(offer: Transaction): (TransactionSignature, TransactionSignature) =
     (TransactionSignature.dummy, TransactionSignature.dummy)

@@ -83,13 +83,12 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private def getNotifiedByBroker(refundSig: TransactionSignature): Receive = {
       case ReceiveMessage(CommitmentNotification(_, buyerTx, sellerTx), _) =>
-        val transactions = Set(buyerTx, sellerTx)
-        transactions.foreach { tx =>
+        Set(buyerTx, sellerTx).foreach { tx =>
           blockchain ! NotifyWhenConfirmed(tx, commitmentConfirmations)
         }
         log.info("Handshake {}: The broker published {} and {}, waiting for confirmations",
           exchangeInfo.id, buyerTx, sellerTx)
-        context.become(waitForConfirmations(transactions, refundSig))
+        context.become(waitForConfirmations(sellerTx, buyerTx, refundSig))
     }
 
     private val abortOnBrokerNotification: Receive = {
@@ -105,21 +104,23 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
       getNotifiedByBroker(refundSig) orElse signCounterpartRefund orElse abortOnBrokerNotification
 
     private def waitForConfirmations(
-        pendingConfirmation: Set[Sha256Hash], refundSig: TransactionSignature): Receive = {
+        sellerTx: Sha256Hash, buyerTx: Sha256Hash, refundSig: TransactionSignature): Receive = {
+      def waitForPendingConfirmations(pendingConfirmation: Set[Sha256Hash]): Receive = {
+        case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
+          val stillPending = pendingConfirmation - tx
+          if (stillPending.nonEmpty) {
+            context.become(waitForPendingConfirmations(stillPending))
+          } else {
+            finishWithResult(Success(HandshakeSuccess(sellerTx, buyerTx, refundSig)))
+          }
 
-      case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
-        val stillPending = pendingConfirmation - tx
-        if (!stillPending.isEmpty) {
-          context.become(waitForConfirmations(stillPending, refundSig))
-        } else {
-          finishWithResult(Success(refundSig))
-        }
-
-      case TransactionRejected(tx) =>
-        val isOwn = tx == handshake.commitmentTransaction.getHash
-        val cause = CommitmentTransactionRejectedException(exchangeInfo.id, tx, isOwn)
-        log.error("Handshake {}: {}", exchangeInfo.id, cause.getMessage)
-        finishWithResult(Failure(cause))
+        case TransactionRejected(tx) =>
+          val isOwn = tx == handshake.commitmentTransaction.getHash
+          val cause = CommitmentTransactionRejectedException(exchangeInfo.id, tx, isOwn)
+          log.error("Handshake {}: {}", exchangeInfo.id, cause.getMessage)
+          finishWithResult(Failure(cause))
+      }
+      waitForPendingConfirmations(Set(buyerTx, sellerTx))
     }
 
     private def subscribeToMessages(): Unit = {
@@ -156,9 +157,11 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
         RefundTxSignatureRequest(exchangeInfo.id, handshake.refundTransaction))
     }
 
-    private def finishWithResult(result: Try[TransactionSignature]): Unit = {
+    private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
       log.info("Handshake {}: handshake finished with result {}", exchangeInfo.id, result)
-      resultListeners.foreach(_ ! HandshakeResult(result))
+      resultListeners.foreach(_ ! result.recover {
+        case e => HandshakeFailure(e)
+      }.get)
       self ! PoisonPill
     }
   }
