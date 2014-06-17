@@ -17,6 +17,13 @@ case class DefaultExchange[C <: FiatCurrency]  (
   override type Transaction = bitcoin.core.Transaction
   override type TransactionSignature = bitcoin.crypto.TransactionSignature
 
+  /** Start a handshake for this exchange.
+    *
+    * @param role       Role played in the handshake
+    * @param myDeposit  Transaction in which the deposit will be compromised. The passed
+    *                   object **should not be modified** once this method is called.
+    * @return           A new handshake
+    */
   override def startHandshake(role: Role, myDeposit: Transaction): Handshake[C] = DefaultHandshake(
     exchange = this,
     myDeposit,

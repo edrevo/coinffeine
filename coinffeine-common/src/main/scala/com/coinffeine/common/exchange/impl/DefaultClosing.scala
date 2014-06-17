@@ -20,7 +20,12 @@ case class DefaultClosing[C <: FiatCurrency](
     (exchange.amounts.sellerDeposit, lastStepFunds._2)
   }
 
-  val closingTransaction: exchange.Transaction =
+  /** Transaction to settle the exchange.
+    *
+    * Note that this transaction lacks the required signatures and that a fresh instance is
+    * returned every time as the Transaction class is mutable.
+    */
+  def closingTransaction: exchange.Transaction =
     TransactionProcessor.createTransaction(
       inputs = deposits.toSeq,
       outputs = Seq(
