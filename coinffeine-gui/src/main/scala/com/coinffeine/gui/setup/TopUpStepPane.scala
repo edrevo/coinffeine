@@ -18,7 +18,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
   content = new VBox(spacing = 5) {
     padding = Insets(10, 50, 10, 50)
     content = Seq(
-      new Label("Add bitcoins to your Coinffeine wallet") { font = Font(16) },
+      new Label("Add bitcoins to your Coinffeine wallet") { styleClass = Seq("stepTitle") },
       new HBox {
         alignment = Pos.BASELINE_LEFT
         content = Seq(

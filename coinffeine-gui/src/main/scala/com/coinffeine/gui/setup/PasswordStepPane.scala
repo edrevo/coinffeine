@@ -2,14 +2,13 @@ package com.coinffeine.gui.setup
 
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.Event
-import scalafx.geometry.{Pos, Insets}
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
 import scalafx.scene.paint.Color
+import scalafx.scene.text.TextAlignment
 
 import com.coinffeine.gui.wizard.StepPane
-
-import scalafx.scene.text.{TextAlignment, Font}
 
 private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfig] {
 
@@ -69,7 +68,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   content = new VBox(spacing = 5) {
     padding = Insets(10, 50, 10, 50)
     content = Seq(
-      new Label("Choose a password") { font = Font(16) },
+      new Label("Choose a password") { styleClass.add("stepTitle") },
       new Label("You can use a password to protect the information that " +
          "Coinffeine saves in your computer.") {
         wrapText = true

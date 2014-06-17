@@ -10,7 +10,6 @@ import scalafx.event.ActionEvent
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
-import scalafx.scene.text.Font
 
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.concurrent.ScalaFxImplicits._
@@ -70,7 +69,7 @@ private[setup] class OkPayCredentialsStepPane(credentialsValidator: CredentialsV
     new VBox(spacing = 5) {
       padding = Insets(10, 50, 10, 50)
       content = Seq(
-        new Label("Configure your OKPay account") { font = Font(16) },
+        new Label("Configure your OKPay account") { styleClass = Seq("stepTitle") },
         new Label("Your credentials are stored locally and never will be shared"),
         grid
       )

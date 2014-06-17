@@ -8,6 +8,9 @@ import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
+import com.coinffeine.gui.application.ApplicationScene
+import com.coinffeine.gui.application.main.MainView
+import com.coinffeine.gui.application.operations.OperationsView
 import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import com.coinffeine.gui.setup.CredentialsValidator.Result
 
@@ -26,7 +29,7 @@ object Main extends JFXApp {
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new MainScene
+    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView))
   }
   stage.show()
 }

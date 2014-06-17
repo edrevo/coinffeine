@@ -7,7 +7,7 @@ import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
 import scalafx.scene.text.Font
-import scalafx.stage.{StageStyle, Stage}
+import scalafx.stage.{Stage, StageStyle}
 
 /** Step-by-step wizard that accumulates information of type Data.
   *
@@ -81,6 +81,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
   resizable = false
   scene = new Scene(Wizard.this.width, Wizard.this.height) {
     root = rootWizardPane
+    stylesheets.add("/css/wizard.css")
   }
 
   private def initializeSteps(): Unit = {
