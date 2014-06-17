@@ -23,7 +23,7 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
 
   override val marketStats = new MarketStats {}
 
-  override val paymentProcessors: Set[PaymentProcessor] = Set.empty
+  override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
 
   override def close(): Unit = system.shutdown()
 }

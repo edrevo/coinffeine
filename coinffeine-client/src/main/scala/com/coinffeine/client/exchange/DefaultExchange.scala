@@ -2,9 +2,13 @@ package com.coinffeine.client.exchange
 
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.duration._
 import scala.util.Try
 
+import akka.actor.ActorRef
+import akka.pattern._
+import akka.util.Timeout
 import com.google.bitcoin.core.{Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.crypto.TransactionSignature
@@ -17,11 +21,12 @@ import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
 class DefaultExchange[C <: FiatCurrency](
     override val exchangeInfo: ExchangeInfo[C],
-    paymentProcessor: PaymentProcessor,
+    paymentProcessor: ActorRef,
     sellerCommitmentTx: Transaction,
     buyerCommitmentTx: Transaction) extends Exchange[C] {
   this: UserRole =>
 
+  private implicit val paymentProcessorTimeout = Timeout(5.seconds)
   private val sellerFunds = sellerCommitmentTx.getOutput(0)
   private val buyerFunds = buyerCommitmentTx.getOutput(0)
   requireValidBuyerFunds(buyerFunds)
@@ -50,10 +55,15 @@ class DefaultExchange[C <: FiatCurrency](
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  override def pay(step: Int): Future[Payment[C]] = paymentProcessor.sendPayment(
-    exchangeInfo.counterpartFiatAddress,
-    exchangeInfo.fiatStepAmount,
-    getPaymentDescription(step))
+  override def pay(step: Int): Future[Payment[C]] = {
+    for {
+      paid <- paymentProcessor.ask(PaymentProcessor.Pay(
+        exchangeInfo.counterpartFiatAddress,
+        exchangeInfo.fiatStepAmount,
+        getPaymentDescription(step))).mapTo[PaymentProcessor.Paid[C]]
+
+    } yield paid.payment
+  }
 
   override def getOffer(step: Int): Transaction = {
     val tx = new Transaction(exchangeInfo.network)
@@ -87,20 +97,22 @@ class DefaultExchange[C <: FiatCurrency](
     tx
   }
 
-  override def validatePayment(step: Int, paymentId: String): Future[Unit] = for {
-    maybePayment <- paymentProcessor.findPayment(paymentId)
-  } yield {
-    require(maybePayment.isDefined, "PaymentId not found")
-    val payment = maybePayment.get
-    require(payment.amount == exchangeInfo.fiatStepAmount,
-      "Payment amount does not match expected amount")
-    require(payment.receiverId == sellersFiatAddress,
-      "Payment is not being sent to the seller")
-    require(payment.senderId == buyersFiatAddress,
-      "Payment is not coming from the buyer")
-    require(payment.description == getPaymentDescription(step),
-      "Payment does not have the required description")
-    ()
+  override def validatePayment(step: Int, paymentId: String): Future[Unit] = {
+    for {
+      found <- paymentProcessor.ask(
+        PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentProcessor.PaymentFound[_]]
+    } yield {
+      val payment = found.payment
+      require(payment.amount == exchangeInfo.fiatStepAmount,
+        "Payment amount does not match expected amount")
+      require(payment.receiverId == sellersFiatAddress,
+        "Payment is not being sent to the seller")
+      require(payment.senderId == buyersFiatAddress,
+        "Payment is not coming from the buyer")
+      require(payment.description == getPaymentDescription(step),
+        "Payment does not have the required description")
+      ()
+    }
   }
 
   override def validateSellersFinalSignature(

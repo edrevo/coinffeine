@@ -52,7 +52,7 @@ object Exchange {
   }
 
   case class PeerInfo[KeyPair](connection: PeerConnection,
-                               paymentProcessorAccount: PaymentProcessor#AccountId,
+                               paymentProcessorAccount: PaymentProcessor.AccountId,
                                bitcoinKey: KeyPair)
 
   case class BrokerInfo(connection: PeerConnection)

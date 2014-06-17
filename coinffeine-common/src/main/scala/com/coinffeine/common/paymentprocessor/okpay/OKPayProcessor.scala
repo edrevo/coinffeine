@@ -3,39 +3,45 @@ package com.coinffeine.common.paymentprocessor.okpay
 import java.util.{Currency => JavaCurrency}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
+import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
-import scalaxb.{DispatchHttpClients, Soap11Clients, Soap11Fault}
+import scalaxb.Soap11Fault
 
 import com.coinffeine.common._
 import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor, PaymentProcessorException}
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessor(
-    tokenGenerator: TokenGenerator,
     account: String,
-    service: I_OkPayAPI = OKPayProcessor.defaultClient()) extends PaymentProcessor {
+    client: OKPayClient,
+    tokenGenerator: TokenGenerator) extends Actor {
 
-  override def id: String = OKPayProcessor.Id
+  private val service = client.service
 
-  /** Send a payment from any of your wallets to someone wallet.
-    *
-    * @param receiverId OKPay Wallet ID of receiver of payment, example: OK321345.
-    * @param amount amount to send.
-    * @return a Payment Object.
-    */
-  override def sendPayment[C <: FiatCurrency](receiverId: String,
-                                              amount: CurrencyAmount[C],
-                                              comment: String): Future[Payment[C]] = {
+  override def receive: Receive = {
+    case PaymentProcessor.Identify =>
+      sender ! PaymentProcessor.Identified(OKPayProcessor.Id)
+    case pay: PaymentProcessor.Pay[_] =>
+      sendPayment(sender(), pay)
+    case PaymentProcessor.FindPayment(paymentId) =>
+      findPayment(sender(), paymentId)
+    case PaymentProcessor.RetrieveBalance(currency) =>
+      currentBalance(sender(), currency)
+  }
+
+  private def sendPayment[C <: FiatCurrency](requester: ActorRef,
+                                             pay: PaymentProcessor.Pay[C]): Unit = {
     Future {
       val response = getResponse(service.send_Money(
         walletID = Some(Some(account)),
         securityToken = Some(Some(buildCurrentToken())),
-        receiver = Some(Some(receiverId)),
-        currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
-        amount = Some(amount.value),
-        comment = Some(Some(comment)),
+        receiver = Some(Some(pay.to)),
+        currency = Some(Some(pay.amount.currency.javaCurrency.getCurrencyCode)),
+        amount = Some(pay.amount.value),
+        comment = Some(Some(pay.comment)),
         isReceiverPaysFees = Some(false),
         invoice = None
       ))
@@ -44,40 +50,34 @@ class OKPayProcessor(
         .flatten
         .flatMap(parseTransactionInfo)
         .getOrElse(throw new PaymentProcessorException("Cannot parse the sent payment: " + response))
-      val expectedCurrency = amount.currency
+      val expectedCurrency = pay.amount.currency
       val actualCurrency = payment.amount.currency
       if (actualCurrency != expectedCurrency) throw new PaymentProcessorException(
-        s"payment returned by OKPay is expressed in $actualCurrency, but $expectedCurrency was expected")
+        s"payment is expressed in $actualCurrency, but $expectedCurrency was expected")
       else payment.asInstanceOf[Payment[C]]
+    }.onComplete {
+      case Success(payment) =>
+        requester ! PaymentProcessor.Paid(payment)
+      case Failure(error) =>
+        requester ! PaymentProcessor.PaymentFailed(pay, error)
     }
   }
 
-  /** Find an specific payment by id.
-    *
-    * Note: The date attribute on Payment is in the Timezone defined by the user in OKPay.
-    * Please, use the payment date with caution.
-    *
-    * @param paymentId PaymentId to search. Example: 2205909.
-    * @return The payment wanted.
-    */
-  override def findPayment(paymentId: String): Future[Option[AnyPayment]] = Future {
+  private def findPayment(requester: ActorRef, paymentId: String): Unit = Future {
     getResponse(service.transaction_Get(
       walletID = Some(Some(this.account)),
       securityToken = Some(Some(buildCurrentToken())),
       txnID = Some(paymentId.toLong),
       invoice = None)
     ).Transaction_GetResult.flatten.flatMap(parseTransactionInfo)
+  }.onComplete {
+    case Success(Some(payment)) => requester ! PaymentProcessor.PaymentFound(payment)
+    case Success(None) => requester ! PaymentProcessor.PaymentNotFound(paymentId)
+    case Failure(error) => throw error
   }
 
-  /** Returns the account balance.
-    *
-    * The balance is a Sequence of FiatAmount, one FiatAmount
-    * by each distinct currency on the wallet.
-    * Example: 20 EUR, 50 GBP and 100 USD.
-    *
-    * @return a Sequence of FiatAmount.
-    */
-  override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = Future {
+  private def currentBalance[C <: FiatCurrency](requester: ActorRef,
+                                                currency: C): Unit = Future {
     val token: String = buildCurrentToken()
     val response = getResponse(service.wallet_Get_Balance(
       walletID = Some(Some(this.account)),
@@ -85,6 +85,9 @@ class OKPayProcessor(
     ))
     response.Wallet_Get_BalanceResult.flatten.map(b => parseArrayOfBalance(b, currency))
       .getOrElse(throw new PaymentProcessorException("Cannot parse balances: " + response))
+  }.onComplete {
+    case Success(balance) => requester ! PaymentProcessor.BalanceRetrieved(balance)
+    case Failure(error) => requester ! PaymentProcessor.BalanceRetrievalFailed(currency, error)
   }
 
   private def parseTransactionInfo(txInfo: TransactionInfo): Option[AnyPayment] = {
@@ -133,14 +136,21 @@ class OKPayProcessor(
   }
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
+
 }
 
 object OKPayProcessor {
 
   val Id = "OKPAY"
 
-  private val DateFormat = "yyyy-MM-dd HH:mm:ss"
+  trait Component extends PaymentProcessor.Component {
 
-  private def defaultClient() =
-    new BasicHttpBinding_I_OkPayAPIBindings with Soap11Clients with DispatchHttpClients {}.service
+    this: TokenGenerator.Component with OKPayClient.Component =>
+
+    override def paymentProcessorProps(account: PaymentProcessor.AccountId,
+                                       credentials: PaymentProcessor.AccountCredentials): Props =
+      Props(new OKPayProcessor(account, okPayClient, createTokenGenerator(credentials)))
+  }
+
+  private val DateFormat = "yyyy-MM-dd HH:mm:ss"
 }

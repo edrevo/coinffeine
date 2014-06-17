@@ -9,7 +9,7 @@ import com.coinffeine.common.protocol.ProtocolConstants
 trait CoinffeineApp extends Closeable {
   def network: CoinffeineNetwork
   def wallet: CoinffeineWallet
-  def paymentProcessors: Set[PaymentProcessor]
+  def paymentProcessors: Set[PaymentProcessor.Component]
   def marketStats: MarketStats
   def protocolConstants: ProtocolConstants
 }
