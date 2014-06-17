@@ -6,8 +6,10 @@ import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
 trait PaymentProcessor {
 
+  type AccountId = String
+
   /** Unique identifier of this payment processor */
-  def id: String
+  def id: AccountId
 
   /** Send a payment from any of your wallets to someone.
     *
@@ -18,7 +20,7 @@ trait PaymentProcessor {
     * @return a Payment object containing the information of payment (receiverId and senderId
     *         properties are not provided)
     */
-  def sendPayment[C <: FiatCurrency](receiverId: String, amount: CurrencyAmount[C], comment: String): Future[Payment[C]]
+  def sendPayment[C <: FiatCurrency](receiverId: AccountId, amount: CurrencyAmount[C], comment: String): Future[Payment[C]]
 
   /** Find a specific payment by id.
     *
