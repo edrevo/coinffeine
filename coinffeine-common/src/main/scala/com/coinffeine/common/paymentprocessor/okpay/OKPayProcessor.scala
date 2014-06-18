@@ -73,7 +73,7 @@ class OKPayProcessor(
   }.onComplete {
     case Success(Some(payment)) => requester ! PaymentProcessor.PaymentFound(payment)
     case Success(None) => requester ! PaymentProcessor.PaymentNotFound(paymentId)
-    case Failure(error) => throw error
+    case Failure(error) => requester ! PaymentProcessor.FindPaymentFailed(paymentId, error)
   }
 
   private def currentBalance[C <: FiatCurrency](requester: ActorRef,

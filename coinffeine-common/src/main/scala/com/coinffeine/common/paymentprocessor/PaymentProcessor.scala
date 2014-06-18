@@ -35,7 +35,7 @@ object PaymentProcessor {
                                     amount: CurrencyAmount[C],
                                     comment: String)
 
-  /** A message sent by the payment process in order to notify of a successful payment. */
+  /** A message sent by the payment processor in order to notify of a successful payment. */
   case class Paid[C <: FiatCurrency](payment: Payment[C])
 
   /** A message sent by the payment processor to notify a payment failure.
@@ -54,6 +54,9 @@ object PaymentProcessor {
 
   /** A message sent by the payment processor to notify a not found payment. */
   case class PaymentNotFound(payment: PaymentId)
+
+  /** A message sent by the payment processor to notify an error while finding a payment. */
+  case class FindPaymentFailed(payment: PaymentId, error: Throwable)
 
   /** A message sent to the payment processor to retrieve the current balance
     * in the given currency.
