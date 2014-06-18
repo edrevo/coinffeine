@@ -55,6 +55,6 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   override def validateRefundSignature(signature: TransactionSignature): Try[Unit] = Try {
     require(TransactionProcessor.isValidSignature(
       refundTransaction, index = 0, signature, exchangeInfo.counterpartKey,
-      List(exchangeInfo.userKey, exchangeInfo.counterpartKey)))
+      List(exchangeInfo.counterpartKey, exchangeInfo.userKey)))
   }
 }
