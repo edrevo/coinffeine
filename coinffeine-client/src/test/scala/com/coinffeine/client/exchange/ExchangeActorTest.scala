@@ -21,7 +21,6 @@ import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
 import com.coinffeine.common.network.UnitTestNetworkComponent
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 
 
@@ -44,7 +43,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
-      paymentProc: PaymentProcessor,
+      paymentProc: ActorRef,
       tx1: Transaction,
       tx2: Transaction): Exchange[Euro.type] with BuyerUser[Euro.type] = exchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
@@ -61,8 +60,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     wallet.addKey(exchangeInfo.userKey)
     wallet
   }
-  private val dummyPaymentProcessor = new MockPaymentProcessorFactory(List.empty).newProcessor(
-    fiatAddress = "", initialBalance = Seq.empty)
+  private val dummyPaymentProcessor = system.actorOf(new MockPaymentProcessorFactory(List.empty).newProcessor(
+    fiatAddress = "", initialBalance = Seq.empty))
 
   trait Fixture {
     val listener = TestProbe()
