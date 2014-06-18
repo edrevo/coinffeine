@@ -29,7 +29,41 @@ class DefaultHandshakeTest extends BitcoinjTest {
       Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (0.1.BTC)
     }
 
-  // TODO: check that #signHerRefund throws on invalid refund transactions
+  it should "reject signing counterpart deposit with a different lock time" in
+    new BuyerHandshake with SellerHandshake {
+      val depositWithWrongLockTime = ImmutableTransaction {
+        val tx = buyerHandshake.myUnsignedRefund.get
+        tx.setLockTime(exchange.parameters.lockTime - 10)
+        tx
+      }
+      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+        sellerHandshake.signHerRefund(depositWithWrongLockTime)
+      }
+    }
+
+  it should "reject signing counterpart deposit with no lock time" in
+    new BuyerHandshake with SellerHandshake {
+      val depositWithNoLockTime = ImmutableTransaction {
+        val tx = buyerHandshake.myUnsignedRefund.get
+        tx.setLockTime(0)
+        tx
+      }
+      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+        sellerHandshake.signHerRefund(depositWithNoLockTime)
+      }
+    }
+
+  it should "reject signing counterpart deposit with other than one input" in
+    new BuyerHandshake with SellerHandshake {
+      val depositWithoutInputs = ImmutableTransaction {
+        val tx = buyerHandshake.myUnsignedRefund.get
+        tx.clearInputs()
+        tx
+      }
+      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+        sellerHandshake.signHerRefund(depositWithoutInputs)
+      }
+    }
 
   it should "create a micropayment channel" in new BuyerHandshake with SellerHandshake {
     val channel = buyerHandshake.createMicroPaymentChannel(sellerHandshake.myDeposit)

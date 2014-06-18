@@ -9,8 +9,8 @@ abstract class Handshake[C <: FiatCurrency](val exchange: Exchange[C]) {
       invalidSignature: exchange.TransactionSignature) extends IllegalArgumentException(
     s"invalid signature $invalidSignature for refund transaction $refundTx")
 
-  case class InvalidRefundTransaction(invalidTransaction: exchange.Transaction)
-    extends IllegalArgumentException(s"invalid refund transaction: $invalidTransaction")
+  case class InvalidRefundTransaction(invalidTransaction: exchange.Transaction, cause: String)
+    extends IllegalArgumentException(s"invalid refund transaction: $invalidTransaction: $cause")
 
   /** Ready to be broadcasted deposit */
   def myDeposit: exchange.Transaction

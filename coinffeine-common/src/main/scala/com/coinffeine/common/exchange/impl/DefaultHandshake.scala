@@ -22,9 +22,8 @@ case class DefaultHandshake[C <: FiatCurrency](
 
   @throws[InvalidRefundTransaction]
   override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
-    val tx = herRefund.get
-    ensureValidRefundTransaction(tx)
-    signRefundTransaction(tx)
+    ensureValidRefundTransaction(herRefund)
+    signRefundTransaction(herRefund.get)
   }
 
   @throws[InvalidRefundSignature]
@@ -34,9 +33,9 @@ case class DefaultHandshake[C <: FiatCurrency](
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
+    ensureValidRefundTransaction(myUnsignedRefund)
     ImmutableTransaction {
       val tx = myUnsignedRefund.get
-      ensureValidRefundTransaction(tx)
       val mySignature = signRefundTransaction(tx)
       val buyerSignature = role.buyer(mySignature, herSignature)
       val sellerSignature = role.seller(mySignature, herSignature)
@@ -60,11 +59,16 @@ case class DefaultHandshake[C <: FiatCurrency](
     DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
   }
 
-  private def ensureValidRefundTransaction(refundTx: Transaction) = {
+  private def ensureValidRefundTransaction(refundTx: ImmutableTransaction) = {
+    def requireProperty(cond: Transaction => Boolean, cause: String): Unit = {
+      if (!cond(refundTx.get)) throw new InvalidRefundTransaction(refundTx, cause)
+    }
+
     // TODO: Is this enough to ensure we can sign?
-    require(refundTx.isTimeLocked)
-    require(refundTx.getLockTime == exchange.parameters.lockTime)
-    require(refundTx.getInputs.size == 1)
-    require(refundTx.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN)
+    requireProperty(_.isTimeLocked, "lack a time lock")
+    requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
+    requireProperty(_.getInputs.size == 1, "should have one input")
+    requireProperty(_.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN,
+      "wrong confidence level")
   }
 }
