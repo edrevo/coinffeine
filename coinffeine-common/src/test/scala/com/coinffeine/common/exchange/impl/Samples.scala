@@ -13,6 +13,9 @@ object Samples {
   val exchange = DefaultExchange(
     id = Exchange.Id("id"),
     parameters = Exchange.Parameters(
+      bitcoinAmount = 1.BTC,
+      fiatAmount = 1000.EUR,
+      totalSteps = Exchange.TotalSteps(10),
       lockTime = 10,
       commitmentConfirmations = 1,
       resubmitRefundSignatureTimeout = 10.seconds,
@@ -21,11 +24,6 @@ object Samples {
     ),
     buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new ECKey()),
     seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new ECKey()),
-    broker = Exchange.BrokerInfo(PeerConnection("broker")),
-    amounts = Exchange.Amounts(
-      bitcoinAmount = 1.BTC,
-      fiatAmount = 1000.EUR,
-      totalSteps = Exchange.TotalSteps(10)
-    )
+    broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )
 }

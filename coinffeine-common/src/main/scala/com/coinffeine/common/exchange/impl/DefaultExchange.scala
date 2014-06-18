@@ -7,11 +7,10 @@ import com.coinffeine.common.exchange.{Exchange, Role}
 
 case class DefaultExchange[C <: FiatCurrency]  (
   override val id: Exchange.Id,
-  override val parameters: Exchange.Parameters,
+  override val parameters: Exchange.Parameters[C],
   override val buyer: Exchange.PeerInfo[bitcoin.core.ECKey],
   override val seller: Exchange.PeerInfo[bitcoin.core.ECKey],
-  override val broker: Exchange.BrokerInfo,
-  override val amounts: Exchange.Amounts[C]) extends Exchange[C] {
+  override val broker: Exchange.BrokerInfo) extends Exchange[C] {
 
   override type KeyPair = bitcoin.core.ECKey
   override type Address = bitcoin.core.Address
@@ -41,11 +40,10 @@ object DefaultExchange {
     type KeyPair = bitcoin.core.ECKey
 
     override def createExchange[C <: FiatCurrency](id: Exchange.Id,
-                                                   parameters: Exchange.Parameters,
+                                                   parameters: Exchange.Parameters[C],
                                                    buyer: Exchange.PeerInfo[KeyPair],
                                                    seller: Exchange.PeerInfo[KeyPair],
-                                                   broker: Exchange.BrokerInfo,
-                                                   amounts: Exchange.Amounts[C]) =
-      DefaultExchange[C](id, parameters, buyer, seller, broker, amounts)
+                                                   broker: Exchange.BrokerInfo) =
+      DefaultExchange[C](id, parameters, buyer, seller, broker)
   }
 }

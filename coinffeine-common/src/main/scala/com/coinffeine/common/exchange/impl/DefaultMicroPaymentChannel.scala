@@ -13,12 +13,19 @@ case class DefaultMicroPaymentChannel[C <: FiatCurrency](
     override val currentStep: Exchange.StepNumber = Exchange.StepNumber.First)
   extends MicroPaymentChannel[C](exchange) {
 
-  private val buyerFundsAfterCurrentStep = exchange.amounts.buyerFundsAfter(currentStep)
-  private val sellerFundsAfterCurrentStep = exchange.amounts.sellerFundsAfter(currentStep)
-  private val isLastStep = exchange.amounts.totalSteps.isLastStep(currentStep)
-
-  private val currentUnsignedTransaction =
-    new MicroPaymentTransaction(exchange, deposits, currentStep)
+  private val currentUnsignedTransaction = ImmutableTransaction {
+    TransactionProcessor.createUnsignedTransaction(
+      inputs = Seq(
+        deposits.buyerDeposit.get.getOutput(0),
+        deposits.sellerDeposit.get.getOutput(0)
+      ),
+      outputs = Seq(
+        exchange.buyer.bitcoinKey -> exchange.amounts.channelOutputForBuyerAfter(currentStep),
+        exchange.seller.bitcoinKey -> exchange.amounts.channelOutputForSellerAfter(currentStep)
+      ),
+      network = exchange.parameters.network
+    )
+  }
 
   override def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean = {
     val tx = currentUnsignedTransaction.get

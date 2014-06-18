@@ -16,16 +16,18 @@ trait Exchange[C <: FiatCurrency] {
   type TransactionSignature
 
   def id: Exchange.Id
-  def parameters: Exchange.Parameters
+  def parameters: Exchange.Parameters[C]
   def buyer: Exchange.PeerInfo[KeyPair]
   def seller: Exchange.PeerInfo[KeyPair]
   def broker: Exchange.BrokerInfo
-  def amounts: Exchange.Amounts[C]
 
   /** An output not yet spent and the key to spend it. */
   case class UnspentOutput(output: TransactionOutput, key: KeyPair) {
     def toTuple: (TransactionOutput, KeyPair) = (output, key)
   }
+
+  def amounts: Exchange.Amounts[C] =
+    Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.totalSteps)
 
   /** Start a handshake for this exchange.
     *
@@ -49,12 +51,14 @@ object Exchange {
     def random() = new Id(value = Random.nextString(12)) // TODO: use a crypto secure method
   }
 
-  case class Parameters(
-      lockTime: Long,
-      commitmentConfirmations: Int,
-      resubmitRefundSignatureTimeout: FiniteDuration,
-      refundSignatureAbortTimeout: FiniteDuration,
-      network: NetworkParameters)
+  case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                           fiatAmount: CurrencyAmount[C],
+                                           totalSteps: Exchange.TotalSteps,
+                                           lockTime: Long,
+                                           commitmentConfirmations: Int,
+                                           resubmitRefundSignatureTimeout: FiniteDuration,
+                                           refundSignatureAbortTimeout: FiniteDuration,
+                                           network: NetworkParameters)
 
   case class StepNumber(value: Int) {
     require(value >= 0, s"Step number must be positive or zero ($value given)")
@@ -103,28 +107,28 @@ object Exchange {
     val buyerRefund: BitcoinAmount = buyerDeposit - stepBitcoinAmount
     val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
+
     val buyerInitialBitcoinAmount: BitcoinAmount = buyerDeposit
     val sellerInitialBitcoinAmount: BitcoinAmount = bitcoinAmount + sellerDeposit
 
-    def buyerFundsAfter(step: Exchange.StepNumber): (BitcoinAmount, CurrencyAmount[C]) = (
-      stepBitcoinAmount * step.count,
-      fiatAmount - (stepFiatAmount * step.count)
-    )
+    def channelOutputForBuyerAfter(step: Exchange.StepNumber): BitcoinAmount = {
+      val amountSplit = stepBitcoinAmount * step.count
+      if (totalSteps.isLastStep(step)) amountSplit + buyerDeposit else amountSplit
+    }
 
-    def sellerFundsAfter(step: Exchange.StepNumber): (BitcoinAmount, CurrencyAmount[C]) = (
-      bitcoinAmount - (stepBitcoinAmount * step.count),
-      stepFiatAmount * step.count
-    )
+    def channelOutputForSellerAfter(step: Exchange.StepNumber): BitcoinAmount = {
+      val amountSplit = bitcoinAmount - (stepBitcoinAmount * step.count)
+      if (totalSteps.isLastStep(step)) amountSplit + sellerDeposit else amountSplit
+    }
   }
 
   trait Component {
     type KeyPair
 
     def createExchange[C <: FiatCurrency](id: Exchange.Id,
-                                          parameters: Exchange.Parameters,
+                                          parameters: Exchange.Parameters[C],
                                           buyer: Exchange.PeerInfo[KeyPair],
                                           seller: Exchange.PeerInfo[KeyPair],
-                                          broker: Exchange.BrokerInfo,
-                                          amounts: Exchange.Amounts[C]): Exchange[C]
+                                          broker: Exchange.BrokerInfo): Exchange[C]
   }
 }
