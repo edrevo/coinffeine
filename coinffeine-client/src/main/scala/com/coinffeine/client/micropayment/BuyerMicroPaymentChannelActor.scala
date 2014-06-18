@@ -1,34 +1,35 @@
-package com.coinffeine.client.exchange
+package com.coinffeine.client.micropayment
 
-import com.google.bitcoin.crypto.TransactionSignature
-
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import com.google.bitcoin.core.Transaction
+import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.MessageForwarding
-import com.coinffeine.client.exchange.ExchangeActor._
+import com.coinffeine.client.exchange.BuyerUser
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
+
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerExchangeActor[C <: FiatCurrency] extends Actor with ActorLogging  {
+class BuyerMicroPaymentChannelActor[C <: FiatCurrency] extends Actor with ActorLogging  {
 
   private var stepTimers = Seq.empty[Cancellable]
 
   override def postStop(): Unit = stepTimers.foreach(_.cancel())
 
   override def receive: Receive = {
-    case init: StartExchange[C, BuyerUser[C]] =>
-      new InitializedBuyerExchange(init).startExchange()
+    case init: StartMicroPaymentChannel[C, BuyerUser[C]] =>
+      new InitializedBuyer(init).startExchange()
   }
 
-  private class InitializedBuyerExchange(init: StartExchange[C, BuyerUser[C]]) {
+  private class InitializedBuyer(init: StartMicroPaymentChannel[C, BuyerUser[C]]) {
     import init._
     import init.constants.exchangeSignatureTimeout
 
@@ -123,8 +124,9 @@ class BuyerExchangeActor[C <: FiatCurrency] extends Actor with ActorLogging  {
   }
 }
 
-object BuyerExchangeActor {
+object BuyerMicroPaymentChannelActor {
   trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps[C <: FiatCurrency]: Props = Props[BuyerExchangeActor[C]]
+    def micropaymentChannelActorProps[C <: FiatCurrency]: Props =
+      Props[BuyerMicroPaymentChannelActor[C]]
   }
 }

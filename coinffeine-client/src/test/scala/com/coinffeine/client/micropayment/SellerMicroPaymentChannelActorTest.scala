@@ -1,22 +1,22 @@
-package com.coinffeine.client.exchange
+package com.coinffeine.client.micropayment
+
+import akka.actor.Props
+import akka.testkit.TestProbe
+import com.coinffeine.client.CoinffeineClientTest
+import com.coinffeine.client.exchange.{MockExchange, SellerUser}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.protocol.ProtocolConstants
+import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
+import com.coinffeine.common.protocol.messages.exchange._
+import org.scalatest.mock.MockitoSugar
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.Props
-import akka.testkit.TestProbe
-import org.scalatest.mock.MockitoSugar
-
-import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.ExchangeActor.{ExchangeSuccess, StartExchange}
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange._
-import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
-
-class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
+class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants(
@@ -26,10 +26,10 @@ class SellerExchangeActorTest extends CoinffeineClientTest("sellerExchange") wit
   val exchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker
   override val counterpart: PeerConnection = exchangeInfo.counterpart
-  val actor = system.actorOf(Props[SellerExchangeActor[Euro.type]], "seller-exchange-actor")
+  val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
   listener.watch(actor)
 
-  actor ! StartExchange(exchange, protocolConstants, gateway.ref, Set(listener.ref))
+  actor ! StartMicroPaymentChannel(exchange, protocolConstants, gateway.ref, Set(listener.ref))
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

@@ -1,7 +1,5 @@
 package com.coinffeine.client.handshake
 
-import scala.util.Try
-
 import akka.actor.{ActorRef, Props}
 import com.google.bitcoin.core.Sha256Hash
 import com.google.bitcoin.crypto.TransactionSignature
@@ -33,7 +31,13 @@ object HandshakeActor {
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
-  case class HandshakeResult(refundSig: Try[TransactionSignature])
+  case class HandshakeSuccess(
+    sellerCommitmentTxId: Sha256Hash,
+    buyerCommitmentTxId: Sha256Hash,
+    refundSig: TransactionSignature
+  )
+
+  case class HandshakeFailure(e: Throwable)
 
   case class RefundSignatureTimeoutException(exchangeId: String) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")

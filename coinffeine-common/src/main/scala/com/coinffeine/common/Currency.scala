@@ -24,9 +24,9 @@ case class CurrencyAmount[+C <: Currency](
     copy(value = value + other.value)
   def -[B >: C <: Currency] (other: CurrencyAmount[B]): CurrencyAmount[B] =
     copy(value = value - other.value)
-  def * (mult: BigDecimal) = copy(value = value * mult)
-  def / (divisor: BigDecimal) = copy(value = value / divisor)
-  def unary_- = copy(value = -value)
+  def * (mult: BigDecimal): CurrencyAmount[C] = copy(value = value * mult)
+  def / (divisor: BigDecimal): CurrencyAmount[C] = copy(value = value / divisor)
+  def unary_- : CurrencyAmount[C] = copy(value = -value)
 
   def min[B >: C <: Currency](that: CurrencyAmount[B]): CurrencyAmount[B] =
     if (this.value <= that.value) this else that
