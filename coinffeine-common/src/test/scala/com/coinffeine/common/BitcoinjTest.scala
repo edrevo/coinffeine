@@ -15,7 +15,7 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-abstract class BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
+trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _

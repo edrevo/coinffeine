@@ -1,13 +1,12 @@
 package com.coinffeine.client.paymentprocessor
 
 import java.util.UUID
-import scala.concurrent.Future
 
+import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.DateTime
 
 import com.coinffeine.common._
-import com.coinffeine.common.paymentprocessor.{AnyPayment, PaymentProcessor}
-import com.coinffeine.common.paymentprocessor.Payment
+import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor}
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
 
@@ -15,14 +14,29 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
 
   private class MockPaymentProcessor(
       fiatAddress: String,
-      initialBalances: Seq[FiatAmount]) extends PaymentProcessor {
+      initialBalances: Seq[FiatAmount]) extends Actor {
 
-    override def id: String = "MockPay"
+    val id: String = "MockPay"
 
-    override def findPayment(paymentId: String): Future[Option[AnyPayment]] =
-      Future.successful(payments.find(_.id == paymentId))
+    override def receive: Receive = {
+      case PaymentProcessor.Identify =>
+        sender ! PaymentProcessor.Identified(id)
+      case pay: PaymentProcessor.Pay[_] =>
+        sendPayment(sender(), pay)
+      case PaymentProcessor.FindPayment(paymentId) =>
+        findPayment(sender(), paymentId)
+      case PaymentProcessor.RetrieveBalance(currency) =>
+        currentBalance(sender(), currency)
+    }
 
-    override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = Future.successful {
+
+    private def findPayment(requester: ActorRef, paymentId: String): Unit =
+      payments.find(_.id == paymentId) match {
+        case Some(payment) => requester ! PaymentProcessor.PaymentFound(payment)
+        case None => requester ! PaymentProcessor.PaymentNotFound(paymentId)
+      }
+
+    private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
       val deltas: List[CurrencyAmount[C]] = payments.collect {
         case Payment(_, `fiatAddress`, `fiatAddress`, out: CurrencyAmount[C], _, _) => currency.Zero
         case Payment(_, _, `fiatAddress`, in: CurrencyAmount[C], _, _) => in
@@ -31,30 +45,29 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       val initial = initialBalances.collectFirst {
         case a: CurrencyAmount[C] => a
       }.getOrElse(currency.Zero)
-      deltas.foldLeft(initial)(_ + _)
+      val balance = deltas.foldLeft(initial)(_ + _)
+      requester ! PaymentProcessor.BalanceRetrieved(balance)
     }
 
-    override def sendPayment[C <: FiatCurrency](receiverId: String,
-                                            amount: CurrencyAmount[C],
-                                            comment: String): Future[Payment[C]] =
-      if (initialBalances.map(_.currency).contains(amount.currency)) {
-        Future.successful {
-          val payment = Payment(
-            UUID.randomUUID().toString,
-            fiatAddress,
-            receiverId,
-            amount,
-            DateTime.now(),
-            comment)
-          payments = payment :: payments
-          payment
-        }
+    private def sendPayment[C <: FiatCurrency](
+        requester: ActorRef, pay: PaymentProcessor.Pay[C]): Unit =
+      if (initialBalances.map(_.currency).contains(pay.amount.currency)) {
+        val payment = Payment(
+          UUID.randomUUID().toString,
+          fiatAddress,
+          pay.to,
+          pay.amount,
+          DateTime.now(),
+          pay.comment)
+        payments = payment :: payments
+        requester ! PaymentProcessor.Paid(payment)
       } else {
-        Future.failed(new Error("[MockPay] The user does not have an account with that currency."))
+        requester ! PaymentProcessor.PaymentFailed(
+          pay, new Error("[MockPay] The user does not have an account with that currency."))
       }
   }
 
   def newProcessor(
-      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): PaymentProcessor =
-    new MockPaymentProcessor(fiatAddress, initialBalance)
+      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): Props =
+    Props(new MockPaymentProcessor(fiatAddress, initialBalance))
 }

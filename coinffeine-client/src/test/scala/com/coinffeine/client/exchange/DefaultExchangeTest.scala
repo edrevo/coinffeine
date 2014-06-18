@@ -3,7 +3,11 @@ package com.coinffeine.client.exchange
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
+import akka.actor.ActorSystem
+import akka.pattern._
+import akka.util.{Timeout => AkkaTimeout}
 import com.google.bitcoin.core.{ECKey, Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
@@ -11,15 +15,18 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
-import com.coinffeine.client.{SampleExchangeInfo, ExchangeInfo}
+import com.coinffeine.client.{ExchangeInfo, SampleExchangeInfo}
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with ScalaFutures {
 
   private trait WithBasicSetup {
+    val actorSystem = ActorSystem("DefaultExchangeTest")
+    implicit val actorTimeout = AkkaTimeout(5.seconds)
     val sellerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
       userKey = new ECKey(),
       userFiatAddress = "seller",
@@ -29,8 +36,8 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with Scal
     lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, 200 BTC)
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
-    val sellerPaymentProc = paymentProcFactory.newProcessor(
-      sellerExchangeInfo.userFiatAddress, Seq(0 EUR))
+    val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
+      sellerExchangeInfo.userFiatAddress, Seq(0 EUR)))
 
     val buyerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
       userKey = sellerExchangeInfo.counterpartKey,
@@ -40,8 +47,8 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with Scal
     )
     lazy val buyerWallet = createWallet(buyerExchangeInfo.userKey, 5 BTC)
     lazy val buyerHandshake = new BuyerHandshake(buyerExchangeInfo, buyerWallet)
-    val buyerPaymentProc = paymentProcFactory.newProcessor(
-      buyerExchangeInfo.userFiatAddress, Seq(1000 EUR))
+    val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
+      buyerExchangeInfo.userFiatAddress, Seq(1000 EUR)))
   }
 
   private trait WithExchange extends WithBasicSetup {
@@ -158,12 +165,17 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with Scal
 
   it should "transfer the expected fiat amount" in new WithExchange {
     val balances = for {
-        prevBuyerBalance <- buyerPaymentProc.currentBalance(Currency.Euro)
-        prevSellerBalance <- sellerPaymentProc.currentBalance(Currency.Euro)
+        prevBuyerBalance <- buyerPaymentProc.ask(
+          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
+        prevSellerBalance <- sellerPaymentProc.ask(
+          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
         payments <- Future.traverse(1 to buyerExchangeInfo.steps)(buyerExchange.pay)
-        afterBuyerBalance <- buyerPaymentProc.currentBalance(Currency.Euro)
-        afterSellerBalance <- sellerPaymentProc.currentBalance(Currency.Euro)
-    } yield (prevBuyerBalance, afterBuyerBalance, prevSellerBalance, afterSellerBalance)
+        afterBuyerBalance <- buyerPaymentProc.ask(
+          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
+        afterSellerBalance <- sellerPaymentProc.ask(
+          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
+    } yield (prevBuyerBalance.balance, afterBuyerBalance.balance,
+        prevSellerBalance.balance, afterSellerBalance.balance)
     whenReady(balances, Timeout(Span(30, Seconds))) { balances =>
       val prevBuyerBalance = balances._1
       val afterBuyerBalance = balances._2
