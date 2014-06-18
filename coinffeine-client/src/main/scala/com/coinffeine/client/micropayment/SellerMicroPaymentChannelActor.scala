@@ -6,7 +6,7 @@ import akka.actor._
 
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.SellerUser
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -18,7 +18,7 @@ import com.coinffeine.common.protocol.messages.exchange._
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
 class SellerMicroPaymentChannelActor[C <: FiatCurrency]
-  extends Actor with ActorLogging with Stash {
+  extends Actor with ActorLogging with Stash with StepTimeout {
 
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C, SellerUser[C]] => new InitializedSellerExchange(init)
@@ -26,6 +26,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
 
   private class InitializedSellerExchange(init: StartMicroPaymentChannel[C, SellerUser[C]]) {
     import init._
+    import init.constants.exchangePaymentProofTimeout
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
@@ -43,12 +44,22 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
     context.become(waitForPaymentProof(1))
 
     private def waitForPaymentProof(step: Int): Receive = {
-      case ReceiveMessage(PaymentProof(_, paymentId), _) =>
-        import context.dispatcher
-        exchange.validatePayment(step, paymentId).onComplete { tryResult =>
+      scheduleStepTimeouts(exchangePaymentProofTimeout)
+
+      {
+        case ReceiveMessage(PaymentProof(_, paymentId), _) =>
+          cancelTimeout()
+          import context.dispatcher
+          exchange.validatePayment(step, paymentId).onComplete { tryResult =>
             self ! PaymentValidationResult(tryResult)
-        }
-        context.become(waitForPaymentValidation(paymentId, step))
+          }
+          context.become(waitForPaymentValidation(paymentId, step))
+        case StepSignatureTimeout =>
+          val errorMsg = "Timed out waiting for the buyer to provide a valid payment proof " +
+            s"step $step (out of ${exchangeInfo.steps}})"
+          log.warning(errorMsg)
+          finishWith(ExchangeFailure(TimeoutException(errorMsg), lastOffer = None))
+      }
     }
 
     private def waitForPaymentValidation(paymentId: String, step: Int): Receive = {
@@ -78,7 +89,11 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
         exchangeInfo.id,
         exchangeInfo.steps + 1,
         exchange.finalSignature))
-      resultListeners.foreach { _ ! ExchangeSuccess }
+      finishWith(ExchangeSuccess)
+    }
+
+    private def finishWith(result: Any): Unit = {
+      resultListeners.foreach { _ ! result }
       context.stop(self)
     }
   }
