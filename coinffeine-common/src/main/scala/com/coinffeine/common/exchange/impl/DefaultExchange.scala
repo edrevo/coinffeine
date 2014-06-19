@@ -19,8 +19,9 @@ case class DefaultExchange[C <: FiatCurrency]  (
   override type TransactionSignature = bitcoin.crypto.TransactionSignature
 
   @throws[IllegalArgumentException]("when funds are insufficient")
-  override def startHandshake(role: Role, unspentOutputs: Seq[UnspentOutput],
-                              changeAddress: Address) = {
+  override def createHandshake(role: Role,
+                               unspentOutputs: Seq[UnspentOutput],
+                               changeAddress: Address) = {
     val availableFunds = TransactionProcessor.valueOf(unspentOutputs.map(_.output))
     val depositAmount = role.myDepositAmount(amounts)
     require(availableFunds >= depositAmount,

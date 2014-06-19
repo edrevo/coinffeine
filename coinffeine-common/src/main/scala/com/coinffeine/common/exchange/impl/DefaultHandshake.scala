@@ -4,7 +4,7 @@ import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.exchange._
 
 case class DefaultHandshake[C <: FiatCurrency](
@@ -22,7 +22,9 @@ case class DefaultHandshake[C <: FiatCurrency](
 
   @throws[InvalidRefundTransaction]
   override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
-    ensureValidRefundTransaction(herRefund)
+    ensureValidRefundTransaction(
+      tx = herRefund,
+      expectedAmount = role.herRefundAmount(exchange.amounts))
     signRefundTransaction(herRefund.get)
   }
 
@@ -33,7 +35,9 @@ case class DefaultHandshake[C <: FiatCurrency](
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
-    ensureValidRefundTransaction(myUnsignedRefund)
+    ensureValidRefundTransaction(
+      tx = myUnsignedRefund,
+      expectedAmount = role.myRefundAmount(exchange.amounts))
     ImmutableTransaction {
       val tx = myUnsignedRefund.get
       val mySignature = signRefundTransaction(tx)
@@ -59,16 +63,21 @@ case class DefaultHandshake[C <: FiatCurrency](
     DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
   }
 
-  private def ensureValidRefundTransaction(refundTx: ImmutableTransaction) = {
+  private def ensureValidRefundTransaction(tx: ImmutableTransaction,
+                                           expectedAmount: BitcoinAmount) = {
     def requireProperty(cond: Transaction => Boolean, cause: String): Unit = {
-      if (!cond(refundTx.get)) throw new InvalidRefundTransaction(refundTx, cause)
+      if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
     }
-
+    def validateAmount(tx: Transaction): Boolean = {
+      val amount = Currency.Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
+      amount == expectedAmount
+    }
     // TODO: Is this enough to ensure we can sign?
     requireProperty(_.isTimeLocked, "lack a time lock")
     requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
     requireProperty(_.getInputs.size == 1, "should have one input")
     requireProperty(_.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN,
       "wrong confidence level")
+    requireProperty(validateAmount, "wrong refund amount")
   }
 }

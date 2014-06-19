@@ -12,7 +12,7 @@ abstract class Handshake[C <: FiatCurrency](val exchange: Exchange[C]) {
   case class InvalidRefundTransaction(invalidTransaction: exchange.Transaction, cause: String)
     extends IllegalArgumentException(s"invalid refund transaction: $invalidTransaction: $cause")
 
-  /** Ready to be broadcasted deposit */
+  /** Ready to be broadcast deposit */
   def myDeposit: exchange.Transaction
 
   def myUnsignedRefund: exchange.Transaction

@@ -75,13 +75,13 @@ class DefaultHandshakeTest extends BitcoinjTest {
     val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
     val buyerFunds = TransactionProcessor.collectFunds(buyerWallet, 0.2.BTC)
       .toSeq.map(exchange.UnspentOutput(_, exchange.buyer.bitcoinKey))
-    val buyerHandshake = exchange.startHandshake(BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
+    val buyerHandshake = exchange.createHandshake(BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
   }
 
   trait SellerHandshake {
     val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
     val sellerFunds = TransactionProcessor.collectFunds(sellerWallet, 0.2.BTC)
       .toSeq.map(exchange.UnspentOutput(_, exchange.seller.bitcoinKey))
-    val sellerHandshake = exchange.startHandshake(SellerRole, sellerFunds, sellerWallet.getChangeAddress)
+    val sellerHandshake = exchange.createHandshake(SellerRole, sellerFunds, sellerWallet.getChangeAddress)
   }
 }

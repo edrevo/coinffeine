@@ -37,8 +37,9 @@ trait Exchange[C <: FiatCurrency] {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when funds are insufficient")
-  def startHandshake(role: Role, unspentOutputs: Seq[UnspentOutput],
-                     changeAddress: Address): Handshake[C]
+  def createHandshake(role: Role,
+                      unspentOutputs: Seq[UnspentOutput],
+                      changeAddress: Address): Handshake[C]
 }
 
 object Exchange {
