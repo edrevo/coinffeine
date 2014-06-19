@@ -14,7 +14,6 @@ import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 
 
@@ -105,7 +104,7 @@ object ExchangeActor {
   type HandshakeFactory[C <: FiatCurrency] = (ExchangeInfo[C], Wallet) => Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
     ExchangeInfo[C],
-    PaymentProcessor,
+    ActorRef,
     Transaction, // sellerCommitmentTx
     Transaction // buyerCommitmentTx
   ) => Exchange[C] with Role
@@ -113,7 +112,7 @@ object ExchangeActor {
   case class StartExchange[C <: FiatCurrency](
     exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
-    paymentProcessor: PaymentProcessor,
+    paymentProcessor: ActorRef,
     messageGateway: ActorRef,
     blockchain: ActorRef
   )
