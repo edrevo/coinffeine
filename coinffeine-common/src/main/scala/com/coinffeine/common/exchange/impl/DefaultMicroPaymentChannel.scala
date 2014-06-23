@@ -1,8 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.{Deposits, Exchange, MicroPaymentChannel, Role}
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 

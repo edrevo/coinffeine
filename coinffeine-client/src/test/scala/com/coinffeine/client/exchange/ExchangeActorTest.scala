@@ -4,25 +4,23 @@ import java.util.concurrent.LinkedBlockingDeque
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props, Terminated}
-import akka.testkit.TestActor.Message
 import akka.testkit.{TestActor, TestProbe}
+import akka.testkit.TestActor.Message
 import akka.util.Timeout
-import com.google.bitcoin.core.{Sha256Hash, Transaction, Wallet}
-import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.concurrent.Eventually
 
-import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
-import com.coinffeine.client.handshake.{Handshake, MockHandshake}
 import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
+import com.coinffeine.client.exchange.ExchangeActor._
+import com.coinffeine.client.handshake.{Handshake, MockHandshake}
+import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.ProtocolConstants
-
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with UnitTestNetworkComponent with Eventually {
@@ -44,8 +42,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
       paymentProc: ActorRef,
-      tx1: Transaction,
-      tx2: Transaction): Exchange[Euro.type] with BuyerUser[Euro.type] = exchange
+      tx1: MutableTransaction,
+      tx2: MutableTransaction): Exchange[Euro.type] with BuyerUser[Euro.type] = exchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
@@ -53,8 +51,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   override val counterpart: PeerConnection = exchangeInfo.counterpart
 
   private val dummySig = TransactionSignature.dummy
-  private val dummyTxId = new Sha256Hash(List.fill(64)("F").mkString)
-  private val dummyTx = new Transaction(network)
+  private val dummyTxId = new Hash(List.fill(64)("F").mkString)
+  private val dummyTx = new MutableTransaction(network)
   private val userWallet = {
     val wallet = new Wallet(network)
     wallet.addKey(exchangeInfo.userKey)

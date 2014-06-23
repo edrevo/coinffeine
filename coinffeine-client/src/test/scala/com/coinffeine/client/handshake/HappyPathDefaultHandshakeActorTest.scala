@@ -2,11 +2,9 @@ package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
 
-import com.google.bitcoin.core.Sha256Hash
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -32,7 +30,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
     filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification("id", mock[Sha256Hash], mock[Sha256Hash]))) should be (true)
+    filter(fromBroker(CommitmentNotification("id", mock[Hash], mock[Hash]))) should be (true)
     filter(fromBroker(ExchangeAborted("id", "failed"))) should be (true)
     filter(fromCounterpart(ExchangeAborted("id", "failed"))) should be (false)
     filter(fromBroker(ExchangeAborted("other", "failed"))) should be (false)

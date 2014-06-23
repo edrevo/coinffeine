@@ -9,22 +9,21 @@ import scala.util.Try
 import akka.actor.ActorRef
 import akka.pattern._
 import akka.util.Timeout
-import com.google.bitcoin.core.{Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
 import com.coinffeine.common.{Currency, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
 class DefaultExchange[C <: FiatCurrency](
     override val exchangeInfo: ExchangeInfo[C],
     paymentProcessor: ActorRef,
-    sellerCommitmentTx: Transaction,
-    buyerCommitmentTx: Transaction) extends Exchange[C] {
+    sellerCommitmentTx: MutableTransaction,
+    buyerCommitmentTx: MutableTransaction) extends Exchange[C] {
   this: UserRole =>
 
   private implicit val paymentProcessorTimeout = Timeout(5.seconds)
@@ -33,7 +32,7 @@ class DefaultExchange[C <: FiatCurrency](
   requireValidBuyerFunds(buyerFunds)
   requireValidSellerFunds(sellerFunds)
 
-  private def requireValidFunds(funds: TransactionOutput): Unit = {
+  private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
     require(funds.getScriptPubKey.isSentToMultiSig,
       "Transaction with funds is invalid because is not sending the funds to a multisig")
     val multisigInfo = MultiSigInfo(funds.getScriptPubKey)
@@ -43,13 +42,13 @@ class DefaultExchange[C <: FiatCurrency](
       "Possible keys in multisig script does not match the expected keys")
   }
 
-  private def requireValidBuyerFunds(buyerFunds: TransactionOutput): Unit = {
+  private def requireValidBuyerFunds(buyerFunds: MutableTransactionOutput): Unit = {
     requireValidFunds(buyerFunds)
     require(Currency.Bitcoin.fromSatoshi(buyerFunds.getValue) == exchangeInfo.btcStepAmount * 2,
       "The amount of committed funds by the buyer does not match the expected amount")
   }
 
-  private def requireValidSellerFunds(sellerFunds: TransactionOutput): Unit = {
+  private def requireValidSellerFunds(sellerFunds: MutableTransactionOutput): Unit = {
     requireValidFunds(sellerFunds)
     require(
       Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) == exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
@@ -66,8 +65,8 @@ class DefaultExchange[C <: FiatCurrency](
     } yield paid.payment
   }
 
-  override def getOffer(step: Int): Transaction = {
-    val tx = new Transaction(exchangeInfo.network)
+  override def getOffer(step: Int): MutableTransaction = {
+    val tx = new MutableTransaction(exchangeInfo.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput((exchangeInfo.btcStepAmount * step).asSatoshi, buyersKey)
@@ -87,8 +86,8 @@ class DefaultExchange[C <: FiatCurrency](
       signature1,
       s"The provided signature is invalid for the offer in step $step")
 
-  override def finalOffer: Transaction = {
-    val tx = new Transaction(exchangeInfo.network)
+  override def finalOffer: MutableTransaction = {
+    val tx = new MutableTransaction(exchangeInfo.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput(
@@ -124,7 +123,7 @@ class DefaultExchange[C <: FiatCurrency](
       signature1,
       s"The provided signature is invalid for the final offer")
 
-  override protected def sign(offer: Transaction): (TransactionSignature, TransactionSignature) = {
+  override protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature) = {
     val userConnectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
       2, List(exchangeInfo.counterpartKey, exchangeInfo.userKey))
     val userInputSignature = offer.calculateSignature(
@@ -150,7 +149,7 @@ class DefaultExchange[C <: FiatCurrency](
   private def getPaymentDescription(step: Int) = s"Payment for ${exchangeInfo.id}, step $step"
 
   private def validateSellersSignature(
-      tx: Transaction,
+      tx: MutableTransaction,
       signature0: TransactionSignature,
       signature1: TransactionSignature,
       validationErrorMessage: String): Try[Unit] = Try {
@@ -159,7 +158,7 @@ class DefaultExchange[C <: FiatCurrency](
   }
 
   private def validateSellersSignature(
-      tx: Transaction,
+      tx: MutableTransaction,
       inputIndex: Int,
       signature: TransactionSignature,
       validationErrorMessage: String): Unit = {
@@ -176,7 +175,7 @@ class DefaultExchange[C <: FiatCurrency](
 
   /** Returns a signed transaction ready to be broadcast */
   override def getSignedOffer(
-      step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)): Transaction = {
+      step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)) = {
     val tx = getOffer(step)
     val userSignatures = sign(tx)
     val (idx0InputSignatures, idx1InputSignatures) =

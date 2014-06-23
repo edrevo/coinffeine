@@ -2,9 +2,8 @@ package com.coinffeine.common.protocol
 
 import java.math.BigInteger
 
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.common.UnitTest
+import com.coinffeine.common.bitcoin.TransactionSignature
 
 class TransactionSignatureUtilsTest extends UnitTest {
 

@@ -3,6 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.ImmutableTransaction
 import com.coinffeine.common.exchange.{BuyerRole, SellerRole}
 
 class DefaultHandshakeTest extends BitcoinjTest {

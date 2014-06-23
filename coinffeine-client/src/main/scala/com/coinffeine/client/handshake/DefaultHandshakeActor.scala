@@ -3,13 +3,12 @@ package com.coinffeine.client.handshake
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
-import com.google.bitcoin.core.Sha256Hash
-import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.DefaultHandshakeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
@@ -28,9 +27,9 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
   }
 
   private class InitializedHandshake(init: StartHandshake[C]) {
+    import context.dispatcher
     import init._
     import init.constants._
-    import context.dispatcher
 
     private val exchangeInfo = handshake.exchangeInfo
     private val forwarding = new MessageForwarding(
@@ -104,8 +103,8 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
       getNotifiedByBroker(refundSig) orElse signCounterpartRefund orElse abortOnBrokerNotification
 
     private def waitForConfirmations(
-        sellerTx: Sha256Hash, buyerTx: Sha256Hash, refundSig: TransactionSignature): Receive = {
-      def waitForPendingConfirmations(pendingConfirmation: Set[Sha256Hash]): Receive = {
+        sellerTx: Hash, buyerTx: Hash, refundSig: TransactionSignature): Receive = {
+      def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
         case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
           val stillPending = pendingConfirmation - tx
           if (stillPending.nonEmpty) {

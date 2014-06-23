@@ -1,18 +1,15 @@
 package com.coinffeine.client.exchange
 
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor
-
-import scala.language.postfixOps
-
 import akka.actor._
-import com.google.bitcoin.core.{Sha256Hash, Transaction, Wallet}
 
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.handshake.Handshake
 import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -61,9 +58,9 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     }
 
     private def receiveTransaction(
-        sellerCommitmentTxId: Sha256Hash, buyerCommitmentTxId: Sha256Hash): Receive = {
+        sellerCommitmentTxId: Hash, buyerCommitmentTxId: Hash): Receive = {
       val commitmentTxIds = Seq(sellerCommitmentTxId, buyerCommitmentTxId)
-      def withReceivedTxs(receivedTxs: Map[Sha256Hash, Transaction]): Receive = {
+      def withReceivedTxs(receivedTxs: Map[Hash, MutableTransaction]): Receive = {
         case TransactionFor(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.forall(newTxs.keySet.contains)) {
@@ -104,8 +101,8 @@ object ExchangeActor {
   type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
     ExchangeInfo[C],
     ActorRef,
-    Transaction, // sellerCommitmentTx
-    Transaction // buyerCommitmentTx
+    MutableTransaction, // sellerCommitmentTx
+    MutableTransaction // buyerCommitmentTx
   ) => Exchange[C] with Role
 
   case class StartExchange[C <: FiatCurrency](
@@ -120,7 +117,7 @@ object ExchangeActor {
 
   case class ExchangeFailure(e: Throwable)
 
-  case class CommitmentTxNotInBlockChain(txId: Sha256Hash) extends RuntimeException(
+  case class CommitmentTxNotInBlockChain(txId: Hash) extends RuntimeException(
     s"Handshake reported that the commitment transaction with hash $txId was in " +
       s"blockchain but it could not be found")
 }

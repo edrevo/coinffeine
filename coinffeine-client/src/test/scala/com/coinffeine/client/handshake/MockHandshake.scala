@@ -3,11 +3,9 @@ package com.coinffeine.client.handshake
 import java.math.BigInteger
 import scala.util.{Failure, Success}
 
-import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.protocol.MockTransaction
 
 class MockHandshake[C <: FiatCurrency](
@@ -21,7 +19,7 @@ class MockHandshake[C <: FiatCurrency](
   val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
   val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
 
-  override def signCounterpartRefundTransaction(txToSign: Transaction) =
+  override def signCounterpartRefundTransaction(txToSign: MutableTransaction) =
     if (txToSign == counterpartRefund) Success(counterpartRefundSignature)
     else Failure(new Error("Invalid refundSig"))
 

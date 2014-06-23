@@ -3,13 +3,12 @@ package com.coinffeine.common.protocol.serialization
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
 
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
-import com.google.bitcoin.crypto.TransactionSignature
 import org.reflections.Reflections
 
 import com.coinffeine.common.{Currency, PeerConnection, UnitTest}
 import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -23,9 +22,9 @@ import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMess
 class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComponent {
 
   val exchangeId = "exchangeid"
-  val transaction = new Transaction(network)
+  val transaction = new MutableTransaction(network)
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
-  val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val btcAmount = 1.BTC
   val fiatAmount = 1.EUR
   val peerConnection = PeerConnection("host", 8888)

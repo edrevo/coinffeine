@@ -1,9 +1,8 @@
 package com.coinffeine.common.protocol.messages.exchange
 
-import com.google.bitcoin.crypto.TransactionSignature
-
-import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.protocol.TransactionSignatureUtils
+import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** This message contains the seller's signatures for a step in a specific exchange
   * @param exchangeId The exchange id for which the signatures are valid

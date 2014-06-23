@@ -6,12 +6,12 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-import com.google.bitcoin.core._
-import com.google.bitcoin.crypto.TransactionSignature
+import com.google.bitcoin.core.FullPrunedBlockChain
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.network.UnitTestNetworkComponent
 
 /** Base class for testing against an in-memory, validated blockchain.  */
@@ -24,7 +24,7 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
   before{
     BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()
-    Wallet.SendRequest.DEFAULT_FEE_PER_KB = BigInteger.ZERO
+    Wallet.defaultFeePerKb = BigInteger.ZERO
     createH2BlockStore()
     chain = new FullPrunedBlockChain(network, blockStore)
   }
@@ -33,16 +33,16 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
     try {
       blockStore.close()
       destroyH2BlockStore()
-      Wallet.SendRequest.DEFAULT_FEE_PER_KB = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
+      Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     } finally {
       BitcoinjTest.ExecutionLock.unlock()
     }
   }
 
   def withFees[A](body: => A) = {
-    Wallet.SendRequest.DEFAULT_FEE_PER_KB = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
+    Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     val result = Try(body)
-    Wallet.SendRequest.DEFAULT_FEE_PER_KB = BigInteger.ZERO
+    Wallet.defaultFeePerKb = BigInteger.ZERO
     result.get
   }
 
@@ -52,14 +52,14 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
     wallet
   }
 
-  def createWallet(key: ECKey): Wallet = {
+  def createWallet(key: KeyPair): Wallet = {
     val wallet = createWallet()
     wallet.addKey(key)
     wallet
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  def createWallet(key: ECKey, amount: BitcoinAmount): Wallet = {
+  def createWallet(key: KeyPair, amount: BitcoinAmount): Wallet = {
     val wallet = createWallet(key)
     sendMoneyToWallet(wallet, amount)
     wallet
@@ -67,7 +67,7 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
 
   /** Mine bitcoins into a wallet until having a minimum amount. */
   def sendMoneyToWallet(wallet: Wallet, amount: BitcoinAmount): Unit = {
-    val miner = new ECKey
+    val miner = new KeyPair
     val minerWallet = createWallet(miner)
     while (Currency.Bitcoin.fromSatoshi(minerWallet.getBalance) < amount) {
       mineBlock(miner)
@@ -77,7 +77,7 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
   }
 
   /** Mine a block and send the coinbase reward to the passed key. */
-  def mineBlock(miner: ECKey) = sendToBlockChain(miner)
+  def mineBlock(miner: PublicKey) = sendToBlockChain(miner)
 
   def mineBlock() = sendToBlockChain()
 
@@ -86,7 +86,7 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
     * @param miner  Destination key of the coinbase
     * @param txs    Transactions to include in the new block
     */
-  def sendToBlockChain(miner: ECKey, txs: Transaction*): Unit = {
+  def sendToBlockChain(miner: PublicKey, txs: MutableTransaction*): Unit = {
     val lastBlock = blockStore.getChainHead
     val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
       miner.getPubKey, 50.BTC.asSatoshi)
@@ -96,14 +96,13 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
   }
 
   /** Mine a new block with the passed transactions. */
-  def sendToBlockChain(txs: Transaction*): Unit = sendToBlockChain(new ECKey(), txs: _*)
+  def sendToBlockChain(txs: MutableTransaction*): Unit = sendToBlockChain(new PublicKey(), txs: _*)
 
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
-  def throughWire(tx: Transaction) = new Transaction(network, tx.bitcoinSerialize())
+  def throughWire(tx: MutableTransaction) = new MutableTransaction(network, tx.bitcoinSerialize())
 
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
-  def throughWire(sig: TransactionSignature) =
-    TransactionSignature.decodeFromBitcoin(sig.encodeToBitcoin(), true)
+  def throughWire(sig: TransactionSignature) = TransactionSignature.decode(sig.encodeToBitcoin())
 
   private def createH2BlockStore(): Unit = {
     blockStorePath = File.createTempFile("temp", "blockStore")

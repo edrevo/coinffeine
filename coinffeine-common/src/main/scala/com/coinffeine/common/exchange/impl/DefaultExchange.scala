@@ -3,6 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.google.bitcoin
 
 import com.coinffeine.common._
+import com.coinffeine.common.bitcoin.ImmutableTransaction
 import com.coinffeine.common.exchange.{Exchange, Role}
 
 private[impl] case class DefaultExchange[C <: FiatCurrency]  (

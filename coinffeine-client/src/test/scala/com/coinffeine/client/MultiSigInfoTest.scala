@@ -2,16 +2,16 @@ package com.coinffeine.client
 
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.ECKey
 import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.common.UnitTest
+import com.coinffeine.common.bitcoin.PublicKey
 
 class MultiSigInfoTest extends UnitTest {
 
   "MultiSigInfo" should "read all the parameters of a multisig output script" in {
-    val keys = List.fill(10)(new ECKey())
+    val keys = List.fill(10)(new PublicKey())
     val requiredKeys = 7
     val script = ScriptBuilder.createMultiSigOutputScript(requiredKeys, keys)
     val multiSigInfo = MultiSigInfo(script)
@@ -21,7 +21,7 @@ class MultiSigInfoTest extends UnitTest {
   }
 
   it should "fail on non-multisig scripts" in {
-    val script = ScriptBuilder.createOutputScript(new ECKey())
+    val script = ScriptBuilder.createOutputScript(new PublicKey())
     an [IllegalArgumentException] should be thrownBy MultiSigInfo(script)
   }
 

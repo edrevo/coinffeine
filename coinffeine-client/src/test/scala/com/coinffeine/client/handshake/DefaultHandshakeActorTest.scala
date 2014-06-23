@@ -1,12 +1,7 @@
 package com.coinffeine.client.handshake
 
-import java.math.BigInteger
-import scala.util.{Failure, Success}
-
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.crypto.TransactionSignature
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest

@@ -2,10 +2,9 @@ package com.coinffeine.common.exchange.impl
 
 import scala.concurrent.duration._
 
-import com.google.bitcoin.core.ECKey
-
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.KeyPair
 import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.network.CoinffeineUnitTestParams
 
@@ -22,8 +21,8 @@ object Samples {
       refundSignatureAbortTimeout = 30.minutes,
       network = CoinffeineUnitTestParams
     ),
-    buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new ECKey()),
-    seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new ECKey()),
+    buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new KeyPair()),
+    seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new KeyPair()),
     broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )
 }

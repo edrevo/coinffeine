@@ -1,6 +1,4 @@
-package com.coinffeine.common.exchange.impl
-
-import com.google.bitcoin.core.{NetworkParameters, Transaction}
+package com.coinffeine.common.bitcoin
 
 /** Wrapper for bitcoinj transactions.
   *
@@ -8,17 +6,17 @@ import com.google.bitcoin.core.{NetworkParameters, Transaction}
   * This class adds some niceties such as a proper string conversion an a syntax similar to
   * {{{Future { ... } }}}.
   */
-private[impl] class ImmutableTransaction(origTx: Transaction) {
+private[impl] class ImmutableTransaction(origTx: MutableTransaction) {
 
-  private val network: NetworkParameters = origTx.getParams
+  private val network: Network = origTx.getParams
   private val bytes: Array[Byte] = origTx.bitcoinSerialize()
 
   override def toString: String = get.toString
 
-  def get: Transaction = new Transaction(network, bytes)
+  def get: MutableTransaction = new MutableTransaction(network, bytes)
 }
 
 private[impl] object ImmutableTransaction {
 
-  def apply(tx: Transaction) = new ImmutableTransaction(tx)
+  def apply(tx: MutableTransaction) = new ImmutableTransaction(tx)
 }

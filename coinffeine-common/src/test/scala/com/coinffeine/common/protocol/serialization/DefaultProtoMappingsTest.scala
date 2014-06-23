@@ -2,14 +2,13 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger
 
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
-import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -18,7 +17,7 @@ import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
 class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
-  val commitmentTransaction = new Transaction(network)
+  val commitmentTransaction = new MutableTransaction(network)
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
@@ -39,7 +38,7 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     }
   }
 
-  val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
 
   val btcAmount = 1.1 BTC
   val btcAmountMessage = msg.BtcAmount.newBuilder
@@ -152,7 +151,7 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val refundTx = new Transaction(UnitTestParams.get())
+  val refundTx = new MutableTransaction(UnitTestParams.get())
   val refundTxSignatureRequest = RefundTxSignatureRequest(exchangeId = "1234", refundTx = refundTx)
   val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
     .setExchangeId("1234")

@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol
 
-import com.google.bitcoin.crypto.TransactionSignature
+import com.coinffeine.common.bitcoin.TransactionSignature
 
 object TransactionSignatureUtils {
   def equals(s1: TransactionSignature, s2: TransactionSignature): Boolean = (s1, s2) match {

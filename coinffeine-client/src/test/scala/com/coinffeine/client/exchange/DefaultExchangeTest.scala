@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.pattern._
 import akka.util.{Timeout => AkkaTimeout}
-import com.google.bitcoin.core.{ECKey, Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -19,6 +18,7 @@ import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.{KeyPair, MutableTransactionOutput, MutableTransaction, PublicKey}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
@@ -27,9 +27,9 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
     val sellerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
-      userKey = new ECKey(),
+      userKey = new KeyPair(),
       userFiatAddress = "seller",
-      counterpartKey = new ECKey(),
+      counterpartKey = new PublicKey(),
       counterpartFiatAddress = "buyer"
     )
     lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, 200 BTC)
@@ -66,7 +66,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new Transaction(sellerExchangeInfo.network)
+    val invalidFundsCommitment = new MutableTransaction(sellerExchangeInfo.network)
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
@@ -80,7 +80,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new Transaction(buyerExchangeInfo.network)
+    val invalidFundsCommitment = new MutableTransaction(buyerExchangeInfo.network)
     invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
@@ -186,6 +186,6 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     }
   }
 
-  private def addAmounts(outputs: Seq[TransactionOutput]) =
+  private def addAmounts(outputs: Seq[MutableTransactionOutput]) =
     outputs.map(o => Currency.Bitcoin.fromSatoshi(o.getValue)).reduce(_ + _)
 }
