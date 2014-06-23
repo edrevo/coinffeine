@@ -8,16 +8,16 @@ import com.google.protobuf.{ByteString, Message}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, TransactionSignature}
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, MutableTransaction, TransactionSignature}
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
-class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
+class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
-  val commitmentTransaction = new MutableTransaction(network)
+  val commitmentTransaction = ImmutableTransaction(new MutableTransaction(network))
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
@@ -151,11 +151,11 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val refundTx = new MutableTransaction(UnitTestParams.get())
+  val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
   val refundTxSignatureRequest = RefundTxSignatureRequest(exchangeId = "1234", refundTx = refundTx)
   val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
     .setExchangeId("1234")
-    .setRefundTx(ByteString.copyFrom(refundTx.bitcoinSerialize()))
+    .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
     .build()
 
   "Refund TX signature request" must behave like thereIsAMappingBetween(

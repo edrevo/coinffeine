@@ -2,6 +2,7 @@ package com.coinffeine.common
 
 import java.math.BigInteger
 
+import com.coinffeine.common.Currency.Bitcoin
 import com.google.bitcoin.{core, crypto}
 
 package object bitcoin {
@@ -15,7 +16,10 @@ package object bitcoin {
   type MutableTransactionOutput = core.TransactionOutput
   type MutableTransaction = core.Transaction
   object MutableTransaction {
-    val ReferenceDefaultMinTxFee = core.Transaction.REFERENCE_DEFAULT_MIN_TX_FEE
+    val ReferenceDefaultMinTxFee: BitcoinAmount =
+      Bitcoin.fromSatoshi(core.Transaction.REFERENCE_DEFAULT_MIN_TX_FEE)
+    val MinimumNonDustAmount: BitcoinAmount =
+      Bitcoin.fromSatoshi(core.Transaction.MIN_NONDUST_OUTPUT)
   }
 
   type Address = core.Address

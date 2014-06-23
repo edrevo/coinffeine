@@ -6,17 +6,23 @@ package com.coinffeine.common.bitcoin
   * This class adds some niceties such as a proper string conversion an a syntax similar to
   * {{{Future { ... } }}}.
   */
-private[impl] class ImmutableTransaction(origTx: MutableTransaction) {
+class ImmutableTransaction(private val bytes: Array[Byte], private val network: Network) {
 
-  private val network: Network = origTx.getParams
-  private val bytes: Array[Byte] = origTx.bitcoinSerialize()
+  def this(tx: MutableTransaction) = this(tx.bitcoinSerialize(), tx.getParams)
 
   override def toString: String = get.toString
 
   def get: MutableTransaction = new MutableTransaction(network, bytes)
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ImmutableTransaction => bytes.sameElements(that.bytes) && network == that.network
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    bytes.foldLeft(network.hashCode())((accum, elem) => 31 * accum + elem.hashCode())
 }
 
-private[impl] object ImmutableTransaction {
-
+object ImmutableTransaction {
   def apply(tx: MutableTransaction) = new ImmutableTransaction(tx)
 }

@@ -9,38 +9,37 @@ import scala.util.Try
 import com.google.bitcoin.core.FullPrunedBlockChain
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
+import org.scalatest.BeforeAndAfterAll
 
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
+trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component with BeforeAndAfterAll {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
   var chain: FullPrunedBlockChain = _
 
-  before{
-    BitcoinjTest.ExecutionLock.lock()
-    BriefLogFormatter.init()
-    Wallet.defaultFeePerKb = BigInteger.ZERO
-    createH2BlockStore()
-    chain = new FullPrunedBlockChain(network, blockStore)
+  if (resetBlockchainBetweenTests) {
+    before { startBitcoinj() }
+    after { stopBitcoinj() }
   }
 
-  after {
-    try {
-      blockStore.close()
-      destroyH2BlockStore()
-      Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
-    } finally {
-      BitcoinjTest.ExecutionLock.unlock()
+  override def beforeAll(): Unit = {
+    if (!resetBlockchainBetweenTests) {
+      startBitcoinj()
+    }
+  }
+  override def afterAll(): Unit = {
+    if (!resetBlockchainBetweenTests) {
+      stopBitcoinj()
     }
   }
 
   def withFees[A](body: => A) = {
-    Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
+    Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee.asSatoshi
     val result = Try(body)
     Wallet.defaultFeePerKb = BigInteger.ZERO
     result.get
@@ -104,12 +103,34 @@ trait BitcoinjTest extends UnitTest with UnitTestNetworkComponent {
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
   def throughWire(sig: TransactionSignature) = TransactionSignature.decode(sig.encodeToBitcoin())
 
+  /** Most test classes require blockchain isolation between tests. Tests building a step-by-step
+    * history should override this function. */
+  protected def resetBlockchainBetweenTests: Boolean = true
+
+  private def startBitcoinj(): Unit = {
+    BitcoinjTest.ExecutionLock.lock()
+    BriefLogFormatter.init()
+    Wallet.defaultFeePerKb = BigInteger.ZERO
+    createH2BlockStore()
+    chain = new FullPrunedBlockChain(network, blockStore)
+  }
+
   private def createH2BlockStore(): Unit = {
     blockStorePath = File.createTempFile("temp", "blockStore")
     blockStorePath.delete()
     blockStorePath.mkdir()
     blockStore = new H2FullPrunedBlockStore(network, new File(blockStorePath, "db").toString, 1000)
     blockStore.resetStore()
+  }
+
+  private def stopBitcoinj(): Unit = {
+    try {
+      blockStore.close()
+      destroyH2BlockStore()
+      Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee.asSatoshi
+    } finally {
+      BitcoinjTest.ExecutionLock.unlock()
+    }
   }
 
   private def destroyH2BlockStore(): Unit = {

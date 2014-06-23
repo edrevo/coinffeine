@@ -35,4 +35,21 @@ class ImmutableTransactionTest extends BitcoinjTest {
     val origTx = new MutableTransaction(network)
     new ImmutableTransaction(origTx).get should be (origTx)
   }
+
+  it must "support equality" in {
+    val wallet = createWallet(new KeyPair(), 1.BTC)
+    val origTx = new MutableTransaction(network)
+    val immutableTx1 = new ImmutableTransaction(origTx)
+    val immutableTx2 = new ImmutableTransaction(origTx)
+    val immutableTx3 = new ImmutableTransaction(
+      wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC.asSatoshi))
+
+    immutableTx1 should equal (immutableTx1)
+    immutableTx1 should equal (immutableTx2)
+    immutableTx2 should equal (immutableTx1)
+    immutableTx1 should not equal immutableTx3
+
+    immutableTx1.hashCode() should equal (immutableTx2.hashCode())
+    immutableTx1.hashCode() should not equal immutableTx3.hashCode()
+  }
 }

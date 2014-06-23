@@ -15,15 +15,14 @@ import com.coinffeine.client.handshake.{Handshake, MockHandshake}
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{BitcoinjTest, PeerConnection}
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
-import com.coinffeine.common.network.UnitTestNetworkComponent
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
-  with UnitTestNetworkComponent with Eventually {
+    with BitcoinjTest with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
   private val exchangeInfo = sampleExchangeInfo
@@ -32,9 +31,6 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
 
-  private val handshake = new MockHandshake(exchangeInfo)
-  private def handshakeFactory(
-      exchangeInfo: ExchangeInfo[Euro.type], wallet: Wallet): Handshake[Euro.type] = handshake
   private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
@@ -62,6 +58,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     fiatAddress = "", initialBalance = Seq.empty))
 
   trait Fixture {
+    val handshake =
+      new MockHandshake(exchangeInfo, amount => createWallet(new KeyPair, amount), network)
+    private def handshakeFactory(exchangeInfo: ExchangeInfo[Euro.type],
+                                 wallet: Wallet): Handshake[Euro.type] = handshake
+
     val listener = TestProbe()
     val blockchain = TestProbe()
     val actor = system.actorOf(

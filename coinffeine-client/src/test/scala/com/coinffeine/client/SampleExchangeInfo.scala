@@ -3,9 +3,9 @@ package com.coinffeine.client
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
-trait SampleExchangeInfo extends UnitTestNetworkComponent {
+trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
   val sampleExchangeInfo = ExchangeInfo(
     "id",
     PeerConnection("counterpart"),
