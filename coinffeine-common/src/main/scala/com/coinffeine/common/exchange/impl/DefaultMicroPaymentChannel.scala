@@ -6,7 +6,7 @@ import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.exchange.{Deposits, Exchange, MicroPaymentChannel, Role}
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
-case class DefaultMicroPaymentChannel[C <: FiatCurrency](
+private[impl] case class DefaultMicroPaymentChannel[C <: FiatCurrency](
     role: Role,
     override val exchange: DefaultExchange[C],
     deposits: Deposits[ImmutableTransaction],
@@ -45,7 +45,7 @@ case class DefaultMicroPaymentChannel[C <: FiatCurrency](
   override def closingTransaction(herSignatures: StepSignatures): exchange.Transaction = ???
 }
 
-object DefaultMicroPaymentChannel {
+private[impl] object DefaultMicroPaymentChannel {
   val BuyerDepositInputIndex = 0
   val SellerDepositInputIndex = 1
 }

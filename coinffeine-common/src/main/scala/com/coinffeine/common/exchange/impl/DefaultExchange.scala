@@ -5,7 +5,7 @@ import com.google.bitcoin
 import com.coinffeine.common._
 import com.coinffeine.common.exchange.{Exchange, Role}
 
-case class DefaultExchange[C <: FiatCurrency]  (
+private[impl] case class DefaultExchange[C <: FiatCurrency]  (
   override val id: Exchange.Id,
   override val parameters: Exchange.Parameters[C],
   override val buyer: Exchange.PeerInfo[bitcoin.core.ECKey],
@@ -35,7 +35,7 @@ case class DefaultExchange[C <: FiatCurrency]  (
   }
 }
 
-object DefaultExchange {
+private[impl] object DefaultExchange {
 
   trait Component extends Exchange.Component {
     type KeyPair = bitcoin.core.ECKey

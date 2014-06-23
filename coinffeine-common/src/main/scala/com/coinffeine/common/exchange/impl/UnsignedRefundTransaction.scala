@@ -1,9 +1,9 @@
 package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.BitcoinAmount
-import com.google.bitcoin.core.{ECKey, NetworkParameters, Transaction}
+import com.google.bitcoin.core.{ECKey, NetworkParameters}
 
-case class UnsignedRefundTransaction(
+private[impl] case class UnsignedRefundTransaction(
     deposit: ImmutableTransaction,
     outputKey: ECKey,
     outputAmount: BitcoinAmount,

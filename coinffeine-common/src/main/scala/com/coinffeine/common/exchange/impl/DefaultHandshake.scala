@@ -1,13 +1,11 @@
 package com.coinffeine.common.exchange.impl
 
+import com.coinffeine.common.exchange._
+import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
-import com.coinffeine.common.exchange._
-
-case class DefaultHandshake[C <: FiatCurrency](
+private[impl] case class DefaultHandshake[C <: FiatCurrency](
    role: Role,
    override val exchange: DefaultExchange[C],
    override val myDeposit: ImmutableTransaction) extends Handshake[C](exchange) {
@@ -22,10 +20,9 @@ case class DefaultHandshake[C <: FiatCurrency](
 
   @throws[InvalidRefundTransaction]
   override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
-    ensureValidRefundTransaction(
-      tx = herRefund,
+    signRefundTransaction(
+      tx = herRefund.get,
       expectedAmount = role.herRefundAmount(exchange.amounts))
-    signRefundTransaction(herRefund.get)
   }
 
   @throws[InvalidRefundSignature]
@@ -35,12 +32,11 @@ case class DefaultHandshake[C <: FiatCurrency](
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
-    ensureValidRefundTransaction(
-      tx = myUnsignedRefund,
-      expectedAmount = role.myRefundAmount(exchange.amounts))
     ImmutableTransaction {
       val tx = myUnsignedRefund.get
-      val mySignature = signRefundTransaction(tx)
+      val mySignature = signRefundTransaction(
+        tx,
+        expectedAmount = role.myRefundAmount(exchange.amounts))
       val buyerSignature = role.buyer(mySignature, herSignature)
       val sellerSignature = role.seller(mySignature, herSignature)
       TransactionProcessor.setMultipleSignatures(tx, 0, buyerSignature, sellerSignature)
@@ -48,7 +44,9 @@ case class DefaultHandshake[C <: FiatCurrency](
     }
   }
 
-  private def signRefundTransaction(tx: Transaction): TransactionSignature = {
+  private def signRefundTransaction(tx: Transaction,
+                                    expectedAmount: BitcoinAmount): TransactionSignature = {
+    ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
     TransactionProcessor.signMultiSignedOutput(
       multiSignedDeposit = tx,
       index = 0,
@@ -76,8 +74,6 @@ case class DefaultHandshake[C <: FiatCurrency](
     requireProperty(_.isTimeLocked, "lack a time lock")
     requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
     requireProperty(_.getInputs.size == 1, "should have one input")
-    requireProperty(_.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN,
-      "wrong confidence level")
     requireProperty(validateAmount, "wrong refund amount")
   }
 }

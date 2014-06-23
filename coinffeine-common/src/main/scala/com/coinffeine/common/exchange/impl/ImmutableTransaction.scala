@@ -8,7 +8,7 @@ import com.google.bitcoin.core.{NetworkParameters, Transaction}
   * This class adds some niceties such as a proper string conversion an a syntax similar to
   * {{{Future { ... } }}}.
   */
-class ImmutableTransaction(origTx: Transaction) {
+private[impl] class ImmutableTransaction(origTx: Transaction) {
 
   private val network: NetworkParameters = origTx.getParams
   private val bytes: Array[Byte] = origTx.bitcoinSerialize()
@@ -18,7 +18,7 @@ class ImmutableTransaction(origTx: Transaction) {
   def get: Transaction = new Transaction(network, bytes)
 }
 
-object ImmutableTransaction {
+private[impl] object ImmutableTransaction {
 
   def apply(tx: Transaction) = new ImmutableTransaction(tx)
 }
