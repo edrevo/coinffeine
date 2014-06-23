@@ -1,18 +1,17 @@
 package com.coinffeine.client.exchange
 
-import com.google.bitcoin.core.ECKey
-
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.KeyPair
 
 /** A trait that provides role-specific access to fiat and btc information for both user
   * and counterpart
   */
 sealed trait UserRole {
   /** The BTC key for the buyer */
-  val buyersKey: ECKey
+  val buyersKey: KeyPair
 
   /** The BTC key for the seller */
-  val sellersKey: ECKey
+  val sellersKey: KeyPair
 
   /** The fiat address for the seller */
   val sellersFiatAddress: String
@@ -35,8 +34,8 @@ sealed trait UserRole {
 trait BuyerUser[C <: FiatCurrency] extends UserRole {
   this: Exchange[C] =>
 
-  override lazy val buyersKey: ECKey = exchangeInfo.userKey
-  override lazy val sellersKey: ECKey = exchangeInfo.counterpartKey
+  override lazy val buyersKey: KeyPair = exchangeInfo.userKey
+  override lazy val sellersKey: KeyPair = exchangeInfo.counterpartKey
   override lazy val sellersFiatAddress: String = exchangeInfo.counterpartFiatAddress
   override lazy val buyersFiatAddress: String = exchangeInfo.userFiatAddress
   override lazy val userInputIndex: Int = 1
@@ -47,8 +46,8 @@ trait BuyerUser[C <: FiatCurrency] extends UserRole {
 trait SellerUser[C <: FiatCurrency] extends UserRole {
   this: Exchange[C] =>
 
-  override lazy val buyersKey: ECKey = exchangeInfo.counterpartKey
-  override lazy val sellersKey: ECKey = exchangeInfo.userKey
+  override lazy val buyersKey: KeyPair = exchangeInfo.counterpartKey
+  override lazy val sellersKey: KeyPair = exchangeInfo.userKey
   override lazy val sellersFiatAddress: String = exchangeInfo.userFiatAddress
   override lazy val buyersFiatAddress: String = exchangeInfo.counterpartFiatAddress
   override lazy val userInputIndex: Int = 0

@@ -3,14 +3,13 @@ package com.coinffeine.common.protocol.serialization
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
 
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
-import com.google.bitcoin.crypto.TransactionSignature
+import com.google.bitcoin.core.Wallet.SendRequest
 import org.reflections.Reflections
 
-import com.coinffeine.common.{Currency, PeerConnection, UnitTest}
+import com.coinffeine.common.{BitcoinjTest, Currency, PeerConnection}
 import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -20,45 +19,26 @@ import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComponent {
+class DefaultProtocolSerializationTest extends BitcoinjTest {
 
   val exchangeId = "exchangeid"
-  val transaction = new Transaction(network)
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
-  val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val btcAmount = 1.BTC
   val fiatAmount = 1.EUR
   val peerConnection = PeerConnection("host", 8888)
-  val sampleMessages = Seq(
-    ExchangeAborted(exchangeId, "reason"),
-    ExchangeCommitment(exchangeId, transaction),
-    CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
-    OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
-    OrderSet(
-      market = Market(Currency.UsDollar),
-      bids = VolumeByPrice(100.USD -> 1.3.BTC),
-      asks = VolumeByPrice(200.USD -> 0.3.BTC,
-        250.USD -> 0.4.BTC)
-    ),
-    QuoteRequest(UsDollar),
-    Quote(fiatAmount -> fiatAmount, fiatAmount),
-    ExchangeRejection(exchangeId, "reason"),
-    RefundTxSignatureRequest(exchangeId, transaction),
-    RefundTxSignatureResponse(exchangeId, transactionSignature),
-    StepSignatures(exchangeId, 1, transactionSignature, transactionSignature),
-    PaymentProof(exchangeId, "paymentId")
-  )
+
   val version = Version(major = 1, minor = 0)
   val protoVersion = proto.ProtocolVersion.newBuilder().setMajor(1).setMinor(0).build()
   val instance = new DefaultProtocolSerialization(version, new TransactionSerialization(network))
 
-  requireSampleInstancesForAllPublicMessages()
 
   "The default protocol serialization" should
-    "support roundtrip serialization for all public messages" in {
+    "support roundtrip serialization for all public messages" in new SampleMessages {
     sampleMessages.foreach { originalMessage =>
       val protoMessage = instance.toProtobuf(originalMessage)
-      instance.fromProtobuf(protoMessage) should be (originalMessage)
+      val roundtripMessage = instance.fromProtobuf(protoMessage)
+      roundtripMessage should be (originalMessage)
     }
   }
 
@@ -105,11 +85,40 @@ class DefaultProtocolSerializationTest extends UnitTest with UnitTestNetworkComp
     ex.getMessage should include ("Malformed message with 2 fields")
   }
 
+  trait SampleMessages {
+    val transaction = {
+      val wallet = createWallet(new KeyPair, 2.BTC)
+      val tx = wallet.sendCoinsOffline(SendRequest.to(network, new PublicKey, 1.BTC.asSatoshi))
+      ImmutableTransaction(tx)
+    }
+    val sampleMessages = Seq(
+      ExchangeAborted(exchangeId, "reason"),
+      ExchangeCommitment(exchangeId, transaction),
+      CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
+      OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
+      OrderSet(
+        market = Market(Currency.UsDollar),
+        bids = VolumeByPrice(100.USD -> 1.3.BTC),
+        asks = VolumeByPrice(200.USD -> 0.3.BTC,
+          250.USD -> 0.4.BTC)
+      ),
+      QuoteRequest(UsDollar),
+      Quote(fiatAmount -> fiatAmount, fiatAmount),
+      ExchangeRejection(exchangeId, "reason"),
+      RefundTxSignatureRequest(exchangeId, transaction),
+      RefundTxSignatureResponse(exchangeId, transactionSignature),
+      StepSignatures(exchangeId, 1, transactionSignature, transactionSignature),
+      PaymentProof(exchangeId, "paymentId")
+    )
+
+    requireSampleInstancesForAllPublicMessages(sampleMessages)
+  }
+
   /** Make sure we have a working serialization for all defined public messages. */
-  private def requireSampleInstancesForAllPublicMessages(): Unit = {
+  private def requireSampleInstancesForAllPublicMessages(messages: Seq[PublicMessage]): Unit = {
     scanPublicMessagesFromClasspath().foreach { messageClass =>
       require(
-        sampleMessages.exists(_.getClass == messageClass),
+        messages.exists(_.getClass == messageClass),
         s"There is not a sample instance of ${messageClass.getCanonicalName}"
       )
     }

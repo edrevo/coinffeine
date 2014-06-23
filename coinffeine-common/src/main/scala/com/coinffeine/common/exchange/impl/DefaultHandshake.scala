@@ -1,9 +1,8 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
-import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.crypto.TransactionSignature
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange._
 
 private[impl] case class DefaultHandshake[C <: FiatCurrency](
    role: Role,
@@ -44,7 +43,7 @@ private[impl] case class DefaultHandshake[C <: FiatCurrency](
     }
   }
 
-  private def signRefundTransaction(tx: Transaction,
+  private def signRefundTransaction(tx: MutableTransaction,
                                     expectedAmount: BitcoinAmount): TransactionSignature = {
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
     TransactionProcessor.signMultiSignedOutput(
@@ -63,10 +62,10 @@ private[impl] case class DefaultHandshake[C <: FiatCurrency](
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,
                                            expectedAmount: BitcoinAmount) = {
-    def requireProperty(cond: Transaction => Boolean, cause: String): Unit = {
+    def requireProperty(cond: MutableTransaction => Boolean, cause: String): Unit = {
       if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
     }
-    def validateAmount(tx: Transaction): Boolean = {
+    def validateAmount(tx: MutableTransaction): Boolean = {
       val amount = Currency.Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
       amount == expectedAmount
     }

@@ -2,12 +2,11 @@ package com.coinffeine.common.exchange.impl
 
 import scala.concurrent.duration._
 
-import com.google.bitcoin.core.ECKey
-
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.KeyPair
 import com.coinffeine.common.exchange.Exchange
-import com.coinffeine.common.network.CoinffeineUnitTestParams
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 object Samples {
   val exchange = DefaultExchange(
@@ -20,10 +19,10 @@ object Samples {
       commitmentConfirmations = 1,
       resubmitRefundSignatureTimeout = 10.seconds,
       refundSignatureAbortTimeout = 30.minutes,
-      network = CoinffeineUnitTestParams
+      network = CoinffeineUnitTestNetwork
     ),
-    buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new ECKey()),
-    seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new ECKey()),
+    buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new KeyPair()),
+    seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new KeyPair()),
     broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )
 }

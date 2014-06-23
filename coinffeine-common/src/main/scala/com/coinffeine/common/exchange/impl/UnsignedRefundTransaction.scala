@@ -1,14 +1,14 @@
 package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.BitcoinAmount
-import com.google.bitcoin.core.{ECKey, NetworkParameters}
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Network, PublicKey}
 
 private[impl] case class UnsignedRefundTransaction(
     deposit: ImmutableTransaction,
-    outputKey: ECKey,
+    outputKey: PublicKey,
     outputAmount: BitcoinAmount,
     lockTime: Long,
-    network: NetworkParameters)
+    network: Network)
   extends ImmutableTransaction(
     TransactionProcessor.createUnsignedTransaction(
       inputs = Seq(deposit.get.getOutput(0)),

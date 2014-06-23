@@ -1,11 +1,10 @@
 package com.coinffeine.common.exchange
 
-import com.google.bitcoin.core.NetworkParameters
-
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 import com.coinffeine.common._
+import com.coinffeine.common.bitcoin.Network
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 trait Exchange[C <: FiatCurrency] {
@@ -59,7 +58,7 @@ object Exchange {
                                            commitmentConfirmations: Int,
                                            resubmitRefundSignatureTimeout: FiniteDuration,
                                            refundSignatureAbortTimeout: FiniteDuration,
-                                           network: NetworkParameters)
+                                           network: Network)
 
   case class StepNumber(value: Int) {
     require(value >= 0, s"Step number must be positive or zero ($value given)")

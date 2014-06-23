@@ -3,17 +3,15 @@ package com.coinffeine.client.micropayment
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
-import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.BuyerUser
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
-
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -39,7 +37,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
       messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
     private val finalStep = exchangeInfo.steps + 1
 
-    private var lastSignedOffer: Option[Transaction] = None
+    private var lastSignedOffer: Option[MutableTransaction] = None
 
     def startExchange(): Unit = {
       subscribeToMessages()

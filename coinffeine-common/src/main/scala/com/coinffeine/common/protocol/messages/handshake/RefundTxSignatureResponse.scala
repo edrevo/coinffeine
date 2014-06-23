@@ -1,7 +1,6 @@
 package com.coinffeine.common.protocol.messages.handshake
 
-import com.google.bitcoin.crypto.TransactionSignature
-
+import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.protocol.TransactionSignatureUtils
 import com.coinffeine.common.protocol.messages.PublicMessage
 

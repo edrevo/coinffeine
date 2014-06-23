@@ -4,11 +4,11 @@ import java.math.BigDecimal
 import java.util.Currency
 import scala.collection.JavaConverters._
 
-import com.google.bitcoin.core.Sha256Hash
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
+import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
 import com.coinffeine.common.Currency.Bitcoin
+import com.coinffeine.common.bitcoin.Hash
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._
@@ -23,8 +23,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
       override def fromProtobuf(commitment: msg.CommitmentNotification) = CommitmentNotification(
         exchangeId = commitment.getExchangeId,
-        buyerTxId = new Sha256Hash(commitment.getBuyerTxId.toByteArray),
-        sellerTxId = new Sha256Hash(commitment.getSellerTxId.toByteArray)
+        buyerTxId = new Hash(commitment.getBuyerTxId.toByteArray),
+        sellerTxId = new Hash(commitment.getSellerTxId.toByteArray)
       )
 
       override def toProtobuf(commitment: CommitmentNotification) =

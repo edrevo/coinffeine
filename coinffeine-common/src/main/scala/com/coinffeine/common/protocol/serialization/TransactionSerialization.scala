@@ -1,21 +1,21 @@
 package com.coinffeine.common.protocol.serialization
 
-import com.google.bitcoin.core.{Transaction, NetworkParameters}
-import com.google.bitcoin.crypto.TransactionSignature
 import com.google.protobuf.ByteString
 
-private[serialization] class TransactionSerialization(network: NetworkParameters) {
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Network, TransactionSignature}
+
+private[serialization] class TransactionSerialization(network: Network) {
 
   def deserializeSignature(byteString: ByteString): TransactionSignature =
-    TransactionSignature.decodeFromBitcoin(byteString.toByteArray,
-      TransactionSerialization.RequireCanonical)
+    TransactionSignature.decode(byteString.toByteArray, TransactionSerialization.RequireCanonical)
 
-  def deserializeTransaction(byteString: ByteString): Transaction =
-    new Transaction(network, byteString.toByteArray)
+  def deserializeTransaction(byteString: ByteString): ImmutableTransaction =
+    new ImmutableTransaction(byteString.toByteArray, network)
 
   def serialize(sig: TransactionSignature): ByteString = ByteString.copyFrom(sig.encodeToBitcoin())
 
-  def serialize(tx: Transaction): ByteString = ByteString.copyFrom(tx.bitcoinSerialize())
+  def serialize(tx: ImmutableTransaction): ByteString =
+    ByteString.copyFrom(tx.get.bitcoinSerialize())
 }
 
 private object TransactionSerialization {

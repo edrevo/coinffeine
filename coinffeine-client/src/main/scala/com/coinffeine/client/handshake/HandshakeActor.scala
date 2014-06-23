@@ -1,10 +1,9 @@
 package com.coinffeine.client.handshake
 
 import akka.actor.{ActorRef, Props}
-import com.google.bitcoin.core.Sha256Hash
-import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
@@ -32,8 +31,8 @@ object HandshakeActor {
     * failure with an exception.
     */
   case class HandshakeSuccess(
-    sellerCommitmentTxId: Sha256Hash,
-    buyerCommitmentTxId: Sha256Hash,
+    sellerCommitmentTxId: Hash,
+    buyerCommitmentTxId: Hash,
     refundSig: TransactionSignature
   )
 
@@ -43,7 +42,7 @@ object HandshakeActor {
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")
 
   case class CommitmentTransactionRejectedException(
-       exchangeId: String, rejectedTx: Sha256Hash, isOwn: Boolean) extends RuntimeException(
+       exchangeId: String, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 

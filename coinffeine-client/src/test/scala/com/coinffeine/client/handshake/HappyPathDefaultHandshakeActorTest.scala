@@ -2,11 +2,9 @@ package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
 
-import com.google.bitcoin.core.Sha256Hash
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -25,14 +23,15 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     gateway.expectNoMsg()
     givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
+    val relevantSignatureRequest =
+      RefundTxSignatureRequest("id", ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
+      RefundTxSignatureRequest("other-id", ImmutableTransaction(handshake.counterpartRefund))
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
     filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification("id", mock[Sha256Hash], mock[Sha256Hash]))) should be (true)
+    filter(fromBroker(CommitmentNotification("id", mock[Hash], mock[Hash]))) should be (true)
     filter(fromBroker(ExchangeAborted("id", "failed"))) should be (true)
     filter(fromCounterpart(ExchangeAborted("id", "failed"))) should be (false)
     filter(fromBroker(ExchangeAborted("other", "failed"))) should be (false)
@@ -43,7 +42,8 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
-    val invalidRequest = RefundTxSignatureRequest("id", handshake.invalidRefundTransaction)
+    val invalidRequest =
+      RefundTxSignatureRequest("id", ImmutableTransaction(handshake.invalidRefundTransaction))
     gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart))
     gateway.expectNoMsg(100 millis)
   }
@@ -59,17 +59,12 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForward (ExchangeCommitment("id", handshake.commitmentTransaction)) to broker
+    shouldForward (ExchangeCommitment("id", ImmutableTransaction(handshake.commitmentTransaction))) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {
     shouldSignCounterpartRefund()
   }
-
-  val publishedTransactions = Set(
-    handshake.commitmentTransaction.getHash,
-    handshake.counterpartCommitmentTransaction.getHash
-  )
 
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
@@ -87,7 +82,12 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "wait until commitments are confirmed" in {
     listener.expectNoMsg(100 millis)
-    publishedTransactions.foreach(tx => blockchain.send(actor, TransactionConfirmed(tx, 1)))
+    for (tx <- Seq(
+      handshake.commitmentTransaction.getHash,
+      handshake.counterpartCommitmentTransaction.getHash
+    )) {
+      blockchain.send(actor, TransactionConfirmed(tx, 1))
+    }
     val result = listener.expectMsgClass(classOf[HandshakeSuccess])
     result.refundSig should be (handshake.refundSignature)
     result.buyerCommitmentTxId should be (handshake.commitmentTransaction.getHash)

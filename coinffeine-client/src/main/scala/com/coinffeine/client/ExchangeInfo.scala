@@ -1,8 +1,7 @@
 package com.coinffeine.client
 
-import com.google.bitcoin.core.{ECKey, NetworkParameters}
-
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
+import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
+import com.coinffeine.common.bitcoin.{KeyPair, Network, PublicKey}
 
 /** A value class that contains all the necessary information relative to an exchange between
   * two peers
@@ -24,10 +23,10 @@ case class ExchangeInfo[C <: FiatCurrency](
     id: String,
     counterpart: PeerConnection,
     broker: PeerConnection,
-    network: NetworkParameters,
-    userKey: ECKey,
+    network: Network,
+    userKey: KeyPair,
     userFiatAddress: String,
-    counterpartKey: ECKey,
+    counterpartKey: PublicKey,
     counterpartFiatAddress: String,
     btcExchangeAmount: BitcoinAmount,
     fiatExchangeAmount: CurrencyAmount[C],
@@ -39,5 +38,4 @@ case class ExchangeInfo[C <: FiatCurrency](
   require(userKey.getPrivKeyBytes != null, "Credentials do not contain private key")
   val fiatStepAmount = fiatExchangeAmount / steps
   val btcStepAmount = btcExchangeAmount / steps
-
 }

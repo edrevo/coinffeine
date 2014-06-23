@@ -1,11 +1,11 @@
 package com.coinffeine.client.micropayment
 
 import akka.actor.ActorRef
+
 import com.coinffeine.client.exchange.{Exchange, UserRole}
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.google.bitcoin.core.Transaction
-import com.google.bitcoin.crypto.TransactionSignature
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.
@@ -24,7 +24,7 @@ object MicroPaymentChannelActor {
   case object ExchangeSuccess
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ExchangeFailure(cause: Throwable, lastOffer: Option[Transaction])
+  case class ExchangeFailure(cause: Throwable, lastOffer: Option[MutableTransaction])
 
   private[micropayment] case object StepSignatureTimeout
 

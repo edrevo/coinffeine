@@ -3,14 +3,13 @@ package com.coinffeine.client.handshake
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-import com.google.bitcoin.core.{Transaction, Wallet}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
-import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 
 abstract class DefaultHandshake[C <: FiatCurrency](
@@ -20,14 +19,15 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   require(userWallet.hasKey(exchangeInfo.userKey),
     "User wallet does not contain the user's private key")
 
-  override val commitmentTransaction: Transaction = TransactionProcessor.createMultiSignedDeposit(
-    userWallet, amountToCommit, Seq(exchangeInfo.counterpartKey, exchangeInfo.userKey),
-    exchangeInfo.network
-  )
+  override val commitmentTransaction: MutableTransaction =
+    TransactionProcessor.createMultiSignedDeposit(
+      userWallet, amountToCommit, Seq(exchangeInfo.counterpartKey, exchangeInfo.userKey),
+      exchangeInfo.network
+    )
 
   private val committedFunds = commitmentTransaction.getOutput(0)
-  override val refundTransaction: Transaction = {
-    val tx = new Transaction(exchangeInfo.network)
+  override val refundTransaction: MutableTransaction = {
+    val tx = new MutableTransaction(exchangeInfo.network)
     tx.setLockTime(exchangeInfo.lockTime)
     tx.addInput(committedFunds).setSequenceNumber(0)
     tx.addOutput(committedFunds.getValue, exchangeInfo.userKey)
@@ -36,7 +36,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   }
 
   override def signCounterpartRefundTransaction(
-      counterpartRefundTx: Transaction): Try[TransactionSignature] = Try {
+      counterpartRefundTx: MutableTransaction): Try[TransactionSignature] = Try {
     ensureValidRefundTransaction(counterpartRefundTx)
     val connectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
       2, List(exchangeInfo.userKey, exchangeInfo.counterpartKey))
@@ -44,7 +44,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
       0, exchangeInfo.userKey, connectedPubKeyScript, SigHash.ALL, false)
   }
 
-  private def ensureValidRefundTransaction(refundTx: Transaction) = {
+  private def ensureValidRefundTransaction(refundTx: MutableTransaction) = {
     // TODO: Is this enough to ensure we can sign?
     require(refundTx.isTimeLocked)
     require(refundTx.getLockTime == exchangeInfo.lockTime)

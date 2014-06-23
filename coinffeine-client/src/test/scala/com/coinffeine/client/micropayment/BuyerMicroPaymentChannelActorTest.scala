@@ -1,19 +1,20 @@
 package com.coinffeine.client.micropayment
 
+import scala.concurrent.duration._
+
 import akka.actor.Props
 import akka.testkit.TestProbe
+
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.{BuyerUser, MockExchange}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
-import com.google.bitcoin.crypto.TransactionSignature
-
-import scala.concurrent.duration._
 
 class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange") {
   val listener = TestProbe()

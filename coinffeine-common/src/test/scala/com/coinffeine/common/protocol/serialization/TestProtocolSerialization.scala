@@ -1,13 +1,13 @@
 package com.coinffeine.common.protocol.serialization
 
-import com.coinffeine.common.network.CoinffeineUnitTestParams
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 class TestProtocolSerialization(version: Version) extends ProtocolSerialization {
   private val underlying = new DefaultProtocolSerialization(
-    version, new TransactionSerialization(CoinffeineUnitTestParams))
+    version, new TransactionSerialization(CoinffeineUnitTestNetwork))
   var unserializableMessages = Set.empty[PublicMessage]
   var undeserializableMessages = Set.empty[CoinffeineMessage]
 

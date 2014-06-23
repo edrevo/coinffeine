@@ -1,7 +1,8 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
-import com.google.bitcoin.core.{Transaction, Sha256Hash}
+
+import com.coinffeine.common.bitcoin.{Hash, MutableTransaction}
 
 /** A BlockchainActor keeps a blockchain and can:
   *
@@ -13,28 +14,28 @@ object BlockchainActor {
   /** The blockchain actor will send either `TransactionConfirmed` or `TransactionRejected`
     * to whoever sends this message.
     */
-  case class NotifyWhenConfirmed(transactionHash: Sha256Hash, confirmations: Int)
+  case class NotifyWhenConfirmed(transactionHash: Hash, confirmations: Int)
 
   /** Sent when the TX reaches the requested number of confirmations. */
-  case class TransactionConfirmed(transactionHash: Sha256Hash, confirmations: Int)
+  case class TransactionConfirmed(transactionHash: Hash, confirmations: Int)
 
   /** Sent if the TX becomes invalid (i.e. input funds have been spent otherwise) while
     * waiting for it to be confirmed.
     */
-  case class TransactionRejected(transactionHash: Sha256Hash)
+  case class TransactionRejected(transactionHash: Hash)
 
-  case class PublishTransaction(transaction: Transaction)
+  case class PublishTransaction(transaction: MutableTransaction)
 
   /** The blockchain actor will send either a `TransactionFor` or `TransactionNotFoundWith`
     * to whoever sends this message.
     */
-  case class GetTransactionFor(hash: Sha256Hash)
+  case class GetTransactionFor(hash: Hash)
 
   /** Sent if a transaction is found in the blockchain for the given hash */
-  case class TransactionFor(hash: Sha256Hash, tx: Transaction)
+  case class TransactionFor(hash: Hash, tx: MutableTransaction)
 
   /** Sent if there is no transaction in the blockchain for the given hash */
-  case class TransactionNotFoundWith(hash: Sha256Hash)
+  case class TransactionNotFoundWith(hash: Hash)
 
   trait Component {
     def blockchainActorProps(): Props

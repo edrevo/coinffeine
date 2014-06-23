@@ -2,7 +2,7 @@ package com.coinffeine.common.network
 
 import com.google.bitcoin.params.UnitTestParams
 
-object CoinffeineUnitTestParams extends UnitTestParams {
+object CoinffeineUnitTestNetwork extends UnitTestParams {
   // Ensures difficulty stays at minimum level
   interval = Int.MaxValue
 
@@ -13,6 +13,6 @@ object CoinffeineUnitTestParams extends UnitTestParams {
   subsidyDecreaseBlockCount = Int.MaxValue
 
   trait Component extends NetworkComponent {
-    override val network = CoinffeineUnitTestParams
+    override val network = CoinffeineUnitTestNetwork
   }
 }

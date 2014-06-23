@@ -8,7 +8,7 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
 import com.coinffeine.common.{AkkaSpec, DefaultTcpPortAllocator, PeerConnection}
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.{ProtocolConstants, TestClient}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
@@ -76,7 +76,7 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   }
 
   trait FreshGateway extends ProtoRpcMessageGateway.Component
-      with TestProtocolSerializationComponent with UnitTestNetworkComponent
+      with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component
       with ProtocolConstants.DefaultComponent {
     val (localPeerAddress, gateway) = createGateway()
     val (remotePeerAddress, remotePeer) = createRemotePeer(localPeerAddress)
