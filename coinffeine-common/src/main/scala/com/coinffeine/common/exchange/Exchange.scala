@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange
 
+import java.security.SecureRandom
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
@@ -25,7 +27,9 @@ object Exchange {
   }
 
   object Id {
-    def random() = new Id(value = Random.nextString(12)) // TODO: use a crypto secure method
+    private val secureGenerator = new Random(new SecureRandom())
+
+    def random() = new Id(value = secureGenerator.nextString(12))
   }
 
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
