@@ -1,9 +1,8 @@
 package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Address}
-import com.coinffeine.common.exchange.Exchange.UnspentOutput
-import com.coinffeine.common.exchange.{Handshake, Role, Exchange, ExchangeProtocol}
+import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
+import com.coinffeine.common.exchange._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 

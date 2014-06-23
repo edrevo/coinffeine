@@ -98,12 +98,4 @@ object Exchange {
       if (totalSteps.isLastStep(step)) amountSplit + sellerDeposit else amountSplit
     }
   }
-
-  /** An output not yet spent and the key to spend it.
-    *
-    * TODO: find an alternative to MutableTransactionOutput or don't make it a case class
-    */
-  case class UnspentOutput(output: MutableTransactionOutput, key: KeyPair) {
-    def toTuple: (MutableTransactionOutput, KeyPair) = (output, key)
-  }
 }

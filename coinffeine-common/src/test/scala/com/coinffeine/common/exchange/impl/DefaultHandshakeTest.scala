@@ -4,8 +4,7 @@ import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{BuyerRole, SellerRole}
-import com.coinffeine.common.exchange.Exchange.UnspentOutput
+import com.coinffeine.common.exchange.{UnspentOutput, BuyerRole, SellerRole}
 
 class DefaultHandshakeTest extends BitcoinjTest {
 
@@ -77,16 +76,14 @@ class DefaultHandshakeTest extends BitcoinjTest {
 
   trait BuyerHandshake {
     val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
-    val buyerFunds = TransactionProcessor.collectFunds(buyerWallet, 0.2.BTC)
-      .toSeq.map(UnspentOutput(_, exchange.buyer.bitcoinKey))
+    val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
     val buyerHandshake =
       protocol.createHandshake(exchange, BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
   }
 
   trait SellerHandshake {
     val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
-    val sellerFunds = TransactionProcessor.collectFunds(sellerWallet, 0.2.BTC)
-      .toSeq.map(UnspentOutput(_, exchange.seller.bitcoinKey))
+    val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
     val sellerHandshake =
       protocol.createHandshake(exchange, SellerRole, sellerFunds, sellerWallet.getChangeAddress)
   }

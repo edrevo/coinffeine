@@ -16,7 +16,7 @@ trait ExchangeProtocol {
   @throws[IllegalArgumentException]("when funds are insufficient")
   def createHandshake[C <: FiatCurrency](exchange: Exchange[C],
                                          role: Role,
-                                         unspentOutputs: Seq[Exchange.UnspentOutput],
+                                         unspentOutputs: Seq[UnspentOutput],
                                          changeAddress: Address): Handshake[C]
 }
 
