@@ -17,6 +17,7 @@ import com.google.bitcoin.script.ScriptBuilder
 import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
 import com.coinffeine.common.{Currency, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
 class DefaultExchange[C <: FiatCurrency](
@@ -181,10 +182,8 @@ class DefaultExchange[C <: FiatCurrency](
     val (idx0InputSignatures, idx1InputSignatures) =
       if (userInputIndex == 0) (Seq(counterpartSignatures._1, userSignatures._1), Seq(userSignatures._2, counterpartSignatures._2))
       else (Seq(userSignatures._1, counterpartSignatures._1), Seq(counterpartSignatures._2, userSignatures._2))
-    tx.getInput(0).setScriptSig(
-      ScriptBuilder.createMultiSigInputScript(idx0InputSignatures))
-    tx.getInput(1).setScriptSig(
-      ScriptBuilder.createMultiSigInputScript(idx1InputSignatures))
+    TransactionProcessor.setMultipleSignatures(tx, 0, idx0InputSignatures: _*)
+    TransactionProcessor.setMultipleSignatures(tx, 1, idx1InputSignatures: _*)
     tx
   }
 }

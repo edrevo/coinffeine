@@ -1,27 +1,79 @@
 package com.coinffeine.common.exchange.impl
 
+import com.coinffeine.common.exchange._
+import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.crypto.TransactionSignature
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.{Deposits, Handshake}
-
-case class DefaultHandshake[C <: FiatCurrency](
+private[impl] case class DefaultHandshake[C <: FiatCurrency](
+   role: Role,
    override val exchange: DefaultExchange[C],
-   override val myDeposit: Transaction,
-   override val myRefund: Transaction) extends Handshake[C](exchange) {
+   override val myDeposit: ImmutableTransaction) extends Handshake[C](exchange) {
 
-  override val myRefundIsSigned = ???
+  override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
+    deposit = myDeposit,
+    outputKey = role.me(exchange).bitcoinKey,
+    outputAmount = role.myRefundAmount(exchange.amounts),
+    lockTime = exchange.parameters.lockTime,
+    network = exchange.parameters.network
+  )
 
-  override def withHerSignatureOfMyRefund(signature: TransactionSignature): DefaultHandshake[C] = {
-    if (!TransactionProcessor.isValidSignature(myRefund, 0, signature)) {
-      throw InvalidRefundSignature(myRefund, signature)
-    }
-    copy(myRefund = TransactionProcessor.addSignatures(myRefund, 0 -> signature))
+  @throws[InvalidRefundTransaction]
+  override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
+    signRefundTransaction(
+      tx = herRefund.get,
+      expectedAmount = role.herRefundAmount(exchange.amounts))
   }
 
-  override def startExchange(herDeposit: exchange.Transaction): DefaultMicroPaymentChannel[C] = {
-    val deposits = Deposits(myDeposit.getOutput(0), herDeposit.getOutput(0))
-    DefaultMicroPaymentChannel[C](exchange, deposits)
+  @throws[InvalidRefundSignature]
+  override def signMyRefund(herSignature: TransactionSignature) = {
+    if (!TransactionProcessor.isValidSignature(
+        myUnsignedRefund.get, index = 0, herSignature, role.her(exchange).bitcoinKey,
+        Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))) {
+      throw InvalidRefundSignature(myUnsignedRefund, herSignature)
+    }
+    ImmutableTransaction {
+      val tx = myUnsignedRefund.get
+      val mySignature = signRefundTransaction(
+        tx,
+        expectedAmount = role.myRefundAmount(exchange.amounts))
+      val buyerSignature = role.buyer(mySignature, herSignature)
+      val sellerSignature = role.seller(mySignature, herSignature)
+      TransactionProcessor.setMultipleSignatures(tx, 0, buyerSignature, sellerSignature)
+      tx
+    }
+  }
+
+  private def signRefundTransaction(tx: Transaction,
+                                    expectedAmount: BitcoinAmount): TransactionSignature = {
+    ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
+    TransactionProcessor.signMultiSignedOutput(
+      multiSignedDeposit = tx,
+      index = 0,
+      signAs = role.me(exchange).bitcoinKey,
+      requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
+    )
+  }
+
+  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = {
+    val buyerDeposit = role.buyer(myDeposit, herDeposit)
+    val sellerDeposit = role.seller(myDeposit, herDeposit)
+    DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
+  }
+
+  private def ensureValidRefundTransaction(tx: ImmutableTransaction,
+                                           expectedAmount: BitcoinAmount) = {
+    def requireProperty(cond: Transaction => Boolean, cause: String): Unit = {
+      if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
+    }
+    def validateAmount(tx: Transaction): Boolean = {
+      val amount = Currency.Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
+      amount == expectedAmount
+    }
+    // TODO: Is this enough to ensure we can sign?
+    requireProperty(_.isTimeLocked, "lack a time lock")
+    requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
+    requireProperty(_.getInputs.size == 1, "should have one input")
+    requireProperty(validateAmount, "wrong refund amount")
   }
 }

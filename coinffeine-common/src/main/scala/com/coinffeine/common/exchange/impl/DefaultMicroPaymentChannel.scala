@@ -1,31 +1,51 @@
 package com.coinffeine.common.exchange.impl
 
-import com.google.bitcoin.core.Transaction
+import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.{Deposits, Exchange, MicroPaymentChannel}
+import com.coinffeine.common.exchange.{Deposits, Exchange, MicroPaymentChannel, Role}
+import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
-case class DefaultMicroPaymentChannel[C <: FiatCurrency](
+private[impl] case class DefaultMicroPaymentChannel[C <: FiatCurrency](
+    role: Role,
     override val exchange: DefaultExchange[C],
-    override val deposits: Deposits,
+    deposits: Deposits[ImmutableTransaction],
     override val currentStep: Exchange.StepNumber = Exchange.StepNumber.First)
   extends MicroPaymentChannel[C](exchange) {
 
-  override val currentTransaction: Transaction =
-    TransactionProcessor.createTransaction(
-      inputs = deposits.toSeq,
+  private val currentUnsignedTransaction = ImmutableTransaction {
+    TransactionProcessor.createUnsignedTransaction(
+      inputs = Seq(
+        deposits.buyerDeposit.get.getOutput(0),
+        deposits.sellerDeposit.get.getOutput(0)
+      ),
       outputs = Seq(
-        exchange.buyer.bitcoinKey -> buyerFundsAfterCurrentStep._1,
-        exchange.seller.bitcoinKey -> sellerFundsAfterCurrentStep._1))
+        exchange.buyer.bitcoinKey -> exchange.amounts.channelOutputForBuyerAfter(currentStep),
+        exchange.seller.bitcoinKey -> exchange.amounts.channelOutputForSellerAfter(currentStep)
+      ),
+      network = exchange.parameters.network
+    )
+  }
 
-  override def validateCurrentTransactionSignatures(
-      buyerSignature: exchange.TransactionSignature,
-      sellerSignature: exchange.TransactionSignature): Boolean =
-    TransactionProcessor.areValidSignatures(currentTransaction, Seq(buyerSignature, sellerSignature))
+  override def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean = {
+    val tx = currentUnsignedTransaction.get
 
-  override def signCurrentTransaction: exchange.TransactionSignature = ???
+    def isValid(index: Int, signature: TransactionSignature) =
+      TransactionProcessor.isValidSignature(tx, index, signature, role.her(exchange).bitcoinKey,
+        Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))
+
+    isValid(BuyerDepositInputIndex, herSignatures.buyerDepositSignature) &&
+      isValid(SellerDepositInputIndex, herSignatures.sellerDepositSignature)
+  }
+
+  override def signCurrentTransaction: StepSignatures = ???
 
   override def nextStep: DefaultMicroPaymentChannel[C] = copy(currentStep = currentStep.next)
 
-  override def close(): DefaultClosing[C] = DefaultClosing(exchange, currentTransaction, deposits)
+  override def closingTransaction(herSignatures: StepSignatures): exchange.Transaction = ???
+}
+
+private[impl] object DefaultMicroPaymentChannel {
+  val BuyerDepositInputIndex = 0
+  val SellerDepositInputIndex = 1
 }
