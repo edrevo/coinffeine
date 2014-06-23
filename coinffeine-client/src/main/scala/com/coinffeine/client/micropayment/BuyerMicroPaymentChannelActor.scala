@@ -18,7 +18,8 @@ import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSigna
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerMicroPaymentChannelActor[C <: FiatCurrency] extends Actor with ActorLogging  {
+class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
+  extends Actor with ActorLogging with StepTimeout  {
 
   private var stepTimers = Seq.empty[Cancellable]
 
@@ -62,8 +63,8 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency] extends Actor with ActorL
     }
 
     private def withStepTimeout(step: Int)(receive: Receive): Receive = {
-      scheduleStepTimers()
-      receive.orElse(handleTimeout(step))
+      scheduleStepTimeouts(exchangeSignatureTimeout)
+      receive.andThen(_ => cancelTimeout()).orElse(handleTimeout(step))
     }
 
     private def waitForValidSignature(
@@ -89,17 +90,6 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency] extends Actor with ActorL
           // TODO: Publish transaction to blockchain
           finishWith(ExchangeSuccess)
       }
-    }
-
-    private def scheduleStepTimers(): Unit = {
-      import context.dispatcher
-      stepTimers = Seq(
-        context.system.scheduler.scheduleOnce(
-          delay = exchangeSignatureTimeout,
-          receiver = self,
-          message = StepSignatureTimeout
-        )
-      )
     }
 
     private def finishWith(result: Any): Unit = {

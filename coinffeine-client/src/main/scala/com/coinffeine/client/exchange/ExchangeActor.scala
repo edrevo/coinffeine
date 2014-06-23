@@ -16,7 +16,6 @@ import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
 import com.coinffeine.common.protocol.ProtocolConstants
 
-
 class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     handshakeActorProps: Props,
     microPaymentChannelActorProps: Props,

@@ -11,7 +11,6 @@ import akka.util.{Timeout => AkkaTimeout}
 import com.google.bitcoin.core.{ECKey, Transaction, TransactionOutput}
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
@@ -22,7 +21,7 @@ import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo with ScalaFutures {
+class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
 
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")

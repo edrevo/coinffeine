@@ -9,7 +9,7 @@ import akka.testkit.{TestActor, TestProbe}
 import akka.util.Timeout
 import com.google.bitcoin.core.{Sha256Hash, Transaction, Wallet}
 import com.google.bitcoin.crypto.TransactionSignature
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.Eventually
 
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
@@ -25,7 +25,7 @@ import com.coinffeine.common.protocol.ProtocolConstants
 
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
-  with UnitTestNetworkComponent with ScalaFutures with Eventually {
+  with UnitTestNetworkComponent with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
   private val exchangeInfo = sampleExchangeInfo
