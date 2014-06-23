@@ -2,12 +2,11 @@ package com.coinffeine.common.exchange
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 
 trait MicroPaymentChannel[C <: FiatCurrency] {
 
-  /** Signatures for a step transaction of both deposits. */
-  case class StepSignatures(buyerDepositSignature: TransactionSignature,
-                            sellerDepositSignature: TransactionSignature)
+  def deposits: Deposits[ImmutableTransaction]
 
   def currentStep: Exchange.StepNumber
 
@@ -27,4 +26,10 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
     *    rest of the amount to exchange for the seller. Note that deposits are lost as fees.
     */
   def closingTransaction(herSignatures: StepSignatures): ImmutableTransaction
+}
+
+object MicroPaymentChannel {
+  /** Signatures for a step transaction of both deposits. */
+  case class StepSignatures(buyerDepositSignature: TransactionSignature,
+                            sellerDepositSignature: TransactionSignature)
 }

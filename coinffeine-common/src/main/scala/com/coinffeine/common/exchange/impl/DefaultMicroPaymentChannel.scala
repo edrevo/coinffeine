@@ -3,12 +3,13 @@ package com.coinffeine.common.exchange.impl
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.{Deposits, Exchange, MicroPaymentChannel, Role}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] case class DefaultMicroPaymentChannel[C <: FiatCurrency](
     role: Role,
-    exchange: DefaultExchange[C],
-    deposits: Deposits[ImmutableTransaction],
+    exchange: Exchange[C],
+    override val deposits: Deposits[ImmutableTransaction],
     override val currentStep: Exchange.StepNumber = Exchange.StepNumber.First)
   extends MicroPaymentChannel[C] {
 

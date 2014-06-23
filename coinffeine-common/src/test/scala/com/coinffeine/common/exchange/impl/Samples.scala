@@ -9,7 +9,7 @@ import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 object Samples {
-  val exchange = DefaultExchange(
+  val exchange = Exchange(
     id = Exchange.Id("id"),
     parameters = Exchange.Parameters(
       bitcoinAmount = 1.BTC,

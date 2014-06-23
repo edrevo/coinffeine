@@ -7,35 +7,15 @@ import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-trait Exchange[C <: FiatCurrency] {
-  def id: Exchange.Id
-  def parameters: Exchange.Parameters[C]
-  def buyer: Exchange.PeerInfo[KeyPair]
-  def seller: Exchange.PeerInfo[KeyPair]
-  def broker: Exchange.BrokerInfo
+case class Exchange[C <: FiatCurrency](
+  id: Exchange.Id,
+  parameters: Exchange.Parameters[C],
+  buyer: Exchange.PeerInfo[KeyPair],
+  seller: Exchange.PeerInfo[KeyPair],
+  broker: Exchange.BrokerInfo) {
 
-  /** An output not yet spent and the key to spend it.
-    *
-    * TODO: find an alternative to MutableTransactionOutput or don't make it a case class
-    */
-  case class UnspentOutput(output: MutableTransactionOutput, key: KeyPair) {
-    def toTuple: (MutableTransactionOutput, KeyPair) = (output, key)
-  }
-
-  def amounts: Exchange.Amounts[C] =
+  val amounts: Exchange.Amounts[C] =
     Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.totalSteps)
-
-  /** Start a handshake for this exchange.
-    *
-    * @param role            Role played in the handshake
-    * @param unspentOutputs  Inputs for the deposit to create during the handshake
-    * @param changeAddress   Address to return the excess of funds in unspentOutputs
-    * @return                A new handshake
-    */
-  @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake(role: Role,
-                      unspentOutputs: Seq[UnspentOutput],
-                      changeAddress: Address): Handshake[C]
 }
 
 object Exchange {
@@ -119,13 +99,11 @@ object Exchange {
     }
   }
 
-  trait Component {
-    type KeyPair
-
-    def createExchange[C <: FiatCurrency](id: Exchange.Id,
-                                          parameters: Exchange.Parameters[C],
-                                          buyer: Exchange.PeerInfo[KeyPair],
-                                          seller: Exchange.PeerInfo[KeyPair],
-                                          broker: Exchange.BrokerInfo): Exchange[C]
+  /** An output not yet spent and the key to spend it.
+    *
+    * TODO: find an alternative to MutableTransactionOutput or don't make it a case class
+    */
+  case class UnspentOutput(output: MutableTransactionOutput, key: KeyPair) {
+    def toTuple: (MutableTransactionOutput, KeyPair) = (output, key)
   }
 }
