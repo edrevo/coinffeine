@@ -4,25 +4,22 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 import com.coinffeine.common._
-import com.coinffeine.common.bitcoin.Network
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 trait Exchange[C <: FiatCurrency] {
-  type KeyPair
-  type TransactionOutput
-  type Address
-  type Transaction
-  type TransactionSignature
-
   def id: Exchange.Id
   def parameters: Exchange.Parameters[C]
   def buyer: Exchange.PeerInfo[KeyPair]
   def seller: Exchange.PeerInfo[KeyPair]
   def broker: Exchange.BrokerInfo
 
-  /** An output not yet spent and the key to spend it. */
-  case class UnspentOutput(output: TransactionOutput, key: KeyPair) {
-    def toTuple: (TransactionOutput, KeyPair) = (output, key)
+  /** An output not yet spent and the key to spend it.
+    *
+    * TODO: find an alternative to MutableTransactionOutput or don't make it a case class
+    */
+  case class UnspentOutput(output: MutableTransactionOutput, key: KeyPair) {
+    def toTuple: (MutableTransactionOutput, KeyPair) = (output, key)
   }
 
   def amounts: Exchange.Amounts[C] =

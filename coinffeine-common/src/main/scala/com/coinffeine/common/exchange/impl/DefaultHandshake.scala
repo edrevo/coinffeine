@@ -6,8 +6,8 @@ import com.coinffeine.common.exchange._
 
 private[impl] case class DefaultHandshake[C <: FiatCurrency](
    role: Role,
-   override val exchange: DefaultExchange[C],
-   override val myDeposit: ImmutableTransaction) extends Handshake[C](exchange) {
+   exchange: DefaultExchange[C],
+   override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,

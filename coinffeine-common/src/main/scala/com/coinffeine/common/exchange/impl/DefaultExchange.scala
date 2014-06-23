@@ -3,7 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.google.bitcoin
 
 import com.coinffeine.common._
-import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
 import com.coinffeine.common.exchange.{Exchange, Role}
 
 private[impl] case class DefaultExchange[C <: FiatCurrency]  (
@@ -12,12 +12,6 @@ private[impl] case class DefaultExchange[C <: FiatCurrency]  (
   override val buyer: Exchange.PeerInfo[bitcoin.core.ECKey],
   override val seller: Exchange.PeerInfo[bitcoin.core.ECKey],
   override val broker: Exchange.BrokerInfo) extends Exchange[C] {
-
-  override type KeyPair = bitcoin.core.ECKey
-  override type Address = bitcoin.core.Address
-  override type TransactionOutput = bitcoin.core.TransactionOutput
-  override type Transaction = ImmutableTransaction
-  override type TransactionSignature = bitcoin.crypto.TransactionSignature
 
   @throws[IllegalArgumentException]("when funds are insufficient")
   override def createHandshake(role: Role,
