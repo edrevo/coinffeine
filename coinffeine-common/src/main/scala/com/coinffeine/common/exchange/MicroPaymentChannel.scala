@@ -6,8 +6,6 @@ import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 
 trait MicroPaymentChannel[C <: FiatCurrency] {
 
-  def deposits: Deposits[ImmutableTransaction]
-
   def currentStep: Exchange.StepNumber
 
   def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean

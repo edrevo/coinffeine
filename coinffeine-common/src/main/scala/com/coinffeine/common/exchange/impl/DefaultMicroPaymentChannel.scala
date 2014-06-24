@@ -9,16 +9,13 @@ import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency](
     role: Role,
     exchange: Exchange[C],
-    override val deposits: Deposits[ImmutableTransaction],
     override val currentStep: Exchange.StepNumber = Exchange.StepNumber.First)
+    deposits: Deposits,
   extends MicroPaymentChannel[C] {
 
   private val currentUnsignedTransaction = ImmutableTransaction {
     TransactionProcessor.createUnsignedTransaction(
-      inputs = Seq(
-        deposits.buyerDeposit.get.getOutput(0),
-        deposits.sellerDeposit.get.getOutput(0)
-      ),
+      inputs = deposits.toSeq.map(_.get.getOutput(0)),
       outputs = Seq(
         exchange.buyer.bitcoinKey -> exchange.amounts.channelOutputForBuyerAfter(currentStep),
         exchange.seller.bitcoinKey -> exchange.amounts.channelOutputForSellerAfter(currentStep)
