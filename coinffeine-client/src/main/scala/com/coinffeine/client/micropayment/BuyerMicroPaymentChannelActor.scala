@@ -35,7 +35,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
       messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
-    private val finalStep = exchangeInfo.steps + 1
+    private val finalStep = exchangeInfo.parameters.breakdown.totalSteps
 
     private var lastSignedOffer: Option[MutableTransaction] = None
 
@@ -53,7 +53,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     private def handleTimeout(step: Int): Receive= {
       case StepSignatureTimeout =>
         val errorMsg = s"Timed out waiting for the seller to provide the signature for step $step" +
-          s" (out of ${exchangeInfo.steps}})"
+          s" (out of ${exchangeInfo.parameters.breakdown.intermediateSteps}})"
         log.warning(errorMsg)
         finishWith(ExchangeFailure(
           TimeoutException(errorMsg),
@@ -107,7 +107,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private def nextWait(step: Int): Receive =
-      if (step == exchangeInfo.steps) waitForFinalSignature
+      if (step == exchangeInfo.parameters.breakdown.intermediateSteps) waitForFinalSignature
       else waitForNextStepSignature(step + 1)
   }
 }

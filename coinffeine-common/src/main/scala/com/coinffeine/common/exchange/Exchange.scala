@@ -35,20 +35,15 @@ object Exchange {
     * @param fiatAmount The amount of fiat money to exchange
     * @param breakdown How the exchange is broken into steps
     * @param lockTime The block number which will cause the refunds transactions to be valid
-    * @param commitmentConfirmations  Minimum number of confirmations to consider the deposits
-    *                                 reliable enough
-    * @param resubmitRefundSignatureTimeout  Time to wait before asking again for a refund signature
-    * @param refundSignatureAbortTimeout  Time to get the refund transaction signature before
-    *                                     aborting the exchange
     */
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                            fiatAmount: CurrencyAmount[C],
                                            breakdown: Exchange.StepBreakdown,
                                            lockTime: Long,
-                                           commitmentConfirmations: Int,
-                                           resubmitRefundSignatureTimeout: FiniteDuration,
-                                           refundSignatureAbortTimeout: FiniteDuration,
-                                           network: Network)
+                                           network: Network) {
+    require(bitcoinAmount.isPositive)
+    require(fiatAmount.isPositive)
+  }
 
   case class PeerInfo[KeyPair](connection: PeerConnection,
                                paymentProcessorAccount: PaymentProcessor.AccountId,

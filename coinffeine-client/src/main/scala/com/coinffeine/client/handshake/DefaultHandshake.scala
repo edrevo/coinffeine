@@ -22,13 +22,13 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   override val commitmentTransaction: MutableTransaction =
     TransactionProcessor.createMultiSignedDeposit(
       userWallet, amountToCommit, Seq(exchangeInfo.counterpartKey, exchangeInfo.userKey),
-      exchangeInfo.network
+      exchangeInfo.parameters.network
     )
 
   private val committedFunds = commitmentTransaction.getOutput(0)
   override val refundTransaction: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
-    tx.setLockTime(exchangeInfo.lockTime)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
+    tx.setLockTime(exchangeInfo.parameters.lockTime)
     tx.addInput(committedFunds).setSequenceNumber(0)
     tx.addOutput(committedFunds.getValue, exchangeInfo.userKey)
     ensureValidRefundTransaction(tx)
@@ -47,7 +47,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   private def ensureValidRefundTransaction(refundTx: MutableTransaction) = {
     // TODO: Is this enough to ensure we can sign?
     require(refundTx.isTimeLocked)
-    require(refundTx.getLockTime == exchangeInfo.lockTime)
+    require(refundTx.getLockTime == exchangeInfo.parameters.lockTime)
     require(refundTx.getInputs.size == 1)
     require(refundTx.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN)
   }

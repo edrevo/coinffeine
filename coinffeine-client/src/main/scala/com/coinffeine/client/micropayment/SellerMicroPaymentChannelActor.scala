@@ -56,7 +56,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
           context.become(waitForPaymentValidation(paymentId, step))
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid payment proof " +
-            s"step $step (out of ${exchangeInfo.steps}})"
+            s"step $step (out of ${exchangeInfo.parameters.breakdown.intermediateSteps}})"
           log.warning(errorMsg)
           finishWith(ExchangeFailure(TimeoutException(errorMsg), lastOffer = None))
       }
@@ -68,7 +68,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
         log.warning(s"Invalid payment proof received in step $step: $paymentId. Reason: $cause")
         context.become(waitForPaymentProof(step))
       case PaymentValidationResult(_) =>
-        if (step == exchangeInfo.steps) finishExchange()
+        if (step == exchangeInfo.parameters.breakdown.intermediateSteps) finishExchange()
         else transitionToNextStep(step)
       case _ => stash()
     }
@@ -87,7 +87,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
-        exchangeInfo.steps + 1,
+        exchangeInfo.parameters.breakdown.totalSteps,
         exchange.finalSignature))
       finishWith(ExchangeSuccess)
     }

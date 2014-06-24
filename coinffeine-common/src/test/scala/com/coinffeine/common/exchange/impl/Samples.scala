@@ -1,7 +1,5 @@
 package com.coinffeine.common.exchange.impl
 
-import scala.concurrent.duration._
-
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.KeyPair
@@ -17,9 +15,6 @@ object Samples {
       fiatAmount = 1000.EUR,
       breakdown = Exchange.StepBreakdown(10),
       lockTime = 10,
-      commitmentConfirmations = 1,
-      resubmitRefundSignatureTimeout = 10.seconds,
-      refundSignatureAbortTimeout = 30.minutes,
       network = CoinffeineUnitTestNetwork
     ),
     buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new KeyPair()),

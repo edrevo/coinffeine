@@ -13,8 +13,8 @@ import com.coinffeine.common.paymentprocessor.Payment
 class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]) extends Exchange[C] {
   this: UserRole =>
 
-  private val offers = (1 to exchangeInfo.steps).map(idx => {
-    val tx = new MutableTransaction(exchangeInfo.network)
+  private val offers = (1 to exchangeInfo.parameters.breakdown.intermediateSteps).map(idx => {
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.setLockTime(idx.toLong) // Ensures that generated transactions do not have the same hash
     tx
   })
@@ -31,7 +31,7 @@ class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]
   override def validateSellersFinalSignature(
       signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit] = Success {}
   override val finalOffer: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.setLockTime(1500L)
     tx
   }

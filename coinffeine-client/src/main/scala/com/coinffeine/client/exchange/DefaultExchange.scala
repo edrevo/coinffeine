@@ -49,7 +49,8 @@ class DefaultExchange[C <: FiatCurrency](
   private def requireValidSellerFunds(sellerFunds: MutableTransactionOutput): Unit = {
     requireValidFunds(sellerFunds)
     require(
-      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) == exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
+      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) ==
+        exchangeInfo.parameters.bitcoinAmount + exchangeInfo.btcStepAmount,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
@@ -64,12 +65,12 @@ class DefaultExchange[C <: FiatCurrency](
   }
 
   override def getOffer(step: Int): MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput((exchangeInfo.btcStepAmount * step).asSatoshi, buyersKey)
     tx.addOutput(
-      (exchangeInfo.btcExchangeAmount - (exchangeInfo.btcStepAmount * step)).asSatoshi,
+      (exchangeInfo.parameters.bitcoinAmount - (exchangeInfo.btcStepAmount * step)).asSatoshi,
       sellersKey)
     tx
   }
@@ -85,11 +86,11 @@ class DefaultExchange[C <: FiatCurrency](
       s"The provided signature is invalid for the offer in step $step")
 
   override def finalOffer: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput(
-      (exchangeInfo.btcExchangeAmount + (exchangeInfo.btcStepAmount * 2)).asSatoshi,
+      (exchangeInfo.parameters.bitcoinAmount + (exchangeInfo.btcStepAmount * 2)).asSatoshi,
       buyersKey)
     tx.addOutput(exchangeInfo.btcStepAmount.asSatoshi, sellersKey)
     tx

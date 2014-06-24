@@ -59,7 +59,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
-    for (i <- 3 to exchangeInfo.steps) {
+    for (i <- 3 to exchangeInfo.parameters.breakdown.intermediateSteps) {
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
       shouldForward(StepSignatures(exchangeInfo.id, i, exchange.signStep(i))) to counterpart
     }
@@ -67,7 +67,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send the final signature" in {
     shouldForward(StepSignatures(
-      exchangeInfo.id, exchangeInfo.steps + 1, exchange.finalSignature)) to counterpart
+      exchangeInfo.id, exchangeInfo.parameters.breakdown.totalSteps, exchange.finalSignature)) to counterpart
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

@@ -44,7 +44,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
 
   it should "respond to step signature messages by sending a payment until all " +
     "steps have are done" in {
-      for (i <- 1 to exchangeInfo.steps) {
+      for (i <- 1 to exchangeInfo.parameters.breakdown.intermediateSteps) {
         actor ! fromCounterpart(StepSignatures(exchangeInfo.id, i, dummySig, dummySig))
         val paymentMsg = PaymentProof(exchangeInfo.id, "paymentId")
         shouldForward(paymentMsg) to counterpart
@@ -54,7 +54,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
 
   it should "send a notification to the listeners once the exchange has finished" in {
     actor ! fromCounterpart(
-      StepSignatures(exchangeInfo.id, exchangeInfo.steps + 1, dummySig, dummySig))
+      StepSignatures(exchangeInfo.id, exchangeInfo.parameters.breakdown.totalSteps, dummySig, dummySig))
     listener.expectMsg(ExchangeSuccess)
   }
 }

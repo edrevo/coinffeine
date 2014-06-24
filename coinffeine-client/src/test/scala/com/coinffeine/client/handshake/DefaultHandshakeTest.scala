@@ -52,7 +52,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.lockTime).foreach(_ => mineBlock())
+    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
     a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
   }
 
@@ -65,7 +65,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.lockTime).foreach(_ => mineBlock())
+    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
     val signatures = List(exchangeInfo.counterpartKey, exchangeInfo.userKey).map(key =>
       handshake.refundTransaction.calculateSignature(
         0,
@@ -119,7 +119,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       counterpartHandshake.commitmentTransaction,
       userHandshake.commitmentTransaction)
 
-    for (_ <- 1L to exchangeInfo.lockTime) { mineBlock() }
+    for (_ <- 1L to exchangeInfo.parameters.lockTime) { mineBlock() }
     sendToBlockChain(counterpartHandshake.refundTransaction, userHandshake.refundTransaction)
   }
 }
