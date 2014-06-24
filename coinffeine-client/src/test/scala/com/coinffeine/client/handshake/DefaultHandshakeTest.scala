@@ -24,7 +24,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
     }
 
   "The refund transaction" should "not be directly broadcastable to the blockchain" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val userWallet = createWallet(exchangeInfo.user.bitcoinKey, 2 BTC)
     val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
@@ -34,7 +34,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   it should "not be broadcastable if the timelock hasn't expired yet" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val userWallet = createWallet(exchangeInfo.user.bitcoinKey, 2 BTC)
     val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
@@ -45,28 +45,28 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 2 BTC)
+    val userWallet = createWallet(exchangeInfo.user.bitcoinKey, 2 BTC)
     val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.lockTime).foreach(_ => mineBlock())
+    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
     a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
   }
 
   it should "be broadcastable after the timelock expired if is has been signed" in {
     val initialAmount = 3 BTC
-    val userWallet = createWallet(exchangeInfo.userKey, initialAmount)
+    val userWallet = createWallet(exchangeInfo.user.bitcoinKey, initialAmount)
     val commitmentAmount = 2 BTC
     val handshake = new DefaultHandshake(
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
     sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.lockTime).foreach(_ => mineBlock())
-    val signatures = List(exchangeInfo.counterpartKey, exchangeInfo.userKey).map(key =>
+    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
+    val signatures = List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey).map(key =>
       handshake.refundTransaction.calculateSignature(
         0,
         key,
@@ -80,16 +80,14 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   "The happy path" should "just work!" in {
-    val userWallet = createWallet(exchangeInfo.userKey, 3 BTC)
+    val userWallet = createWallet(exchangeInfo.user.bitcoinKey, 3 BTC)
     val userHandshake = new DefaultHandshake(
       exchangeInfo,
       amountToCommit = 2 BTC,
       userWallet) {}
 
-    val counterpartWallet = createWallet(exchangeInfo.counterpartKey, 5 BTC)
-    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = exchangeInfo.copy(
-      userKey = exchangeInfo.counterpartKey,
-      counterpartKey = exchangeInfo.userKey)
+    val counterpartWallet = createWallet(exchangeInfo.counterpart.bitcoinKey, 5 BTC)
+    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = buyerExchangeInfo
     val counterpartHandshake = new DefaultHandshake(
       counterpartExchange,
       3 BTC,
@@ -104,7 +102,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
           throughWire(userHandshake.refundTransaction)).get),
         userHandshake.refundTransaction.calculateSignature(
           0,
-          exchangeInfo.userKey,
+          exchangeInfo.user.bitcoinKey,
           userHandshake.commitmentTransaction.getOutput(0).getScriptPubKey,
           SigHash.ALL,
           false))
@@ -119,7 +117,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       counterpartHandshake.commitmentTransaction,
       userHandshake.commitmentTransaction)
 
-    for (_ <- 1L to exchangeInfo.lockTime) { mineBlock() }
+    for (_ <- 1L to exchangeInfo.parameters.lockTime) { mineBlock() }
     sendToBlockChain(counterpartHandshake.refundTransaction, userHandshake.refundTransaction)
   }
 }

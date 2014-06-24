@@ -30,8 +30,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
       Props(new MessageForwarder(to)), name)
   }
 
-  override val broker: PeerConnection = exchangeInfo.broker
-  override val counterpart: PeerConnection = exchangeInfo.counterpart
+  override val broker: PeerConnection = exchangeInfo.broker.connection
+  override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val buyer = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")
 
   val seller = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")

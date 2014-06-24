@@ -4,8 +4,9 @@ import scala.concurrent.duration._
 
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, TransactionSignature}
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -23,18 +24,20 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     gateway.expectNoMsg()
     givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val otherId = Exchange.Id("other-id")
     val relevantSignatureRequest =
-      RefundTxSignatureRequest("id", ImmutableTransaction(handshake.counterpartRefund))
+      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest("other-id", ImmutableTransaction(handshake.counterpartRefund))
+      RefundTxSignatureRequest(otherId, ImmutableTransaction(handshake.counterpartRefund))
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
-    filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification("id", mock[Hash], mock[Hash]))) should be (true)
-    filter(fromBroker(ExchangeAborted("id", "failed"))) should be (true)
-    filter(fromCounterpart(ExchangeAborted("id", "failed"))) should be (false)
-    filter(fromBroker(ExchangeAborted("other", "failed"))) should be (false)
+    filter(fromCounterpart(
+      RefundTxSignatureResponse(exchangeId, handshake.refundSignature))) should be (true)
+    filter(fromBroker(CommitmentNotification(exchangeId, mock[Hash], mock[Hash]))) should be (true)
+    filter(fromBroker(ExchangeAborted(exchangeId, "failed"))) should be (true)
+    filter(fromCounterpart(ExchangeAborted(exchangeId, "failed"))) should be (false)
+    filter(fromBroker(ExchangeAborted(otherId, "failed"))) should be (false)
   }
 
   it should "and requesting refund transaction signature" in {
@@ -43,8 +46,8 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "reject signature of invalid counterpart refund transactions" in {
     val invalidRequest =
-      RefundTxSignatureRequest("id", ImmutableTransaction(handshake.invalidRefundTransaction))
-    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart))
+      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.invalidRefundTransaction))
+    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart.connection))
     gateway.expectNoMsg(100 millis)
   }
 
@@ -53,13 +56,15 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "don't be fooled by invalid refund TX or source and resubmit signature request" in {
-    gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", mock[TransactionSignature])))
+    gateway.send(
+      actor, fromCounterpart(RefundTxSignatureResponse(exchangeId, mock[TransactionSignature])))
     shouldForwardRefundSignatureRequest()
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
-    gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForward (ExchangeCommitment("id", ImmutableTransaction(handshake.commitmentTransaction))) to broker
+    gateway.send(
+      actor, fromCounterpart(RefundTxSignatureResponse(exchangeId, handshake.refundSignature)))
+    shouldForward (ExchangeCommitment(exchangeId, ImmutableTransaction(handshake.commitmentTransaction))) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {
@@ -69,7 +74,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
     gateway.send(actor, fromBroker(CommitmentNotification(
-      "id",
+      exchangeId,
       handshake.commitmentTransaction.getHash,
       handshake.counterpartCommitmentTransaction.getHash
     )))

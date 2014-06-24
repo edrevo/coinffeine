@@ -13,12 +13,12 @@ import com.google.bitcoin.script.ScriptBuilder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
-import com.coinffeine.client.{ExchangeInfo, SampleExchangeInfo}
+import com.coinffeine.client.SampleExchangeInfo
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{KeyPair, MutableTransactionOutput, MutableTransaction, PublicKey}
+import com.coinffeine.common.bitcoin.{MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
@@ -26,28 +26,17 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
-    val sellerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
-      userKey = new KeyPair(),
-      userFiatAddress = "seller",
-      counterpartKey = new PublicKey(),
-      counterpartFiatAddress = "buyer"
-    )
-    lazy val sellerWallet = createWallet(sellerExchangeInfo.userKey, 200 BTC)
+
+    lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
-      sellerExchangeInfo.userFiatAddress, Seq(0 EUR)))
+      sellerExchangeInfo.user.paymentProcessorAccount, Seq(0 EUR)))
 
-    val buyerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
-      userKey = sellerExchangeInfo.counterpartKey,
-      userFiatAddress = sellerExchangeInfo.counterpartFiatAddress,
-      counterpartKey = sellerExchangeInfo.userKey,
-      counterpartFiatAddress = sellerExchangeInfo.userFiatAddress
-    )
-    lazy val buyerWallet = createWallet(buyerExchangeInfo.userKey, 5 BTC)
+    lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
     lazy val buyerHandshake = new BuyerHandshake(buyerExchangeInfo, buyerWallet)
     val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
-      buyerExchangeInfo.userFiatAddress, Seq(1000 EUR)))
+      buyerExchangeInfo.user.paymentProcessorAccount, Seq(1000 EUR)))
   }
 
   private trait WithExchange extends WithBasicSetup {
@@ -66,7 +55,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(sellerExchangeInfo.network)
+    val invalidFundsCommitment = new MutableTransaction(sellerExchangeInfo.parameters.network)
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
@@ -80,7 +69,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(buyerExchangeInfo.network)
+    val invalidFundsCommitment = new MutableTransaction(buyerExchangeInfo.parameters.network)
     invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
@@ -97,7 +86,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     val finalOffer = sellerExchange.finalOffer
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should be (addAmounts(finalOffer.getOutputs))
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should be
-      sellerExchangeInfo.btcExchangeAmount + (sellerExchangeInfo.btcStepAmount * 3)
+      sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3)
     finalOffer.getInput(0).setScriptSig(
       ScriptBuilder.createMultiSigInputScript(
         buyerExchange.finalSignature._1, sellerExchange.finalSignature._1))
@@ -106,9 +95,9 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
         sellerExchange.finalSignature._2, buyerExchange.finalSignature._2))
     sendToBlockChain(finalOffer)
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
-      (200 BTC) - sellerExchangeInfo.btcExchangeAmount)
+      200.BTC - sellerExchangeInfo.parameters.bitcoinAmount)
     Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (
-      (5 BTC) + sellerExchangeInfo.btcExchangeAmount)
+      5.BTC + sellerExchangeInfo.parameters.bitcoinAmount)
   }
 
   it should "validate the seller's final signature" in new WithExchange {
@@ -121,13 +110,13 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     sellerExchange.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
   }
 
-  for (step <- 1 to sampleExchangeInfo.steps) {
+  for (step <- 1 to sampleExchangeInfo.parameters.breakdown.intermediateSteps) {
     it should s"have an intermediate offer $step that splits the amount as expected" in new WithExchange {
       val stepOffer = sellerExchange.getOffer(step)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should be
         addAmounts(stepOffer.getOutputs) - (sellerExchangeInfo.btcStepAmount * 3)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should be
-        sellerExchangeInfo.btcExchangeAmount + (sellerExchangeInfo.btcStepAmount * 3)
+        sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3)
       val signedStepOffer = sellerExchange.getSignedOffer(step, buyerExchange.signStep(step))
       sendToBlockChain(signedStepOffer)
       val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
@@ -147,7 +136,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     }
 
     it should s"validate payments for step $step" in new WithExchange {
-      for (currentStep <- 1 to buyerExchangeInfo.steps) {
+      for (currentStep <- 1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps) {
         val validation = for {
           payment <- buyerExchange.pay(currentStep)
           _ <- sellerExchange.validatePayment(step, payment.id)
@@ -168,7 +157,7 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
         prevSellerBalance <- sellerPaymentProc.ask(
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-        payments <- Future.traverse(1 to buyerExchangeInfo.steps)(buyerExchange.pay)
+        payments <- Future.traverse(1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps)(buyerExchange.pay)
         afterBuyerBalance <- buyerPaymentProc.ask(
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
         afterSellerBalance <- sellerPaymentProc.ask(
@@ -181,8 +170,8 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
       val prevSellerBalance = balances._3
       val afterSellerBalance = balances._4
 
-      prevBuyerBalance should be (afterBuyerBalance + buyerExchangeInfo.fiatExchangeAmount)
-      prevSellerBalance should be (afterSellerBalance - buyerExchangeInfo.fiatExchangeAmount)
+      prevBuyerBalance should be (afterBuyerBalance + buyerExchangeInfo.parameters.fiatAmount)
+      prevSellerBalance should be (afterSellerBalance - buyerExchangeInfo.parameters.fiatAmount)
     }
   }
 

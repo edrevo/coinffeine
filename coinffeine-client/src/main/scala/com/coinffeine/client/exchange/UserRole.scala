@@ -34,10 +34,10 @@ sealed trait UserRole {
 trait BuyerUser[C <: FiatCurrency] extends UserRole {
   this: Exchange[C] =>
 
-  override lazy val buyersKey: KeyPair = exchangeInfo.userKey
-  override lazy val sellersKey: KeyPair = exchangeInfo.counterpartKey
-  override lazy val sellersFiatAddress: String = exchangeInfo.counterpartFiatAddress
-  override lazy val buyersFiatAddress: String = exchangeInfo.userFiatAddress
+  override lazy val buyersKey: KeyPair = exchangeInfo.user.bitcoinKey
+  override lazy val sellersKey: KeyPair = exchangeInfo.counterpart.bitcoinKey
+  override lazy val sellersFiatAddress: String = exchangeInfo.counterpart.paymentProcessorAccount
+  override lazy val buyersFiatAddress: String = exchangeInfo.user.paymentProcessorAccount
   override lazy val userInputIndex: Int = 1
   override lazy val counterPartInputIndex: Int = 0
 }
@@ -46,10 +46,10 @@ trait BuyerUser[C <: FiatCurrency] extends UserRole {
 trait SellerUser[C <: FiatCurrency] extends UserRole {
   this: Exchange[C] =>
 
-  override lazy val buyersKey: KeyPair = exchangeInfo.counterpartKey
-  override lazy val sellersKey: KeyPair = exchangeInfo.userKey
-  override lazy val sellersFiatAddress: String = exchangeInfo.userFiatAddress
-  override lazy val buyersFiatAddress: String = exchangeInfo.counterpartFiatAddress
+  override lazy val buyersKey: KeyPair = exchangeInfo.counterpart.bitcoinKey
+  override lazy val sellersKey: KeyPair = exchangeInfo.user.bitcoinKey
+  override lazy val sellersFiatAddress: String = exchangeInfo.user.paymentProcessorAccount
+  override lazy val buyersFiatAddress: String = exchangeInfo.counterpart.paymentProcessorAccount
   override lazy val userInputIndex: Int = 0
   override lazy val counterPartInputIndex: Int = 1
 }

@@ -33,7 +33,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private val exchangeInfo = handshake.exchangeInfo
     private val forwarding = new MessageForwarding(
-      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
+      messageGateway, exchangeInfo.counterpart.connection, exchangeInfo.broker.connection)
 
     def startHandshake(): Unit = {
       subscribeToMessages()
@@ -124,8 +124,8 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private def subscribeToMessages(): Unit = {
       val id = exchangeInfo.id
-      val broker = exchangeInfo.broker
-      val counterpart = exchangeInfo.counterpart
+      val broker = exchangeInfo.broker.connection
+      val counterpart = exchangeInfo.counterpart.connection
       messageGateway ! Subscribe {
         case ReceiveMessage(RefundTxSignatureRequest(`id`, _), `counterpart`) => true
         case ReceiveMessage(RefundTxSignatureResponse(`id`, _), `counterpart`) => true

@@ -36,7 +36,7 @@ class DefaultExchange[C <: FiatCurrency](
     val multisigInfo = MultiSigInfo(funds.getScriptPubKey)
     require(multisigInfo.requiredKeyCount == 2,
       "Funds are sent to a multisig that do not require 2 keys")
-    require(multisigInfo.possibleKeys == Set(exchangeInfo.userKey, exchangeInfo.counterpartKey),
+    require(multisigInfo.possibleKeys == Set(exchangeInfo.user.bitcoinKey, exchangeInfo.counterpart.bitcoinKey),
       "Possible keys in multisig script does not match the expected keys")
   }
 
@@ -49,27 +49,25 @@ class DefaultExchange[C <: FiatCurrency](
   private def requireValidSellerFunds(sellerFunds: MutableTransactionOutput): Unit = {
     requireValidFunds(sellerFunds)
     require(
-      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) == exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
+      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) ==
+        exchangeInfo.parameters.bitcoinAmount + exchangeInfo.btcStepAmount,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  override def pay(step: Int): Future[Payment[C]] = {
-    for {
-      paid <- paymentProcessor.ask(PaymentProcessor.Pay(
-        exchangeInfo.counterpartFiatAddress,
-        exchangeInfo.fiatStepAmount,
-        getPaymentDescription(step))).mapTo[PaymentProcessor.Paid[C]]
-
-    } yield paid.payment
-  }
+  override def pay(step: Int): Future[Payment[C]] = for {
+    paid <- paymentProcessor.ask(PaymentProcessor.Pay(
+      exchangeInfo.counterpart.paymentProcessorAccount,
+      exchangeInfo.fiatStepAmount,
+      getPaymentDescription(step))).mapTo[PaymentProcessor.Paid[C]]
+  } yield paid.payment
 
   override def getOffer(step: Int): MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput((exchangeInfo.btcStepAmount * step).asSatoshi, buyersKey)
     tx.addOutput(
-      (exchangeInfo.btcExchangeAmount - (exchangeInfo.btcStepAmount * step)).asSatoshi,
+      (exchangeInfo.parameters.bitcoinAmount - (exchangeInfo.btcStepAmount * step)).asSatoshi,
       sellersKey)
     tx
   }
@@ -85,11 +83,11 @@ class DefaultExchange[C <: FiatCurrency](
       s"The provided signature is invalid for the offer in step $step")
 
   override def finalOffer: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.network)
+    val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.addInput(sellerFunds)
     tx.addInput(buyerFunds)
     tx.addOutput(
-      (exchangeInfo.btcExchangeAmount + (exchangeInfo.btcStepAmount * 2)).asSatoshi,
+      (exchangeInfo.parameters.bitcoinAmount + (exchangeInfo.btcStepAmount * 2)).asSatoshi,
       buyersKey)
     tx.addOutput(exchangeInfo.btcStepAmount.asSatoshi, sellersKey)
     tx
@@ -123,12 +121,12 @@ class DefaultExchange[C <: FiatCurrency](
 
   override protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature) = {
     val userInputSignature = TransactionProcessor.signMultiSignedOutput(
-      offer, userInputIndex, exchangeInfo.userKey,
-      List(exchangeInfo.counterpartKey, exchangeInfo.userKey)
+      offer, userInputIndex, exchangeInfo.user.bitcoinKey,
+      List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey)
     )
     val counterpartInputSignature = TransactionProcessor.signMultiSignedOutput(
-      offer, counterPartInputIndex, exchangeInfo.userKey,
-      List(exchangeInfo.userKey, exchangeInfo.counterpartKey)
+      offer, counterPartInputIndex, exchangeInfo.user.bitcoinKey,
+      List(exchangeInfo.user.bitcoinKey, exchangeInfo.counterpart.bitcoinKey)
     )
     if (userInputIndex == 0) (userInputSignature, counterpartInputSignature)
     else (counterpartInputSignature, userInputSignature)

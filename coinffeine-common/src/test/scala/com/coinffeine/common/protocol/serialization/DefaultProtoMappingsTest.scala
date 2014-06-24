@@ -8,7 +8,8 @@ import com.google.protobuf.{ByteString, Message}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, MutableTransaction, TransactionSignature}
+import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -39,6 +40,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   }
 
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleExchangeId = Exchange.Id.random()
 
   val btcAmount = 1.1 BTC
   val btcAmountMessage = msg.BtcAmount.newBuilder
@@ -73,12 +75,12 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     orderSet, orderSetMessage)
 
   val commitmentNotification = CommitmentNotification(
-    exchangeId = "1234",
+    exchangeId = sampleExchangeId,
     buyerTxId = sampleTxId,
     sellerTxId = sampleTxId
   )
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setBuyerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .setSellerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .build()
@@ -86,17 +88,17 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
 
-  val commitment = ExchangeCommitment(exchangeId = "1234", commitmentTransaction)
+  val commitment = ExchangeCommitment(sampleExchangeId, commitmentTransaction)
   val commitmentMessage = msg.ExchangeCommitment.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
     .build()
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted("1234", "a reason")
+  val exchangeAborted = ExchangeAborted(Exchange.Id(sampleExchangeId.value), "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")
     .build()
 
@@ -104,10 +106,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeAborted, exchangeAbortedMessage)
 
   val exchangeRejection = ExchangeRejection(
-    exchangeId = "1234",
+    exchangeId = sampleExchangeId,
     reason = "a reason")
   val exchangeRejectionMessage = msg.ExchangeRejection.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")
     .build()
 
@@ -115,14 +117,14 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeRejection, exchangeRejectionMessage)
 
   val orderMatch = OrderMatch(
-    exchangeId = "1234",
+    exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
     buyer = PeerConnection("buyer", 8080),
     seller = PeerConnection("seller", 1234)
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
     .setBuyer("coinffeine://buyer:8080/")
@@ -152,9 +154,9 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
   val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
-  val refundTxSignatureRequest = RefundTxSignatureRequest(exchangeId = "1234", refundTx = refundTx)
+  val refundTxSignatureRequest = RefundTxSignatureRequest(sampleExchangeId, refundTx)
   val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
     .build()
 
@@ -162,12 +164,9 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     refundTxSignatureRequest, refundTxSignatureRequestMessage)
 
   val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
-  val refundTxSignatureResponse = RefundTxSignatureResponse(
-    exchangeId = "1234",
-    refundSignature = refundTxSignature
-  )
+  val refundTxSignatureResponse = RefundTxSignatureResponse(sampleExchangeId, refundTxSignature)
   val refundTxSignatureResponseMessage = msg.RefundTxSignatureResponse.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
     .build()
 

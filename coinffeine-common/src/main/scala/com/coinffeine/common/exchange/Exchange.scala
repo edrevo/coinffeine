@@ -1,21 +1,26 @@
 package com.coinffeine.common.exchange
 
 import java.security.SecureRandom
-
-import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, FinalStep}
-
-import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
+/** A value class that contains all the necessary information relative to an exchange between
+  * two peers
+  *
+  * @param id          An identifier for the exchange
+  * @param parameters  Configurable parameters
+  * @param buyer       Description of the buyer
+  * @param seller      Description of the seller
+  * @param broker      Connection parameters to one of the Coinffeine brokers
+  */
 case class Exchange[C <: FiatCurrency](
   id: Exchange.Id,
   parameters: Exchange.Parameters[C],
-  buyer: Exchange.PeerInfo[KeyPair],
-  seller: Exchange.PeerInfo[KeyPair],
+  buyer: Exchange.PeerInfo,
+  seller: Exchange.PeerInfo,
   broker: Exchange.BrokerInfo) {
 
   val amounts: Exchange.Amounts[C] =
@@ -31,21 +36,28 @@ object Exchange {
   object Id {
     private val secureGenerator = new Random(new SecureRandom())
 
-    def random() = new Id(value = secureGenerator.nextString(12))
+    def random() = Id(value = secureGenerator.nextString(12))
   }
 
+  /** Configurable parameters of an exchange.
+    *
+    * @param bitcoinAmount The amount of bitcoins to exchange
+    * @param fiatAmount The amount of fiat money to exchange
+    * @param breakdown How the exchange is broken into steps
+    * @param lockTime The block number which will cause the refunds transactions to be valid
+    */
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                            fiatAmount: CurrencyAmount[C],
                                            breakdown: Exchange.StepBreakdown,
                                            lockTime: Long,
-                                           commitmentConfirmations: Int,
-                                           resubmitRefundSignatureTimeout: FiniteDuration,
-                                           refundSignatureAbortTimeout: FiniteDuration,
-                                           network: Network)
+                                           network: Network) {
+    require(bitcoinAmount.isPositive)
+    require(fiatAmount.isPositive)
+  }
 
-  case class PeerInfo[KeyPair](connection: PeerConnection,
-                               paymentProcessorAccount: PaymentProcessor.AccountId,
-                               bitcoinKey: KeyPair)
+  case class PeerInfo(connection: PeerConnection,
+                      paymentProcessorAccount: PaymentProcessor.AccountId,
+                      bitcoinKey: KeyPair)
 
   case class BrokerInfo(connection: PeerConnection)
 
@@ -77,6 +89,5 @@ object Exchange {
     val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
     /** Amount refundable by the seller after a lock time */
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
-
   }
 }

@@ -1,8 +1,9 @@
 package com.coinffeine.common.protocol.messages.handshake
 
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class ExchangeAborted (
-  exchangeId: String,
+  exchangeId: Exchange.Id,
   reason: String
 ) extends PublicMessage

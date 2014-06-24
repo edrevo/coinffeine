@@ -18,8 +18,8 @@ import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 class BuyerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("buyerExchange") {
 
   val exchangeInfo = sampleExchangeInfo
-  override val broker: PeerConnection = exchangeInfo.broker
-  override val counterpart: PeerConnection = exchangeInfo.counterpart
+  override val broker: PeerConnection = exchangeInfo.broker.connection
+  override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val protocolConstants = ProtocolConstants(exchangeSignatureTimeout = 0.5 seconds)
   val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   val dummySig = TransactionSignature.dummy

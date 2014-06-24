@@ -7,5 +7,5 @@ import com.coinffeine.common.bitcoin.Wallet
 class SellerHandshake[C <: FiatCurrency](exchangeInfo: ExchangeInfo[C], userWallet: Wallet)
   extends DefaultHandshake(
     exchangeInfo,
-    amountToCommit = exchangeInfo.btcExchangeAmount + exchangeInfo.btcStepAmount,
+    amountToCommit = exchangeInfo.parameters.bitcoinAmount + exchangeInfo.btcStepAmount,
     userWallet)
