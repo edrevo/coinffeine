@@ -1,16 +1,15 @@
 package com.coinffeine.client
 
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
 import com.coinffeine.common.exchange.{BuyerRole, Exchange, SellerRole}
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
-import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
 trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
 
-  val exchangeId = ExchangeId("id")
+  val exchangeId = Exchange.Id("id")
 
   val sellerExchangeInfo: ExchangeInfo[Euro.type] = ExchangeInfo(
     SellerRole,

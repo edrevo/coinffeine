@@ -1,20 +1,22 @@
 package com.coinffeine.client.micropayment
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import akka.actor.Props
 import akka.testkit.TestProbe
+import org.scalatest.mock.MockitoSugar
+
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.{MockExchange, SellerUser}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
 import com.coinffeine.common.protocol.messages.exchange._
-import org.scalatest.mock.MockitoSugar
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
@@ -35,7 +37,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val anotherPeer = PeerConnection("some-random-peer")
     val relevantPayment = PaymentProof(exchangeId, null)
-    val irrelevantPayment = PaymentProof(ExchangeId("another-id"), null)
+    val irrelevantPayment = PaymentProof(Exchange.Id("another-id"), null)
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)

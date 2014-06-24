@@ -2,7 +2,6 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger
 
-import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
@@ -10,6 +9,7 @@ import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -40,7 +40,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   }
 
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
-  val sampleExchangeId = ExchangeId.random()
+  val sampleExchangeId = Exchange.Id.random()
 
   val btcAmount = 1.1 BTC
   val btcAmountMessage = msg.BtcAmount.newBuilder
@@ -96,7 +96,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value), "a reason")
+  val exchangeAborted = ExchangeAborted(Exchange.Id(sampleExchangeId.value), "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")

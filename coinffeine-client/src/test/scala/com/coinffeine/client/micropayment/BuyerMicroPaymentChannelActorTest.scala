@@ -11,10 +11,11 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSucc
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin.TransactionSignature
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
-import com.coinffeine.common.protocol.messages.exchange.{ExchangeId, PaymentProof, StepSignatures}
+import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange") {
   val listener = TestProbe()
@@ -31,7 +32,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     gateway.expectNoMsg()
     actor ! StartMicroPaymentChannel(exchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val otherId = ExchangeId("other-id")
+    val otherId = Exchange.Id("other-id")
     val relevantOfferAccepted = StepSignatures(exchangeId, 5, dummySig, dummySig)
     val irrelevantOfferAccepted = StepSignatures(otherId, 2, dummySig, dummySig)
     val anotherPeer = PeerConnection("some-random-peer")

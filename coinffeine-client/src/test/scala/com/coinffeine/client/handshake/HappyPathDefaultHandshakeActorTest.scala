@@ -6,10 +6,10 @@ import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
-import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 import com.coinffeine.common.protocol.messages.handshake._
 
 class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
@@ -24,7 +24,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     gateway.expectNoMsg()
     givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val otherId = ExchangeId("other-id")
+    val otherId = Exchange.Id("other-id")
     val relevantSignatureRequest =
       RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =

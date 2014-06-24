@@ -1,9 +1,11 @@
 package com.coinffeine.common.exchange
 
+import java.security.SecureRandom
+import scala.util.Random
+
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
 /** A value class that contains all the necessary information relative to an exchange between
   * two peers
@@ -15,7 +17,7 @@ import com.coinffeine.common.protocol.messages.exchange.ExchangeId
   * @param broker      Connection parameters to one of the Coinffeine brokers
   */
 case class Exchange[C <: FiatCurrency](
-  id: ExchangeId,
+  id: Exchange.Id,
   parameters: Exchange.Parameters[C],
   buyer: Exchange.PeerInfo,
   seller: Exchange.PeerInfo,
@@ -26,6 +28,16 @@ case class Exchange[C <: FiatCurrency](
 }
 
 object Exchange {
+
+  case class Id(value: String) {
+    override def toString = s"exchange:$value"
+  }
+
+  object Id {
+    private val secureGenerator = new Random(new SecureRandom())
+
+    def random() = Id(value = secureGenerator.nextString(12))
+  }
 
   /** Configurable parameters of an exchange.
     *

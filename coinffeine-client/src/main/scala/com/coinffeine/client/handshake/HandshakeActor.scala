@@ -4,8 +4,8 @@ import akka.actor.{ActorRef, Props}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
   * transaction signed and relying on the broker to publish the commitment TX.
@@ -39,15 +39,15 @@ object HandshakeActor {
 
   case class HandshakeFailure(e: Throwable)
 
-  case class RefundSignatureTimeoutException(exchangeId: ExchangeId) extends RuntimeException(
+  case class RefundSignatureTimeoutException(exchangeId: Exchange.Id) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")
 
   case class CommitmentTransactionRejectedException(
-       exchangeId: ExchangeId, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
+       exchangeId: Exchange.Id, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 
-  case class HandshakeAbortedException(exchangeId: ExchangeId, reason: String)
+  case class HandshakeAbortedException(exchangeId: Exchange.Id, reason: String)
     extends RuntimeException(s"Handshake $exchangeId aborted externally: $reason")
 
   trait Component {
