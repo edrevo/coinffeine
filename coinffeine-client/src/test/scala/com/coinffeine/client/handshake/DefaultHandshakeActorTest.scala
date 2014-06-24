@@ -31,14 +31,16 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest =
-      RefundTxSignatureRequest("id", ImmutableTransaction(handshake.refundTransaction))
+      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.refundTransaction))
     shouldForward (refundSignatureRequest) to counterpart
   }
 
   def shouldSignCounterpartRefund(): Unit = {
-    val request = RefundTxSignatureRequest("id", ImmutableTransaction(handshake.counterpartRefund))
+    val request =
+      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
     gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart))
-    val refundSignatureRequest = RefundTxSignatureResponse("id", handshake.counterpartRefundSignature)
+    val refundSignatureRequest =
+      RefundTxSignatureResponse(exchangeId, handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart
   }
 

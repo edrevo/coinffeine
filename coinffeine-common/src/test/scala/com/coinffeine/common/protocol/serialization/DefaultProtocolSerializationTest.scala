@@ -21,7 +21,7 @@ import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMess
 
 class DefaultProtocolSerializationTest extends BitcoinjTest {
 
-  val exchangeId = "exchangeid"
+  val exchangeId = ExchangeId.random()
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val btcAmount = 1.BTC

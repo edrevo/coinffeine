@@ -14,7 +14,7 @@ import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
-import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
+import com.coinffeine.common.protocol.messages.exchange.{ExchangeId, PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange") {
   val listener = TestProbe()
@@ -31,8 +31,9 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     gateway.expectNoMsg()
     actor ! StartMicroPaymentChannel(exchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantOfferAccepted = StepSignatures("id", 5, dummySig, dummySig)
-    val irrelevantOfferAccepted = StepSignatures("another-id", 2, dummySig, dummySig)
+    val otherId = ExchangeId("other-id")
+    val relevantOfferAccepted = StepSignatures(exchangeId, 5, dummySig, dummySig)
+    val irrelevantOfferAccepted = StepSignatures(otherId, 2, dummySig, dummySig)
     val anotherPeer = PeerConnection("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)

@@ -1,4 +1,5 @@
 package com.coinffeine.common.protocol.serialization
+
 import scala.util.Random
 
 import com.coinffeine.common.PeerConnection
@@ -7,6 +8,7 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
+import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 /** Provides a serialization that behaves like the default one but allowing injection of
@@ -23,7 +25,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
   }
 
   def randomMessage(): OrderMatch = OrderMatch(
-    exchangeId = s"exchange-${Random.nextLong().toHexString}",
+    exchangeId = ExchangeId.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
     buyer = PeerConnection("bob", randomPort()),

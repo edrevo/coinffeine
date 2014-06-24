@@ -34,8 +34,8 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val anotherPeer = PeerConnection("some-random-peer")
-    val relevantPayment = PaymentProof("id", null)
-    val irrelevantPayment = PaymentProof("another-id", null)
+    val relevantPayment = PaymentProof(exchangeId, null)
+    val irrelevantPayment = PaymentProof(ExchangeId("another-id"), null)
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)

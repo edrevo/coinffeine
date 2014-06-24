@@ -1,11 +1,12 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.{FiatAmount, BitcoinAmount, PeerConnection}
+import com.coinffeine.common.{BitcoinAmount, FiatAmount, PeerConnection}
 import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
 /** Represents a coincidence of desires of both a buyer and a seller */
 case class OrderMatch(
-    exchangeId: String,
+    exchangeId: ExchangeId,
     amount: BitcoinAmount,
     price: FiatAmount,
     buyer: PeerConnection,

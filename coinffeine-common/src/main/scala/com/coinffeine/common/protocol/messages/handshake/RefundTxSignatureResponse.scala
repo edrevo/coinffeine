@@ -3,9 +3,10 @@ package com.coinffeine.common.protocol.messages.handshake
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.protocol.TransactionSignatureUtils
 import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
 case class RefundTxSignatureResponse(
-  exchangeId: String,
+  exchangeId: ExchangeId,
   refundSignature: TransactionSignature
 ) extends PublicMessage {
 

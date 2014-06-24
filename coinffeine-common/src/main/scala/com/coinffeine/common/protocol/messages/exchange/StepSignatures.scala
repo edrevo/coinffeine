@@ -11,7 +11,7 @@ import com.coinffeine.common.protocol.messages.PublicMessage
   * @param idx1Signature The signature for input 1 in the step
   */
 case class StepSignatures(
-    exchangeId: String,
+    exchangeId: ExchangeId,
     step: Int,
     idx0Signature: TransactionSignature,
     idx1Signature: TransactionSignature)  extends PublicMessage {
@@ -25,9 +25,10 @@ case class StepSignatures(
 }
 
 object StepSignatures {
-  def apply(
-      exchangeId: String,
-      step: Int,
-      signatures: (TransactionSignature, TransactionSignature)): StepSignatures =
+
+  /** Factory method accepting a tuple of signatures. */
+  def apply(exchangeId: ExchangeId,
+            step: Int,
+            signatures: (TransactionSignature, TransactionSignature)): StepSignatures =
     StepSignatures(exchangeId, step, signatures._1, signatures._2)
 }

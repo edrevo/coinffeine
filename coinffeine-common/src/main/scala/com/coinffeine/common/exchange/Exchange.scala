@@ -1,18 +1,23 @@
 package com.coinffeine.common.exchange
 
-import java.security.SecureRandom
-
-import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, FinalStep}
-
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Random
 
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 
+/** A value class that contains all the necessary information relative to an exchange between
+  * two peers
+  *
+  * @param id          An identifier for the exchange
+  * @param parameters  Configurable parameters
+  * @param buyer       Description of the buyer
+  * @param seller      Description of the seller
+  * @param broker      Connection parameters to one of the Coinffeine brokers
+  */
 case class Exchange[C <: FiatCurrency](
-  id: Exchange.Id,
+  id: ExchangeId,
   parameters: Exchange.Parameters[C],
   buyer: Exchange.PeerInfo[KeyPair],
   seller: Exchange.PeerInfo[KeyPair],
@@ -24,16 +29,18 @@ case class Exchange[C <: FiatCurrency](
 
 object Exchange {
 
-  case class Id(value: String) {
-    override def toString = s"exchange:$value"
-  }
-
-  object Id {
-    private val secureGenerator = new Random(new SecureRandom())
-
-    def random() = new Id(value = secureGenerator.nextString(12))
-  }
-
+  /** Configurable parameters of an exchange.
+    *
+    * @param bitcoinAmount The amount of bitcoins to exchange
+    * @param fiatAmount The amount of fiat money to exchange
+    * @param breakdown How the exchange is broken into steps
+    * @param lockTime The block number which will cause the refunds transactions to be valid
+    * @param commitmentConfirmations  Minimum number of confirmations to consider the deposits
+    *                                 reliable enough
+    * @param resubmitRefundSignatureTimeout  Time to wait before asking again for a refund signature
+    * @param refundSignatureAbortTimeout  Time to get the refund transaction signature before
+    *                                     aborting the exchange
+    */
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                            fiatAmount: CurrencyAmount[C],
                                            breakdown: Exchange.StepBreakdown,
@@ -77,6 +84,5 @@ object Exchange {
     val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
     /** Amount refundable by the seller after a lock time */
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
-
   }
 }
