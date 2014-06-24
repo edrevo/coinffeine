@@ -30,7 +30,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
-      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
+      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker.connection)
 
     messageGateway ! Subscribe {
       case ReceiveMessage(PaymentProof(exchangeInfo.`id`, _), exchangeInfo.`counterpart`) => true

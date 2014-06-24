@@ -45,7 +45,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   override def counterpart = handshake.exchangeInfo.counterpart
-  override def broker = handshake.exchangeInfo.broker
+  override def broker = handshake.exchangeInfo.broker.connection
 
   override protected def resetBlockchainBetweenTests = false
 }

@@ -34,7 +34,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
-      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker)
+      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker.connection)
     private val finalStep = exchangeInfo.parameters.breakdown.totalSteps
 
     private var lastSignedOffer: Option[MutableTransaction] = None

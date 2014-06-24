@@ -20,8 +20,8 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
       lockTime = 25,
       network
     ),
-    PeerConnection("counterpart"),
-    PeerConnection("broker"),
+    counterpart = PeerConnection("counterpart"),
+    broker = Exchange.BrokerInfo(PeerConnection("broker")),
     userKey = new KeyPair(),
     userFiatAddress = "",
     counterpartKey = new PublicKey(),

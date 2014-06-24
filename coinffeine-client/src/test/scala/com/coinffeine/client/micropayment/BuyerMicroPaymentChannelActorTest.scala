@@ -21,7 +21,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants()
   val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
-  override val broker: PeerConnection = exchangeInfo.broker
+  override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")
   val dummySig = TransactionSignature.dummy

@@ -24,7 +24,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
   val exchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
-  override val broker: PeerConnection = exchangeInfo.broker
+  override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart
   val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
   listener.watch(actor)

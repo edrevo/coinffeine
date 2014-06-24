@@ -43,7 +43,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
-  override val broker: PeerConnection = exchangeInfo.broker
+  override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart
 
   private val dummySig = TransactionSignature.dummy
