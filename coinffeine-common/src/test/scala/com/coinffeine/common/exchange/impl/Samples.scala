@@ -14,7 +14,7 @@ object Samples {
     parameters = Exchange.Parameters(
       bitcoinAmount = 1.BTC,
       fiatAmount = 1000.EUR,
-      totalSteps = Exchange.TotalSteps(10),
+      breakdown = Exchange.StepBreakdown(10),
       lockTime = 10,
       commitmentConfirmations = 1,
       resubmitRefundSignatureTimeout = 10.seconds,

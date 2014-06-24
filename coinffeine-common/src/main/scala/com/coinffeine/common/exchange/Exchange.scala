@@ -2,6 +2,8 @@ package com.coinffeine.common.exchange
 
 import java.security.SecureRandom
 
+import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, FinalStep}
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
@@ -17,7 +19,7 @@ case class Exchange[C <: FiatCurrency](
   broker: Exchange.BrokerInfo) {
 
   val amounts: Exchange.Amounts[C] =
-    Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.totalSteps)
+    Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.breakdown)
 }
 
 object Exchange {
@@ -34,26 +36,12 @@ object Exchange {
 
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                            fiatAmount: CurrencyAmount[C],
-                                           totalSteps: Exchange.TotalSteps,
+                                           breakdown: Exchange.StepBreakdown,
                                            lockTime: Long,
                                            commitmentConfirmations: Int,
                                            resubmitRefundSignatureTimeout: FiniteDuration,
                                            refundSignatureAbortTimeout: FiniteDuration,
                                            network: Network)
-
-  case class StepNumber(value: Int) {
-    require(value >= 0, s"Step number must be positive or zero ($value given)")
-
-    val count = value + 1
-
-    override def toString = s"step number $value"
-
-    def next: StepNumber = new StepNumber(value + 1)
-  }
-
-  object StepNumber {
-    val First = new StepNumber(0)
-  }
 
   case class PeerInfo[KeyPair](connection: PeerConnection,
                                paymentProcessorAccount: PaymentProcessor.AccountId,
@@ -61,45 +49,34 @@ object Exchange {
 
   case class BrokerInfo(connection: PeerConnection)
 
-  case class TotalSteps(value: Int) {
-    require(value >= 0, s"Total steps must be positive or zero ($value given)")
-
-    val isPositive: Boolean = value > 0
-    val lastStep: StepNumber = StepNumber(value - 1)
-
-    override def toString = s"$value total steps"
-    def toBigDecimal = BigDecimal(value)
-    def isLastStep(step: StepNumber): Boolean = step == lastStep
+  /** How the exchange is break down into steps */
+  case class StepBreakdown(intermediateSteps: Int) {
+    require(intermediateSteps > 0, s"Intermediate steps must be positive ($intermediateSteps given)")
+    val totalSteps = intermediateSteps + 1
   }
 
   case class Amounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                         fiatAmount: CurrencyAmount[C],
-                                        totalSteps: Exchange.TotalSteps) {
-    require(totalSteps.isPositive,
-      s"exchange amounts must have positive total steps ($totalSteps given)")
+                                        breakdown: Exchange.StepBreakdown) {
     require(bitcoinAmount.isPositive,
       s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive,
       s"fiat amount must be positive ($fiatAmount given)")
 
-    val stepBitcoinAmount: BitcoinAmount = bitcoinAmount / totalSteps.toBigDecimal
-    val stepFiatAmount: CurrencyAmount[C] = fiatAmount / totalSteps.toBigDecimal
-    val buyerDeposit: BitcoinAmount = stepBitcoinAmount * BigDecimal(2)
+    /** Amount of bitcoins to exchange per intermediate step */
+    val stepBitcoinAmount: BitcoinAmount = bitcoinAmount / breakdown.intermediateSteps
+    /** Amount of fiat to exchange per intermediate step */
+    val stepFiatAmount: CurrencyAmount[C] = fiatAmount / breakdown.intermediateSteps
+
+    /** Total amount compromised in multisignature by the buyer */
+    val buyerDeposit: BitcoinAmount = stepBitcoinAmount * 2
+    /** Amount refundable by the buyer after a lock time */
     val buyerRefund: BitcoinAmount = buyerDeposit - stepBitcoinAmount
+
+    /** Total amount compromised in multisignature by the seller */
     val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
+    /** Amount refundable by the seller after a lock time */
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
 
-    val buyerInitialBitcoinAmount: BitcoinAmount = buyerDeposit
-    val sellerInitialBitcoinAmount: BitcoinAmount = bitcoinAmount + sellerDeposit
-
-    def channelOutputForBuyerAfter(step: Exchange.StepNumber): BitcoinAmount = {
-      val amountSplit = stepBitcoinAmount * step.count
-      if (totalSteps.isLastStep(step)) amountSplit + buyerDeposit else amountSplit
-    }
-
-    def channelOutputForSellerAfter(step: Exchange.StepNumber): BitcoinAmount = {
-      val amountSplit = bitcoinAmount - (stepBitcoinAmount * step.count)
-      if (totalSteps.isLastStep(step)) amountSplit + sellerDeposit else amountSplit
-    }
   }
 }
