@@ -1,7 +1,5 @@
 package com.coinffeine.common.exchange
 
-import scala.concurrent.duration.FiniteDuration
-
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
@@ -19,8 +17,8 @@ import com.coinffeine.common.protocol.messages.exchange.ExchangeId
 case class Exchange[C <: FiatCurrency](
   id: ExchangeId,
   parameters: Exchange.Parameters[C],
-  buyer: Exchange.PeerInfo[KeyPair],
-  seller: Exchange.PeerInfo[KeyPair],
+  buyer: Exchange.PeerInfo,
+  seller: Exchange.PeerInfo,
   broker: Exchange.BrokerInfo) {
 
   val amounts: Exchange.Amounts[C] =
@@ -45,9 +43,9 @@ object Exchange {
     require(fiatAmount.isPositive)
   }
 
-  case class PeerInfo[KeyPair](connection: PeerConnection,
-                               paymentProcessorAccount: PaymentProcessor.AccountId,
-                               bitcoinKey: KeyPair)
+  case class PeerInfo(connection: PeerConnection,
+                      paymentProcessorAccount: PaymentProcessor.AccountId,
+                      bitcoinKey: KeyPair)
 
   case class BrokerInfo(connection: PeerConnection)
 

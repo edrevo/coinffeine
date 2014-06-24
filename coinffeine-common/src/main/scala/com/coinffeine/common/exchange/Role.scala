@@ -1,11 +1,10 @@
 package com.coinffeine.common.exchange
 
 import com.coinffeine.common._
-import com.coinffeine.common.bitcoin.{PublicKey, KeyPair}
 
 sealed trait Role {
-  def me(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo[KeyPair]
-  def her(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo[PublicKey]
+  def me(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
+  def her(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def herRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
