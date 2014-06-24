@@ -4,11 +4,13 @@ import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{BuyerRole, SellerRole}
+import com.coinffeine.common.exchange.{UnspentOutput, BuyerRole, SellerRole}
 
 class DefaultHandshakeTest extends BitcoinjTest {
 
   import com.coinffeine.common.exchange.impl.Samples.exchange
+
+  val protocol = new DefaultExchangeProtocol()
 
   "A handshake" should "create a refund of the right amount for the buyer" in new BuyerHandshake {
     Bitcoin.fromSatoshi(buyerHandshake.myUnsignedRefund.get.getValueSentToMe(buyerWallet)) should be (0.1.BTC)
@@ -74,15 +76,15 @@ class DefaultHandshakeTest extends BitcoinjTest {
 
   trait BuyerHandshake {
     val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
-    val buyerFunds = TransactionProcessor.collectFunds(buyerWallet, 0.2.BTC)
-      .toSeq.map(exchange.UnspentOutput(_, exchange.buyer.bitcoinKey))
-    val buyerHandshake = exchange.createHandshake(BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
+    val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
+    val buyerHandshake =
+      protocol.createHandshake(exchange, BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
   }
 
   trait SellerHandshake {
     val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
-    val sellerFunds = TransactionProcessor.collectFunds(sellerWallet, 0.2.BTC)
-      .toSeq.map(exchange.UnspentOutput(_, exchange.seller.bitcoinKey))
-    val sellerHandshake = exchange.createHandshake(SellerRole, sellerFunds, sellerWallet.getChangeAddress)
+    val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
+    val sellerHandshake =
+      protocol.createHandshake(exchange, SellerRole, sellerFunds, sellerWallet.getChangeAddress)
   }
 }

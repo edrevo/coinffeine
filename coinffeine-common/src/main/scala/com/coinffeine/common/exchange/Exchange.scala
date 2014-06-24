@@ -1,44 +1,23 @@
 package com.coinffeine.common.exchange
 
+import java.security.SecureRandom
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 import com.coinffeine.common._
-import com.coinffeine.common.bitcoin.Network
+import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-trait Exchange[C <: FiatCurrency] {
-  type KeyPair
-  type TransactionOutput
-  type Address
-  type Transaction
-  type TransactionSignature
+case class Exchange[C <: FiatCurrency](
+  id: Exchange.Id,
+  parameters: Exchange.Parameters[C],
+  buyer: Exchange.PeerInfo[KeyPair],
+  seller: Exchange.PeerInfo[KeyPair],
+  broker: Exchange.BrokerInfo) {
 
-  def id: Exchange.Id
-  def parameters: Exchange.Parameters[C]
-  def buyer: Exchange.PeerInfo[KeyPair]
-  def seller: Exchange.PeerInfo[KeyPair]
-  def broker: Exchange.BrokerInfo
-
-  /** An output not yet spent and the key to spend it. */
-  case class UnspentOutput(output: TransactionOutput, key: KeyPair) {
-    def toTuple: (TransactionOutput, KeyPair) = (output, key)
-  }
-
-  def amounts: Exchange.Amounts[C] =
+  val amounts: Exchange.Amounts[C] =
     Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.totalSteps)
-
-  /** Start a handshake for this exchange.
-    *
-    * @param role            Role played in the handshake
-    * @param unspentOutputs  Inputs for the deposit to create during the handshake
-    * @param changeAddress   Address to return the excess of funds in unspentOutputs
-    * @return                A new handshake
-    */
-  @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake(role: Role,
-                      unspentOutputs: Seq[UnspentOutput],
-                      changeAddress: Address): Handshake[C]
 }
 
 object Exchange {
@@ -48,7 +27,9 @@ object Exchange {
   }
 
   object Id {
-    def random() = new Id(value = Random.nextString(12)) // TODO: use a crypto secure method
+    private val secureGenerator = new Random(new SecureRandom())
+
+    def random() = new Id(value = secureGenerator.nextString(12))
   }
 
   case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
@@ -120,15 +101,5 @@ object Exchange {
       val amountSplit = bitcoinAmount - (stepBitcoinAmount * step.count)
       if (totalSteps.isLastStep(step)) amountSplit + sellerDeposit else amountSplit
     }
-  }
-
-  trait Component {
-    type KeyPair
-
-    def createExchange[C <: FiatCurrency](id: Exchange.Id,
-                                          parameters: Exchange.Parameters[C],
-                                          buyer: Exchange.PeerInfo[KeyPair],
-                                          seller: Exchange.PeerInfo[KeyPair],
-                                          broker: Exchange.BrokerInfo): Exchange[C]
   }
 }
