@@ -1,23 +1,16 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.BitcoinjTest
-import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{UnspentOutput, BuyerRole, SellerRole}
 
-class DefaultHandshakeTest extends BitcoinjTest {
-
-  import com.coinffeine.common.exchange.impl.Samples.exchange
-
-  val protocol = new DefaultExchangeProtocol()
+class DefaultHandshakeTest extends ExchangeTest {
 
   "A handshake" should "create a refund of the right amount for the buyer" in new BuyerHandshake {
-    Bitcoin.fromSatoshi(buyerHandshake.myUnsignedRefund.get.getValueSentToMe(buyerWallet)) should be (0.1.BTC)
+    valueSent(buyerHandshake.myUnsignedRefund, buyerWallet) should be (0.1.BTC)
   }
 
   it should "create a refund of the right amount for the seller" in new SellerHandshake {
-    Bitcoin.fromSatoshi(sellerHandshake.myUnsignedRefund.get.getValueSentToMe(sellerWallet)) should be (1.BTC)
+    valueSent(sellerHandshake.myUnsignedRefund, sellerWallet) should be (1.BTC)
   }
 
   it should "produce a signature for the counterpart to get a refund" in
@@ -29,7 +22,7 @@ class DefaultHandshakeTest extends BitcoinjTest {
         mineBlock()
       }
       sendToBlockChain(signedBuyerRefund)
-      Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (0.1.BTC)
+      balance(buyerWallet) should be (0.1.BTC)
     }
 
   it should "reject signing counterpart deposit with a different lock time" in
@@ -67,24 +60,4 @@ class DefaultHandshakeTest extends BitcoinjTest {
         sellerHandshake.signHerRefund(depositWithoutInputs)
       }
     }
-
-  it should "create a micropayment channel" in new BuyerHandshake with SellerHandshake {
-    val channel = buyerHandshake.createMicroPaymentChannel(sellerHandshake.myDeposit)
-    channel.deposits.buyerDeposit.get should be (buyerHandshake.myDeposit.get)
-    channel.deposits.sellerDeposit.get should be (sellerHandshake.myDeposit.get)
-  }
-
-  trait BuyerHandshake {
-    val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
-    val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
-    val buyerHandshake =
-      protocol.createHandshake(exchange, BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
-  }
-
-  trait SellerHandshake {
-    val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
-    val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
-    val sellerHandshake =
-      protocol.createHandshake(exchange, SellerRole, sellerFunds, sellerWallet.getChangeAddress)
-  }
 }
