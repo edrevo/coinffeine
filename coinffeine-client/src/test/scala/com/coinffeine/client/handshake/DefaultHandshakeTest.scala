@@ -87,10 +87,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       userWallet) {}
 
     val counterpartWallet = createWallet(exchangeInfo.counterpart.bitcoinKey, 5 BTC)
-    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = exchangeInfo.copy(
-      user = exchangeInfo.user.copy(bitcoinKey = exchangeInfo.counterpart.bitcoinKey),
-      counterpart = exchangeInfo.counterpart.copy(bitcoinKey = exchangeInfo.user.bitcoinKey)
-    )
+    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = buyerExchangeInfo
     val counterpartHandshake = new DefaultHandshake(
       counterpartExchange,
       3 BTC,

@@ -13,12 +13,12 @@ import com.google.bitcoin.script.ScriptBuilder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
-import com.coinffeine.client.{ExchangeInfo, SampleExchangeInfo}
+import com.coinffeine.client.SampleExchangeInfo
 import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{KeyPair, MutableTransactionOutput, MutableTransaction, PublicKey}
+import com.coinffeine.common.bitcoin.{MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
@@ -26,32 +26,13 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
-    val sellerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
-      user = sampleExchangeInfo.user.copy(
-        bitcoinKey = new KeyPair(),
-        paymentProcessorAccount = "seller"
-      ),
-      counterpart = sampleExchangeInfo.counterpart.copy(
-        bitcoinKey = new PublicKey(),
-        paymentProcessorAccount = "buyer"
-      )
-    )
+
     lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
     lazy val sellerHandshake = new SellerHandshake(sellerExchangeInfo, sellerWallet)
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
       sellerExchangeInfo.user.paymentProcessorAccount, Seq(0 EUR)))
 
-    val buyerExchangeInfo: ExchangeInfo[Currency.Euro.type] = sampleExchangeInfo.copy(
-      user = sampleExchangeInfo.user.copy(
-        bitcoinKey = sellerExchangeInfo.counterpart.bitcoinKey,
-        paymentProcessorAccount = sellerExchangeInfo.counterpart.paymentProcessorAccount
-      ),
-      counterpart = sampleExchangeInfo.counterpart.copy(
-        bitcoinKey = sellerExchangeInfo.user.bitcoinKey,
-        paymentProcessorAccount = sellerExchangeInfo.user.paymentProcessorAccount
-      )
-    )
     lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
     lazy val buyerHandshake = new BuyerHandshake(buyerExchangeInfo, buyerWallet)
     val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
