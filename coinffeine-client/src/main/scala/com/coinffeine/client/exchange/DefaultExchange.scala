@@ -1,6 +1,5 @@
 package com.coinffeine.client.exchange
 
-import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.duration._
@@ -10,7 +9,6 @@ import akka.actor.ActorRef
 import akka.pattern._
 import akka.util.Timeout
 import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
 import com.coinffeine.common.{Currency, FiatCurrency}
@@ -124,26 +122,16 @@ class DefaultExchange[C <: FiatCurrency](
       s"The provided signature is invalid for the final offer")
 
   override protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature) = {
-    val userConnectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
-      2, List(exchangeInfo.counterpartKey, exchangeInfo.userKey))
-    val userInputSignature = offer.calculateSignature(
-      userInputIndex,
-      exchangeInfo.userKey,
-      userConnectedPubKeyScript,
-      SigHash.ALL,
-      false)
-    val counterpartConnectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
-      2, List(exchangeInfo.userKey, exchangeInfo.counterpartKey))
-    val counterpartInputSignature = offer.calculateSignature(
-      counterPartInputIndex,
-      exchangeInfo.userKey,
-      counterpartConnectedPubKeyScript,
-      SigHash.ALL,
-      false)
-    if (userInputIndex == 0)
-      (userInputSignature, counterpartInputSignature)
-    else
-      (counterpartInputSignature, userInputSignature)
+    val userInputSignature = TransactionProcessor.signMultiSignedOutput(
+      offer, userInputIndex, exchangeInfo.userKey,
+      List(exchangeInfo.counterpartKey, exchangeInfo.userKey)
+    )
+    val counterpartInputSignature = TransactionProcessor.signMultiSignedOutput(
+      offer, counterPartInputIndex, exchangeInfo.userKey,
+      List(exchangeInfo.userKey, exchangeInfo.counterpartKey)
+    )
+    if (userInputIndex == 0) (userInputSignature, counterpartInputSignature)
+    else (counterpartInputSignature, userInputSignature)
   }
 
   private def getPaymentDescription(step: Int) = s"Payment for ${exchangeInfo.id}, step $step"

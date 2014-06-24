@@ -20,7 +20,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey), exchange.parameters.network)
     }
-    DefaultHandshake(role, exchange, myDeposit)
+    new DefaultHandshake(role, exchange, myDeposit)
   }
 }
 

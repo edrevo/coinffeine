@@ -2,13 +2,11 @@ package com.coinffeine.common.exchange
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
-import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
+import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 trait MicroPaymentChannel[C <: FiatCurrency] {
 
-  def deposits: Deposits[ImmutableTransaction]
-
-  def currentStep: Exchange.StepNumber
+  def currentStep: Step
 
   def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean
 
@@ -29,6 +27,13 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
 }
 
 object MicroPaymentChannel {
+
+  sealed trait Step
+  case class IntermediateStep(i: Int) extends Step {
+    require(i > 0, s"Step number must be positive ($i given)")
+  }
+  case object FinalStep extends Step
+
   /** Signatures for a step transaction of both deposits. */
   case class StepSignatures(buyerDepositSignature: TransactionSignature,
                             sellerDepositSignature: TransactionSignature)

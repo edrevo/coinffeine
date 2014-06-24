@@ -4,7 +4,7 @@ import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
 
-private[impl] case class DefaultHandshake[C <: FiatCurrency](
+private[impl] class DefaultHandshake[C <: FiatCurrency](
    role: Role,
    exchange: Exchange[C],
    override val myDeposit: ImmutableTransaction) extends Handshake[C] {
@@ -57,7 +57,7 @@ private[impl] case class DefaultHandshake[C <: FiatCurrency](
   override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = {
     val buyerDeposit = role.buyer(myDeposit, herDeposit)
     val sellerDeposit = role.seller(myDeposit, herDeposit)
-    DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
+    new DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
   }
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,

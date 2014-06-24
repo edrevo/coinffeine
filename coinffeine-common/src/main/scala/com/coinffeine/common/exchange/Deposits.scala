@@ -1,3 +1,7 @@
 package com.coinffeine.common.exchange
 
-case class Deposits[Transaction](buyerDeposit: Transaction, sellerDeposit: Transaction)
+import com.coinffeine.common.bitcoin.ImmutableTransaction
+
+case class Deposits(buyerDeposit: ImmutableTransaction, sellerDeposit: ImmutableTransaction) {
+  def toSeq: Seq[ImmutableTransaction] = Seq(buyerDeposit, sellerDeposit)
+}
