@@ -20,10 +20,16 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
       lockTime = 25,
       network
     ),
-    counterpart = PeerConnection("counterpart"),
-    broker = Exchange.BrokerInfo(PeerConnection("broker")),
-    userKey = new KeyPair(),
-    userFiatAddress = "",
-    counterpartKey = new PublicKey(),
-    counterpartFiatAddress = "")
+    user = Exchange.PeerInfo(
+      connection = PeerConnection("user"),
+      paymentProcessorAccount = "user",
+      bitcoinKey = new KeyPair()
+    ),
+    counterpart = Exchange.PeerInfo(
+      connection = PeerConnection("counterpart"),
+      paymentProcessorAccount = "counterpart",
+      bitcoinKey = new PublicKey()
+    ),
+    broker = Exchange.BrokerInfo(PeerConnection("broker"))
+  )
 }

@@ -34,7 +34,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
 
     private val exchangeInfo = exchange.exchangeInfo
     private val forwarding = new MessageForwarding(
-      messageGateway, exchangeInfo.counterpart, exchangeInfo.broker.connection)
+      messageGateway, exchangeInfo.counterpart.connection, exchangeInfo.broker.connection)
     private val finalStep = exchangeInfo.parameters.breakdown.totalSteps
 
     private var lastSignedOffer: Option[MutableTransaction] = None
@@ -46,7 +46,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private def subscribeToMessages(): Unit = messageGateway ! Subscribe {
-      case ReceiveMessage(StepSignatures(exchangeInfo.`id`, _, _, _), exchangeInfo.`counterpart`) => true
+      case ReceiveMessage(StepSignatures(exchangeInfo.`id`, _, _, _), exchangeInfo.counterpart.`connection`) => true
       case _ => false
     }
 

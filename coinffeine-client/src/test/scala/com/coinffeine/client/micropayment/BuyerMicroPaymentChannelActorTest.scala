@@ -22,7 +22,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   val protocolConstants = ProtocolConstants()
   val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker.connection
-  override val counterpart: PeerConnection = exchangeInfo.counterpart
+  override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")
   val dummySig = TransactionSignature.dummy
   listener.watch(actor)
@@ -39,7 +39,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
     val randomMessage = OrderSet.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
+    filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart.connection)) should be (false)
   }
 
   it should "respond to step signature messages by sending a payment until all " +

@@ -25,7 +25,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     refundSignatureAbortTimeout = 1 minute)
   val exchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
   override val broker: PeerConnection = exchangeInfo.broker.connection
-  override val counterpart: PeerConnection = exchangeInfo.counterpart
+  override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
   listener.watch(actor)
 
@@ -40,7 +40,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
     val randomMessage = OrderSet.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart)) should be (false)
+    filter(ReceiveMessage(randomMessage, exchangeInfo.counterpart.connection)) should be (false)
   }
 
   it should "send the first step signature as soon as the exchange starts" in {

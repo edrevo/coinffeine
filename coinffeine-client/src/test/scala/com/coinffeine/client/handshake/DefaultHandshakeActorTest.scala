@@ -38,13 +38,13 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   def shouldSignCounterpartRefund(): Unit = {
     val request =
       RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
-    gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart))
+    gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart.connection))
     val refundSignatureRequest =
       RefundTxSignatureResponse(exchangeId, handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart
   }
 
-  override def counterpart = handshake.exchangeInfo.counterpart
+  override def counterpart = handshake.exchangeInfo.counterpart.connection
   override def broker = handshake.exchangeInfo.broker.connection
 
   override protected def resetBlockchainBetweenTests = false

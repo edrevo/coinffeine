@@ -16,12 +16,12 @@ abstract class DefaultHandshake[C <: FiatCurrency](
     val exchangeInfo: ExchangeInfo[C],
     amountToCommit: BitcoinAmount,
     userWallet: Wallet) extends Handshake[C] {
-  require(userWallet.hasKey(exchangeInfo.userKey),
+  require(userWallet.hasKey(exchangeInfo.user.bitcoinKey),
     "User wallet does not contain the user's private key")
 
   override val commitmentTransaction: MutableTransaction =
     TransactionProcessor.createMultiSignedDeposit(
-      userWallet, amountToCommit, Seq(exchangeInfo.counterpartKey, exchangeInfo.userKey),
+      userWallet, amountToCommit, Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
       exchangeInfo.parameters.network
     )
 
@@ -30,7 +30,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
     val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.setLockTime(exchangeInfo.parameters.lockTime)
     tx.addInput(committedFunds).setSequenceNumber(0)
-    tx.addOutput(committedFunds.getValue, exchangeInfo.userKey)
+    tx.addOutput(committedFunds.getValue, exchangeInfo.user.bitcoinKey)
     ensureValidRefundTransaction(tx)
     tx
   }
@@ -39,9 +39,9 @@ abstract class DefaultHandshake[C <: FiatCurrency](
       counterpartRefundTx: MutableTransaction): Try[TransactionSignature] = Try {
     ensureValidRefundTransaction(counterpartRefundTx)
     val connectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
-      2, List(exchangeInfo.userKey, exchangeInfo.counterpartKey))
+      2, List(exchangeInfo.user.bitcoinKey, exchangeInfo.counterpart.bitcoinKey))
     counterpartRefundTx.calculateSignature(
-      0, exchangeInfo.userKey, connectedPubKeyScript, SigHash.ALL, false)
+      0, exchangeInfo.user.bitcoinKey, connectedPubKeyScript, SigHash.ALL, false)
   }
 
   private def ensureValidRefundTransaction(refundTx: MutableTransaction) = {
@@ -54,7 +54,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
 
   override def validateRefundSignature(signature: TransactionSignature): Try[Unit] = Try {
     require(TransactionProcessor.isValidSignature(
-      refundTransaction, index = 0, signature, exchangeInfo.counterpartKey,
-      List(exchangeInfo.counterpartKey, exchangeInfo.userKey)))
+      refundTransaction, index = 0, signature, exchangeInfo.counterpart.bitcoinKey,
+      List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey)))
   }
 }

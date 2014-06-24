@@ -29,7 +29,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     import init._
 
     def start(): Unit = {
-      require(userWallet.getKeys.contains(exchangeInfo.userKey))
+      require(userWallet.getKeys.contains(exchangeInfo.user.bitcoinKey))
       log.info(s"Starting exchange ${exchangeInfo.id}")
 
       val handshake = handshakeFactory(exchangeInfo, userWallet)

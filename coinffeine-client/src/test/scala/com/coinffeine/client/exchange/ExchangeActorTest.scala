@@ -44,14 +44,14 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
   override val broker: PeerConnection = exchangeInfo.broker.connection
-  override val counterpart: PeerConnection = exchangeInfo.counterpart
+  override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
 
   private val dummySig = TransactionSignature.dummy
   private val dummyTxId = new Hash(List.fill(64)("F").mkString)
   private val dummyTx = new MutableTransaction(network)
   private val userWallet = {
     val wallet = new Wallet(network)
-    wallet.addKey(exchangeInfo.userKey)
+    wallet.addKey(exchangeInfo.user.bitcoinKey)
     wallet
   }
   private val dummyPaymentProcessor = system.actorOf(new MockPaymentProcessorFactory(List.empty).newProcessor(
