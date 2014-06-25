@@ -8,6 +8,7 @@ import org.joda.time.DateTime
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.paymentprocessor.Payment
 
 class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]) extends Exchange[C] {
@@ -26,8 +27,8 @@ class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]
   override def pay(step: Int): Future[Payment[C]] = Future.successful(Payment(
     "paymentId", "sender", "receiver", exchangeInfo.fiatStepAmount, DateTime.now(), "description"))
   override def validatePayment(step: Int, paymentId: String): Future[Unit] = Future.successful {}
-  override protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature) =
-    (TransactionSignature.dummy, TransactionSignature.dummy)
+  override protected def sign(offer: MutableTransaction) =
+    StepSignatures(TransactionSignature.dummy, TransactionSignature.dummy)
   override def validateSellersFinalSignature(
       signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit] = Success {}
   override val finalOffer: MutableTransaction = {
@@ -36,7 +37,5 @@ class MockExchange[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]
     tx
   }
 
-  override def getSignedOffer(
-      step: Int,
-      counterpartSignatures: (TransactionSignature, TransactionSignature)) = getOffer(step)
+  override def getSignedOffer(step: Int, counterpartSignatures: StepSignatures) = getOffer(step)
 }

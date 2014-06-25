@@ -6,6 +6,7 @@ import scala.util.Try
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.paymentprocessor.AnyPayment
 
 trait Exchange[C <: FiatCurrency] {
@@ -17,16 +18,16 @@ trait Exchange[C <: FiatCurrency] {
   def getOffer(step: Int): MutableTransaction
 
   /** Returns a signed transaction ready to be broadcast */
-  def getSignedOffer(step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)): MutableTransaction
+  def getSignedOffer(step: Int, counterpartSignatures: StepSignatures): MutableTransaction
 
   /** Returns the transaction signature for the corresponding step */
-  def signStep(step: Int): (TransactionSignature, TransactionSignature) = sign(getOffer(step))
+  def signStep(step: Int): StepSignatures = sign(getOffer(step))
 
   /** Returns the bitcoin transaction that corresponds with the final offer */
   def finalOffer: MutableTransaction
 
   /** Returns the transaction signature for the final step */
-  def finalSignature: (TransactionSignature, TransactionSignature) = sign(finalOffer)
+  def finalSignatures: StepSignatures = sign(finalOffer)
 
   /** Validates that the signatures are valid for the offer in the passed in step */
   def validateSellersSignature(
@@ -43,5 +44,5 @@ trait Exchange[C <: FiatCurrency] {
   def pay(step: Int): Future[AnyPayment]
 
   /** Returns the user's signature for the transaction */
-  protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature)
+  protected def sign(offer: MutableTransaction): StepSignatures
 }

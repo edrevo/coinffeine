@@ -9,6 +9,7 @@ import com.coinffeine.client.exchange.BuyerUser
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{StepSignatures => Signatures}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
@@ -99,7 +100,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
       waitForValidSignature(step, exchange.validateSellersSignature(step, _, _)) {
         (signature0, signature1) =>
           import context.dispatcher
-          lastSignedOffer = Some(exchange.getSignedOffer(step, (signature0, signature1)))
+          lastSignedOffer = Some(exchange.getSignedOffer(step, Signatures(signature0, signature1)))
           forwarding.forwardToCounterpart(
             exchange.pay(step).map(payment => PaymentProof(exchangeInfo.id, payment.id)))
           context.become(nextWait(step))
