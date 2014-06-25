@@ -10,7 +10,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
-import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
+import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency, R <: UserRole](
@@ -51,8 +51,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     private val inHandshake: Receive = {
       case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTxSig) =>
         context.child(HandshakeActorName).map(context.stop)
-        blockchain ! GetTransactionFor(sellerCommitmentTxId)
-        blockchain ! GetTransactionFor(buyerCommitmentTxId)
+        blockchain ! RetrieveTransaction(sellerCommitmentTxId)
+        blockchain ! RetrieveTransaction(buyerCommitmentTxId)
         context.become(receiveTransaction(sellerCommitmentTxId, buyerCommitmentTxId))
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
@@ -61,7 +61,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
         sellerCommitmentTxId: Hash, buyerCommitmentTxId: Hash): Receive = {
       val commitmentTxIds = Seq(sellerCommitmentTxId, buyerCommitmentTxId)
       def withReceivedTxs(receivedTxs: Map[Hash, MutableTransaction]): Receive = {
-        case TransactionFor(id, tx) =>
+        case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.forall(newTxs.keySet.contains)) {
             val exchange = microPaymentChannelFactory(
@@ -77,7 +77,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
           } else {
             context.become(withReceivedTxs(newTxs))
           }
-        case TransactionNotFoundWith(txId) =>
+        case TransactionNotFound(txId) =>
           finishWith(ExchangeFailure(CommitmentTxNotInBlockChain(txId)))
       }
       withReceivedTxs(Map.empty)
