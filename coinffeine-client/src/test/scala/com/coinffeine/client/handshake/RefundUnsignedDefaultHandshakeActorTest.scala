@@ -24,7 +24,7 @@ class RefundUnsignedDefaultHandshakeActorTest
   }
 
   it must "notify the broker that the exchange is rejected" in {
-    val broker = handshake.exchange.broker.connection
+    val broker = exchange.broker.connection
     gateway.fishForMessage() {
       case ForwardMessage(ExchangeRejection(`exchangeId`, _), `broker`) => true
       case _ => false

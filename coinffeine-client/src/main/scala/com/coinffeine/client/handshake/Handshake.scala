@@ -6,8 +6,6 @@ import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 trait Handshake[C <: FiatCurrency] {
-  val exchange: Exchange[C]
-  val role: Role
 
   def myDeposit: ImmutableTransaction
   def myUnsignedRefund: ImmutableTransaction

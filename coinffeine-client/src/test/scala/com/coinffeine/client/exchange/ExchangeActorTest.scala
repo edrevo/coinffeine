@@ -88,10 +88,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   "The exchange actor" should "report an exchange success if both handshake " +
       "and exchange work as expected" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
+      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+    )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
+      queueItem.msg should be (StartHandshake(exchangeInfo.exchange, exchangeInfo.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
@@ -116,11 +117,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the handshake fails" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
+      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+    )
     val error = new Error("Handshake error")
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
+      queueItem.msg should be (StartHandshake(exchangeInfo.exchange, exchangeInfo.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(HandshakeFailure(error), handshakeActor)
@@ -132,10 +134,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the blockchain can't find the commitment txs" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
+      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+    )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
+      queueItem.msg should be (StartHandshake(exchangeInfo.exchange, exchangeInfo.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
@@ -154,10 +157,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the actual exchange fails" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
+      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+    )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
+      queueItem.msg should be (StartHandshake(exchangeInfo.exchange, exchangeInfo.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)

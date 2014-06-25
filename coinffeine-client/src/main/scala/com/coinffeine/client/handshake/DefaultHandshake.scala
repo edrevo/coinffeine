@@ -7,8 +7,8 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
 import com.coinffeine.common.exchange.impl.{TransactionProcessor, UnsignedRefundTransaction}
 
 class DefaultHandshake[C <: FiatCurrency](
-    override val role: Role,
-    override val exchange: Exchange[C],
+    role: Role,
+    exchange: Exchange[C],
     override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund = UnsignedRefundTransaction(

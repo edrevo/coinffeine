@@ -19,7 +19,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def protocolConstants: ProtocolConstants
 
-  lazy val handshake = new MockHandshake(sampleExchangeInfo.exchange, sampleExchangeInfo.role,
+  lazy val handshake = new MockHandshake(exchange, sampleExchangeInfo.role,
     amount => createWallet(new KeyPair, amount), network)
   val listener = TestProbe()
   val blockchain = TestProbe()
@@ -27,7 +27,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake(handshake.exchange, handshake.role, handshake, protocolConstants,
+    actor ! StartHandshake(exchange, sampleExchangeInfo.role, handshake, protocolConstants,
       gateway.ref, blockchain.ref, Set(listener.ref))
   }
 
@@ -46,7 +46,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   override def counterpart = sampleExchangeInfo.counterpart.connection
-  override def broker = handshake.exchange.broker.connection
+  override def broker = exchange.broker.connection
 
   override protected def resetBlockchainBetweenTests = false
 }

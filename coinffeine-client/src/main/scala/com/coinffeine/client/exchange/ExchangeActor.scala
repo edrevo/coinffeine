@@ -2,6 +2,7 @@ package com.coinffeine.client.exchange
 
 import akka.actor._
 
+import com.coinffeine.common
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.handshake.Handshake
@@ -11,6 +12,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPay
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Role
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency, R <: UserRole](
@@ -37,8 +39,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
 
       val handshake = handshakeFactory(exchangeInfo, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        handshake.exchange,
-        handshake.role,
+        exchange,
+        role,
         handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
       context.become(inHandshake)
     }
@@ -112,6 +114,8 @@ object ExchangeActor {
   ) => Exchange[C] with Role
 
   case class StartExchange[C <: FiatCurrency](
+    role: Role,
+    exchange: common.exchange.Exchange[C],
     exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
     paymentProcessor: ActorRef,

@@ -17,8 +17,8 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
   * @param walletFactory  Creates wallets with a minimum balance on demand
   * @param network        Network in which transactions are generated
   */
-class MockHandshake[C <: FiatCurrency](override val exchange: Exchange[C],
-                                       override val role: Role,
+class MockHandshake[C <: FiatCurrency](exchange: Exchange[C],
+                                       role: Role,
                                        walletFactory: BitcoinAmount => Wallet,
                                        network: Network)  extends Handshake[C] {
   override val myDeposit = randomImmutableTransaction()

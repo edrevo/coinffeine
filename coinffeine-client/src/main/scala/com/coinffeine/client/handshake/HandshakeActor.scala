@@ -26,7 +26,7 @@ object HandshakeActor {
   case class StartHandshake[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
-      @deprecated handshake: Handshake[C],
+      handshake: Handshake[C],
       constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,
