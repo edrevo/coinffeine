@@ -3,10 +3,11 @@ package com.coinffeine.common
 import java.io.File
 import java.math.BigInteger
 import java.util.concurrent.locks.{Lock, ReentrantLock}
+import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-import com.google.bitcoin.core.FullPrunedBlockChain
+import com.google.bitcoin.core.{FullPrunedBlockChain, StoredBlock}
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 import org.scalatest.BeforeAndAfterAll
@@ -37,6 +38,8 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component wit
       stopBitcoinj()
     }
   }
+
+  def chainHead(): StoredBlock = chain.getChainHead
 
   def withFees[A](body: => A) = {
     Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee.asSatoshi
@@ -80,22 +83,47 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component wit
 
   def mineBlock() = sendToBlockChain()
 
+  /** Mine a new block with the passed transactions using the given last block.
+    *
+    * @param lastBlock The last block to be considered the chain head
+    * @param miner     Destination key of the coinbase
+    * @param txs       Transactions to include in the new block
+    * @return          The new blockchain header
+    */
+  def sendToBlockChain(lastBlock: StoredBlock,
+                       miner: PublicKey,
+                       txs: MutableTransaction*): StoredBlock = {
+    @tailrec
+    def retrySend(remainingAttempts: Int): StoredBlock = {
+      if (remainingAttempts < 0) {
+        throw new IllegalStateException(
+          "after several attempts, cannot send the given transactions to the blockchain")
+      }
+      val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
+        miner.getPubKey, 50.BTC.asSatoshi)
+      txs.foreach(newBlock.addTransaction)
+      newBlock.solve()
+      if (!chain.add(newBlock)) {
+        Thread.sleep(250)
+        retrySend(remainingAttempts - 1)
+      }
+      else chain.getBlockStore.get(newBlock.getHash)
+    }
+    retrySend(3)
+  }
+
   /** Mine a new block with the passed transactions.
     *
     * @param miner  Destination key of the coinbase
     * @param txs    Transactions to include in the new block
     */
-  def sendToBlockChain(miner: PublicKey, txs: MutableTransaction*): Unit = {
-    val lastBlock = blockStore.getChainHead
-    val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
-      miner.getPubKey, 50.BTC.asSatoshi)
-    txs.foreach(newBlock.addTransaction)
-    newBlock.solve()
-    chain.add(newBlock)
+  def sendToBlockChain(miner: PublicKey, txs: MutableTransaction*): StoredBlock = {
+    sendToBlockChain(blockStore.getChainHead, miner, txs: _*)
   }
 
   /** Mine a new block with the passed transactions. */
-  def sendToBlockChain(txs: MutableTransaction*): Unit = sendToBlockChain(new PublicKey(), txs: _*)
+  def sendToBlockChain(txs: MutableTransaction*): StoredBlock =
+    sendToBlockChain(new PublicKey(), txs: _*)
 
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
   def throughWire(tx: MutableTransaction) = new MutableTransaction(network, tx.bitcoinSerialize())
