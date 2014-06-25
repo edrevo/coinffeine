@@ -1,20 +1,43 @@
 package com.coinffeine.common.exchange.impl
 
+import com.google.bitcoin.core.VerificationException
+
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
 import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 class DefaultHandshakeTest extends ExchangeTest {
 
-  "A handshake" should "create a refund of the right amount for the buyer" in new BuyerHandshake {
+  "The refund transaction" should "refund the right amount for the buyer" in new BuyerHandshake {
     valueSent(buyerHandshake.myUnsignedRefund, buyerWallet) should be (0.1.BTC)
   }
 
-  it should "create a refund of the right amount for the seller" in new SellerHandshake {
+  it should "refund the right amount for the seller" in new SellerHandshake {
     valueSent(sellerHandshake.myUnsignedRefund, sellerWallet) should be (1.BTC)
   }
 
-  it should "produce a signature for the counterpart to get a refund" in
+  it should "not be directly broadcastable to the blockchain" in new BuyerHandshake {
+    a [VerificationException] should be thrownBy {
+      sendToBlockChain(buyerHandshake.myUnsignedRefund.get)
+    }
+  }
+
+  it should "not be broadcastable if locktime hasn't expired yet" in new BuyerHandshake {
+    sendToBlockChain(buyerHandshake.myDeposit.get)
+    a [VerificationException] should be thrownBy {
+      sendToBlockChain(buyerHandshake.myUnsignedRefund.get)
+    }
+  }
+
+  it should "not be broadcastable after locktime when unsigned" in new BuyerHandshake {
+    sendToBlockChain(buyerHandshake.myDeposit.get)
+    mineUntilLockTime(exchange.parameters.lockTime)
+    a [VerificationException] should be thrownBy {
+      sendToBlockChain(buyerHandshake.myUnsignedRefund.get)
+    }
+  }
+
+  it should "be broadcastable after locktime if it has been signed" in
     new BuyerHandshake with SellerHandshake {
       val signature = sellerHandshake.signHerRefund(buyerHandshake.myUnsignedRefund)
       val signedBuyerRefund = buyerHandshake.signMyRefund(signature).get
@@ -24,7 +47,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       balance(buyerWallet) should be (0.1.BTC)
     }
 
-  it should "reject signing counterpart deposit with a different lock time" in
+  "A handshake" should "reject signing counterpart deposit with a different lock time" in
     new BuyerHandshake with SellerHandshake {
       val depositWithWrongLockTime = ImmutableTransaction {
         val tx = buyerHandshake.myUnsignedRefund.get
