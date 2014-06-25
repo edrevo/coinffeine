@@ -2,6 +2,7 @@ package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 class DefaultHandshakeTest extends ExchangeTest {
 
@@ -30,7 +31,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.setLockTime(exchange.parameters.lockTime - 10)
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithWrongLockTime)
       }
     }
@@ -42,7 +43,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.setLockTime(0)
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithNoLockTime)
       }
     }
@@ -54,7 +55,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.clearInputs()
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithoutInputs)
       }
     }

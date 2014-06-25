@@ -22,7 +22,7 @@ class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rej
       actor, fromCounterpart(RefundTxSignatureResponse(exchangeId, handshake.refundSignature)))
     gateway.send(actor, fromBroker(CommitmentNotification(
       exchangeId,
-      handshake.commitmentTransaction.get.getHash,
+      handshake.myDeposit.get.getHash,
       handshake.counterpartCommitmentTransaction.getHash
     )))
     blockchain.send(actor, TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))

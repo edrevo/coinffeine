@@ -32,7 +32,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest = RefundTxSignatureRequest(exchangeId, handshake.unsignedRefundTransaction)
+    val refundSignatureRequest = RefundTxSignatureRequest(exchangeId, handshake.myUnsignedRefund)
     shouldForward (refundSignatureRequest) to counterpart
   }
 

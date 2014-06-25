@@ -8,7 +8,8 @@ import com.google.bitcoin.core.Wallet.SendRequest
 import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Role, Exchange}
+import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 /** Create a mock handshake with random transactions.
   *
@@ -20,8 +21,8 @@ class MockHandshake[C <: FiatCurrency](override val exchange: Exchange[C],
                                        override val role: Role,
                                        walletFactory: BitcoinAmount => Wallet,
                                        network: Network)  extends Handshake[C] {
-  override val commitmentTransaction = randomImmutableTransaction()
-  override val unsignedRefundTransaction = randomImmutableTransaction()
+  override val myDeposit = randomImmutableTransaction()
+  override val myUnsignedRefund = randomImmutableTransaction()
   val counterpartCommitmentTransaction = randomTransaction()
   val counterpartRefund = randomTransaction()
   val invalidRefundTransaction = randomTransaction()
@@ -29,9 +30,9 @@ class MockHandshake[C <: FiatCurrency](override val exchange: Exchange[C],
   val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
   val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
 
-  override def signCounterpartRefundTransaction(txToSign: MutableTransaction) =
-    if (txToSign == counterpartRefund) Success(counterpartRefundSignature)
-    else Failure(new Error("Invalid refundSig"))
+  override def signHerRefund(txToSign: ImmutableTransaction) =
+    if (txToSign.get == counterpartRefund) counterpartRefundSignature
+    else throw new InvalidRefundTransaction(txToSign, "Invalid refundSig")
 
   override def validateRefundSignature(sig: TransactionSignature) =
     if (sig == refundSignature) Success(()) else Failure(new Error("Invalid signature!"))

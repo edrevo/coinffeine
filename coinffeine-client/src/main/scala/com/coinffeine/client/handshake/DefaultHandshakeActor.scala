@@ -1,5 +1,7 @@
 package com.coinffeine.client.handshake
 
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
+
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -43,13 +45,13 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private val signCounterpartRefund: Receive = {
       case ReceiveMessage(RefundTxSignatureRequest(_, refundTransaction), _) =>
-        handshake.signCounterpartRefundTransaction(refundTransaction.get) match {
-          case Success(refundSignature) =>
-            forwarding.forwardToCounterpart(
-              RefundTxSignatureResponse(exchange.id, refundSignature))
-            log.info("Handshake {}: Signing refund TX {}", exchange.id,
-              refundTransaction.get.getHashAsString)
-          case Failure(cause) =>
+        try {
+          val refundSignature = handshake.signHerRefund(refundTransaction)
+          forwarding.forwardToCounterpart(RefundTxSignatureResponse(exchange.id, refundSignature))
+          log.info("Handshake {}: Signing refund TX {}", exchange.id,
+            refundTransaction.get.getHashAsString)
+        } catch {
+          case cause: InvalidRefundTransaction =>
             log.warning("Handshake {}: Dropping invalid refund: {}", exchange.id, cause)
         }
     }
@@ -59,7 +61,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
         handshake.validateRefundSignature(refundSignature) match {
           case Success(_) =>
             forwarding.forwardToBroker(
-              ExchangeCommitment(exchange.id, handshake.commitmentTransaction))
+              ExchangeCommitment(exchange.id, handshake.myDeposit))
             log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
             context.become(waitForPublication(refundSignature))
 
@@ -112,7 +114,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
           }
 
         case TransactionRejected(tx) =>
-          val isOwn = tx == handshake.commitmentTransaction.get.getHash
+          val isOwn = tx == handshake.myDeposit.get.getHash
           val cause = CommitmentTransactionRejectedException(exchange.id, tx, isOwn)
           log.error("Handshake {}: {}", exchange.id, cause.getMessage)
           finishWithResult(Failure(cause))
@@ -151,7 +153,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private def requestRefundSignature(): Unit = {
       forwarding.forwardToCounterpart(
-        RefundTxSignatureRequest(exchange.id, handshake.unsignedRefundTransaction))
+        RefundTxSignatureRequest(exchange.id, handshake.myUnsignedRefund))
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
