@@ -13,23 +13,28 @@ import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 
 abstract class DefaultHandshake[C <: FiatCurrency](
-    val exchangeInfo: ExchangeInfo[C],
+    exchangeInfo: ExchangeInfo[C],
     amountToCommit: BitcoinAmount,
     userWallet: Wallet) extends Handshake[C] {
   require(userWallet.hasKey(exchangeInfo.user.bitcoinKey),
     "User wallet does not contain the user's private key")
 
+  override val exchange = exchangeInfo.exchange
+  override val role = exchangeInfo.role
+
   override val commitmentTransaction = ImmutableTransaction(
     TransactionProcessor.createMultiSignedDeposit(
-      userWallet, amountToCommit, Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
-      exchangeInfo.parameters.network
+      userWallet,
+      amountToCommit,
+      Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
+      exchange.parameters.network
     )
   )
 
   override val unsignedRefundTransaction = {
     val committedFunds = commitmentTransaction.get.getOutput(0)
-    val tx = new MutableTransaction(exchangeInfo.parameters.network)
-    tx.setLockTime(exchangeInfo.parameters.lockTime)
+    val tx = new MutableTransaction(exchange.parameters.network)
+    tx.setLockTime(exchange.parameters.lockTime)
     tx.addInput(committedFunds).setSequenceNumber(0)
     tx.addOutput(committedFunds.getValue, exchangeInfo.user.bitcoinKey)
     ensureValidRefundTransaction(tx)
@@ -48,7 +53,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   private def ensureValidRefundTransaction(refundTx: MutableTransaction) = {
     // TODO: Is this enough to ensure we can sign?
     require(refundTx.isTimeLocked)
-    require(refundTx.getLockTime == exchangeInfo.parameters.lockTime)
+    require(refundTx.getLockTime == exchange.parameters.lockTime)
     require(refundTx.getInputs.size == 1)
     require(refundTx.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN)
   }

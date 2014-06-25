@@ -5,18 +5,19 @@ import scala.util.{Failure, Random, Success}
 
 import com.google.bitcoin.core.Wallet.SendRequest
 
-import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.{Role, Exchange}
 
 /** Create a mock handshake with random transactions.
   *
-  * @param exchangeInfo   Info about the exchange being mocked
+  * @param exchange       Info about the exchange being mocked
   * @param walletFactory  Creates wallets with a minimum balance on demand
   * @param network        Network in which transactions are generated
   */
-class MockHandshake[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C],
+class MockHandshake[C <: FiatCurrency](override val exchange: Exchange[C],
+                                       override val role: Role,
                                        walletFactory: BitcoinAmount => Wallet,
                                        network: Network)  extends Handshake[C] {
   override val commitmentTransaction = randomImmutableTransaction()

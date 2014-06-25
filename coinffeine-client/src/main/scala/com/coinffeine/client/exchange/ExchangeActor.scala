@@ -37,6 +37,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
 
       val handshake = handshakeFactory(exchangeInfo, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
+        handshake.exchange,
+        handshake.role,
         handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
       context.become(inHandshake)
     }
