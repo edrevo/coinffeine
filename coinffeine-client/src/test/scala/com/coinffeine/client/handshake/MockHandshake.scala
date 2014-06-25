@@ -5,6 +5,7 @@ import scala.util.Random
 
 import com.google.bitcoin.core.Wallet.SendRequest
 
+import com.coinffeine.common
 import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
@@ -20,7 +21,7 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
 class MockHandshake[C <: FiatCurrency](exchange: Exchange[C],
                                        role: Role,
                                        walletFactory: BitcoinAmount => Wallet,
-                                       network: Network)  extends Handshake[C] {
+                                       network: Network) extends common.exchange.Handshake[C] {
   override val myDeposit = randomImmutableTransaction()
   override val myUnsignedRefund = randomImmutableTransaction()
   val mySignedRefund = randomImmutableTransaction()
@@ -47,4 +48,6 @@ class MockHandshake[C <: FiatCurrency](exchange: Exchange[C],
     val wallet = walletFactory(amount + 0.01.BTC)
     wallet.sendCoinsOffline(SendRequest.to(network, destination, amount.asSatoshi))
   }
+
+  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = ???
 }

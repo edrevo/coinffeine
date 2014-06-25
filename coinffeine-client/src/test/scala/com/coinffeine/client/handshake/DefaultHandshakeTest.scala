@@ -1,5 +1,8 @@
 package com.coinffeine.client.handshake
 
+import com.coinffeine.common
+import com.coinffeine.common.exchange.impl.DefaultExchangeProtocol
+
 import scala.collection.JavaConversions._
 
 import com.google.bitcoin.core.VerificationException
@@ -12,9 +15,10 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.MutableTransaction
 import com.coinffeine.common.exchange.UnspentOutput
 
-class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
+class DefaultHandshakeTest
+  extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
+
   val exchangeInfo = sampleExchangeInfo
-  val exchangeProtocol = new DefaultExchangeProtocol()
 
   "The refund transaction" should "not be directly broadcastable to the blockchain" in
     new UserFixture {
@@ -53,8 +57,8 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   "The happy path" should "just work!" in new UserFixture with CounterpartFixture {
 
     def signedRefund(exchangeInfo: ExchangeInfo[Currency.Euro.type],
-                     handshake: Handshake[Currency.Euro.type],
-                     counterpartHandshake: Handshake[Currency.Euro.type]): MutableTransaction = {
+                     handshake: common.exchange.Handshake[Currency.Euro.type],
+                     counterpartHandshake: common.exchange.Handshake[Currency.Euro.type]): MutableTransaction = {
       val tx = handshake.myUnsignedRefund.get
       val signatures = List(
         throughWire(counterpartHandshake.signHerRefund(handshake.myUnsignedRefund)),

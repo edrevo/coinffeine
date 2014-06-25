@@ -11,7 +11,7 @@ import org.scalatest.concurrent.Eventually
 
 import com.coinffeine.client.{CoinffeineClientTest, ExchangeInfo}
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.handshake.{Handshake, MockHandshake}
+import com.coinffeine.client.handshake.MockHandshake
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
@@ -61,16 +61,13 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val handshake = new MockHandshake(
       exchangeInfo.exchange, exchangeInfo.role, amount => createWallet(new KeyPair, amount), network
     )
-    private def handshakeFactory(exchangeInfo: ExchangeInfo[Euro.type],
-                                 wallet: Wallet): Handshake[Euro.type] = handshake
-
     val listener = TestProbe()
     val blockchain = TestProbe()
     val actor = system.actorOf(
       Props(new ExchangeActor[Euro.type, BuyerUser[Euro.type]](
         handshakeProps,
         exchangeProps,
-        handshakeFactory,
+        (_, _, _) => handshake,
         exchangeFactory,
         protocolConstants,
         Set(listener.ref))))

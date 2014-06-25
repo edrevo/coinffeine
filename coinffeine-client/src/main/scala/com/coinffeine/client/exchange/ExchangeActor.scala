@@ -5,7 +5,6 @@ import akka.actor._
 import com.coinffeine.common
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.handshake.Handshake
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
@@ -37,7 +36,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
       // We have to watch the counterpart public key to be aware of its deposit tx
       blockchain ! WatchPublicKey(exchangeInfo.counterpart.bitcoinKey)
 
-      val handshake = handshakeFactory(exchangeInfo, userWallet)
+      val handshake = handshakeFactory(init.exchange, exchangeInfo.role, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
         exchange,
         role,
@@ -105,7 +104,7 @@ object ExchangeActor {
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
 
-  type HandshakeFactory[C <: FiatCurrency] = (ExchangeInfo[C], Wallet) => Handshake[C]
+  type HandshakeFactory[C <: FiatCurrency] = (common.exchange.Exchange[C], Role, Wallet) => common.exchange.Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
     ExchangeInfo[C],
     ActorRef,

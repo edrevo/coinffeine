@@ -13,23 +13,21 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.SampleExchangeInfo
-import com.coinffeine.client.handshake.DefaultExchangeProtocol
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
-import com.coinffeine.common.exchange.impl.TransactionProcessor
+import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
+class DefaultExchangeTest
+  extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
 
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
-
-    val exchangeProtocol = new DefaultExchangeProtocol()
 
     lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
     lazy val sellerHandshake = exchangeProtocol.createHandshake(
