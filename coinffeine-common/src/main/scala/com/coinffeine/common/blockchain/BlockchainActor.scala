@@ -10,6 +10,11 @@ import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, PublicKey}
   */
 object BlockchainActor {
 
+  /** A message sent to the blockchain actor requesting to watch for transactions on the given
+    * public key.
+    */
+  case class WatchPublicKey(publicKey: PublicKey)
+
   /** A message sent to the blockchain actor requesting to watch for confirmation of the
     * given block.
     *

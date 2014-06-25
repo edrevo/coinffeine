@@ -32,6 +32,9 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
       require(userWallet.getKeys.contains(exchangeInfo.user.bitcoinKey))
       log.info(s"Starting exchange ${exchangeInfo.id}")
 
+      // We have to watch the counterpart public key to be aware of its deposit tx
+      blockchain ! WatchPublicKey(exchangeInfo.counterpart.bitcoinKey)
+
       val handshake = handshakeFactory(exchangeInfo, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
         handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
