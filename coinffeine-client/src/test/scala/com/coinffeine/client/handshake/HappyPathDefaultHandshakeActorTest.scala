@@ -94,7 +94,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
       blockchain.send(actor, TransactionConfirmed(tx, 1))
     }
     val result = listener.expectMsgClass(classOf[HandshakeSuccess])
-    result.refundSig should be (handshake.refundSignature)
+    result.refundTransaction should be (handshake.mySignedRefund)
     result.buyerCommitmentTxId should be (handshake.myDeposit.get.getHash)
     result.sellerCommitmentTxId should be (handshake.counterpartCommitmentTransaction.getHash)
   }

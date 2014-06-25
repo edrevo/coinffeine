@@ -46,9 +46,9 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
 
-  private val dummySig = TransactionSignature.dummy
   private val dummyTxId = new Hash(List.fill(64)("F").mkString)
   private val dummyTx = new MutableTransaction(network)
+  private val dummyRefund = ImmutableTransaction(dummyTx)
   private val userWallet = {
     val wallet = new Wallet(network)
     wallet.addKey(exchangeInfo.user.bitcoinKey)
@@ -94,7 +94,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
+      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }
     blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
     blockchain.expectMsg(RetrieveTransaction(dummyTxId))
@@ -107,7 +107,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
         exchange, protocolConstants, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(MicroPaymentChannelActor.ExchangeSuccess)(exchangeActor)
+      actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
     }
     listener.expectMsg(ExchangeSuccess)
     listener.expectMsgClass(classOf[Terminated])
@@ -123,7 +123,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(HandshakeFailure(error))(handshakeActor)
+      actor.tell(HandshakeFailure(error), handshakeActor)
     }
     listener.expectMsg(ExchangeFailure(error))
     listener.expectMsgClass(classOf[Terminated])
@@ -138,7 +138,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
+      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }
     blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
     blockchain.expectMsg(RetrieveTransaction(dummyTxId))
@@ -160,7 +160,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
-      actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
+      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }
     blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
     blockchain.expectMsg(RetrieveTransaction(dummyTxId))

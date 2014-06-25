@@ -91,8 +91,8 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
     )
     mineUntilLockTime(exchangeInfo.parameters.lockTime)
     sendToBlockChain(
-      signedRefund(exchangeInfo, userHandshake, counterpartHandshake),
-      signedRefund(counterpartExchangeInfo, counterpartHandshake, userHandshake)
+      userHandshake.signMyRefund(counterpartHandshake.signHerRefund(userHandshake.myUnsignedRefund)).get,
+      counterpartHandshake.signMyRefund(userHandshake.signHerRefund(counterpartHandshake.myUnsignedRefund)).get
     )
   }
 }

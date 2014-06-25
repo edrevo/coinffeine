@@ -1,11 +1,9 @@
 package com.coinffeine.client.handshake
 
-import scala.util.Try
-
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.{Exchange, Role}
-import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
+import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 trait Handshake[C <: FiatCurrency] {
   val exchange: Exchange[C]
@@ -14,13 +12,9 @@ trait Handshake[C <: FiatCurrency] {
   def myDeposit: ImmutableTransaction
   def myUnsignedRefund: ImmutableTransaction
 
-  @throws[InvalidRefundTransaction]("refund transaction was not valid (e.g. incorrect amount)")
-  def signHerRefund(refundTransaction: ImmutableTransaction): TransactionSignature
+  @throws[InvalidRefundSignature]
+  def signMyRefund(herSignature: TransactionSignature): ImmutableTransaction
 
-  /** Validate counterpart signature of our refundSignature transaction.
-    *
-    * @param signature  Signed refundSignature TX
-    * @return           Success when valid or rejection cause as an exception
-    */
-  def validateRefundSignature(signature: TransactionSignature): Try[Unit]
+  @throws[InvalidRefundTransaction]("refund transaction was not valid (e.g. incorrect amount)")
+  def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature
 }

@@ -54,7 +54,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     }
 
     private val inHandshake: Receive = {
-      case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTxSig) =>
+      case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTx) =>
+        // TODO: next step for refundTx
         context.child(HandshakeActorName).map(context.stop)
         blockchain ! RetrieveTransaction(sellerCommitmentTxId)
         blockchain ! RetrieveTransaction(buyerCommitmentTxId)
