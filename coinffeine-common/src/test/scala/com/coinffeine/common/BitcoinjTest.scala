@@ -83,6 +83,12 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component wit
 
   def mineBlock() = sendToBlockChain()
 
+  def mineUntilLockTime(lockTime: Long): Unit = {
+    while (blockStore.getChainHead.getHeight < lockTime) {
+      mineBlock()
+    }
+  }
+
   /** Mine a new block with the passed transactions using the given last block.
     *
     * @param lastBlock The last block to be considered the chain head

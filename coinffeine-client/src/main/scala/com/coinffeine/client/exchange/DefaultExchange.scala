@@ -20,15 +20,15 @@ import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 class DefaultExchange[C <: FiatCurrency](
     override val exchangeInfo: ExchangeInfo[C],
     paymentProcessor: ActorRef,
-    sellerCommitmentTx: MutableTransaction,
-    buyerCommitmentTx: MutableTransaction) extends Exchange[C] {
+    sellerCommitmentTx: ImmutableTransaction,
+    buyerCommitmentTx: ImmutableTransaction) extends Exchange[C] {
   this: UserRole =>
 
   private implicit val paymentProcessorTimeout = Timeout(5.seconds)
-  private val sellerFunds = sellerCommitmentTx.getOutput(0)
-  private val buyerFunds = buyerCommitmentTx.getOutput(0)
-  requireValidBuyerFunds(buyerFunds)
+  private val sellerFunds = sellerCommitmentTx.get.getOutput(0)
+  private val buyerFunds = buyerCommitmentTx.get.getOutput(0)
   requireValidSellerFunds(sellerFunds)
+  requireValidBuyerFunds(buyerFunds)
 
   private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
     require(funds.getScriptPubKey.isSentToMultiSig,

@@ -4,12 +4,12 @@ import scala.util.Try
 
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 
 trait Handshake[C <: FiatCurrency] {
   val exchangeInfo: ExchangeInfo[C]
-  val commitmentTransaction: MutableTransaction
-  val refundTransaction: MutableTransaction
+  val commitmentTransaction: ImmutableTransaction
+  val unsignedRefundTransaction: ImmutableTransaction
 
   /** Signs counterpart refundSignature transaction
     *

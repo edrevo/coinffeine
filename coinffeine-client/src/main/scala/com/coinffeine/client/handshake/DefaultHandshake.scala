@@ -19,20 +19,21 @@ abstract class DefaultHandshake[C <: FiatCurrency](
   require(userWallet.hasKey(exchangeInfo.user.bitcoinKey),
     "User wallet does not contain the user's private key")
 
-  override val commitmentTransaction: MutableTransaction =
+  override val commitmentTransaction = ImmutableTransaction(
     TransactionProcessor.createMultiSignedDeposit(
       userWallet, amountToCommit, Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
       exchangeInfo.parameters.network
     )
+  )
 
-  private val committedFunds = commitmentTransaction.getOutput(0)
-  override val refundTransaction: MutableTransaction = {
+  override val unsignedRefundTransaction = {
+    val committedFunds = commitmentTransaction.get.getOutput(0)
     val tx = new MutableTransaction(exchangeInfo.parameters.network)
     tx.setLockTime(exchangeInfo.parameters.lockTime)
     tx.addInput(committedFunds).setSequenceNumber(0)
     tx.addOutput(committedFunds.getValue, exchangeInfo.user.bitcoinKey)
     ensureValidRefundTransaction(tx)
-    tx
+    ImmutableTransaction(tx)
   }
 
   override def signCounterpartRefundTransaction(
@@ -54,7 +55,7 @@ abstract class DefaultHandshake[C <: FiatCurrency](
 
   override def validateRefundSignature(signature: TransactionSignature): Try[Unit] = Try {
     require(TransactionProcessor.isValidSignature(
-      refundTransaction, index = 0, signature, exchangeInfo.counterpart.bitcoinKey,
+      unsignedRefundTransaction.get, index = 0, signature, exchangeInfo.counterpart.bitcoinKey,
       List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey)))
   }
 }

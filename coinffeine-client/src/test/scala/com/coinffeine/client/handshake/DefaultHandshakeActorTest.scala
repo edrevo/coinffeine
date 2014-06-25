@@ -30,8 +30,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     actor ! StartHandshake(handshake, protocolConstants, gateway.ref, blockchain.ref, Set(listener.ref))
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest =
-      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.refundTransaction))
+    val refundSignatureRequest = RefundTxSignatureRequest(exchangeId, handshake.unsignedRefundTransaction)
     shouldForward (refundSignatureRequest) to counterpart
   }
 

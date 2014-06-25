@@ -18,9 +18,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       val signature = sellerHandshake.signHerRefund(buyerHandshake.myUnsignedRefund)
       val signedBuyerRefund = buyerHandshake.signMyRefund(signature).get
       sendToBlockChain(buyerHandshake.myDeposit.get)
-      while(signedBuyerRefund.getLockTime > blockStore.getChainHead.getHeight) {
-        mineBlock()
-      }
+      mineUntilLockTime(exchange.parameters.lockTime)
       sendToBlockChain(signedBuyerRefund)
       balance(buyerWallet) should be (0.1.BTC)
     }

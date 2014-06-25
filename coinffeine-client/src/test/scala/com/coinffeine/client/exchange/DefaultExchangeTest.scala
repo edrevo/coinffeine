@@ -18,7 +18,7 @@ import com.coinffeine.client.handshake.{BuyerHandshake, SellerHandshake}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{MutableTransaction, MutableTransactionOutput}
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
@@ -40,8 +40,8 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   private trait WithExchange extends WithBasicSetup {
-    sendToBlockChain(sellerHandshake.commitmentTransaction)
-    sendToBlockChain(buyerHandshake.commitmentTransaction)
+    sendToBlockChain(sellerHandshake.commitmentTransaction.get)
+    sendToBlockChain(buyerHandshake.commitmentTransaction.get)
     val sellerExchange = new DefaultExchange[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
@@ -59,12 +59,12 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
-    sendToBlockChain(buyerHandshake.commitmentTransaction)
+    sendToBlockChain(buyerHandshake.commitmentTransaction.get)
     sendToBlockChain(invalidFundsCommitment)
     an [IllegalArgumentException] should be thrownBy { new DefaultExchange[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
-      invalidFundsCommitment,
+      ImmutableTransaction(invalidFundsCommitment),
       buyerHandshake.commitmentTransaction) with SellerUser[Currency.Euro.type] }
   }
 
@@ -73,13 +73,13 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
-    sendToBlockChain(sellerHandshake.commitmentTransaction)
+    sendToBlockChain(sellerHandshake.commitmentTransaction.get)
     sendToBlockChain(invalidFundsCommitment)
     an [IllegalArgumentException] should be thrownBy { new DefaultExchange[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
       sellerHandshake.commitmentTransaction,
-      invalidFundsCommitment) with SellerUser[Currency.Euro.type] }
+      ImmutableTransaction(invalidFundsCommitment)) with SellerUser[Currency.Euro.type] }
   }
 
   it should "have a final offer that splits the amount as expected" in new WithExchange {

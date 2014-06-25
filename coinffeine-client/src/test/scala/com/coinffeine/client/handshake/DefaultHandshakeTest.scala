@@ -6,9 +6,10 @@ import com.google.bitcoin.core.VerificationException
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
-import com.coinffeine.client.{SampleExchangeInfo, ExchangeInfo}
+import com.coinffeine.client.{ExchangeInfo, SampleExchangeInfo}
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.bitcoin.MutableTransaction
 
 class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
   val exchangeInfo = sampleExchangeInfo
@@ -30,7 +31,7 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.unsignedRefundTransaction.get)
   }
 
   it should "not be broadcastable if the timelock hasn't expired yet" in {
@@ -40,8 +41,8 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    sendToBlockChain(handshake.commitmentTransaction)
-    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
+    sendToBlockChain(handshake.commitmentTransaction.get)
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.unsignedRefundTransaction.get)
   }
 
   it should "not be broadcastable after the timelock expired if is hasn't been signed" in {
@@ -51,9 +52,9 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
-    a [VerificationException] should be thrownBy sendToBlockChain(handshake.refundTransaction)
+    sendToBlockChain(handshake.commitmentTransaction.get)
+    mineUntilLockTime(exchangeInfo.parameters.lockTime)
+    a [VerificationException] should be thrownBy sendToBlockChain(handshake.unsignedRefundTransaction.get)
   }
 
   it should "be broadcastable after the timelock expired if is has been signed" in {
@@ -64,18 +65,18 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       exchangeInfo,
       commitmentAmount,
       userWallet) {}
-    sendToBlockChain(handshake.commitmentTransaction)
-    (1L to exchangeInfo.parameters.lockTime).foreach(_ => mineBlock())
+    sendToBlockChain(handshake.commitmentTransaction.get)
+    mineUntilLockTime(exchangeInfo.parameters.lockTime)
+    val tx = handshake.unsignedRefundTransaction.get
     val signatures = List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey).map(key =>
-      handshake.refundTransaction.calculateSignature(
+      tx.calculateSignature(
         0,
         key,
-        handshake.commitmentTransaction.getOutput(0).getScriptPubKey,
+        handshake.commitmentTransaction.get.getOutput(0).getScriptPubKey,
         SigHash.ALL,
         false))
-    handshake.refundTransaction.getInput(0)
-      .setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
-    sendToBlockChain(handshake.refundTransaction)
+    tx.getInput(0).setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
+    sendToBlockChain(tx)
     Currency.Bitcoin.fromSatoshi(userWallet.getBalance) should be (initialAmount)
   }
 
@@ -87,37 +88,36 @@ class DefaultHandshakeTest extends BitcoinjTest with SampleExchangeInfo {
       userWallet) {}
 
     val counterpartWallet = createWallet(exchangeInfo.counterpart.bitcoinKey, 5 BTC)
-    val counterpartExchange: ExchangeInfo[Currency.Euro.type] = buyerExchangeInfo
+    val counterpartExchangeInfo: ExchangeInfo[Currency.Euro.type] = buyerExchangeInfo
     val counterpartHandshake = new DefaultHandshake(
-      counterpartExchange,
+      counterpartExchangeInfo,
       3 BTC,
       counterpartWallet) {}
 
-    def signRefund(
-        exchangeInfo: ExchangeInfo[Currency.Euro.type],
-        userHandshake: Handshake[Currency.Euro.type],
-        counterpartHandshake: Handshake[Currency.Euro.type]): Unit = {
+    def signedRefund(exchangeInfo: ExchangeInfo[Currency.Euro.type],
+                     handshake: Handshake[Currency.Euro.type],
+                     counterpartHandshake: Handshake[Currency.Euro.type]): MutableTransaction = {
+      val tx = handshake.unsignedRefundTransaction.get
       val signatures = List(
-        throughWire(counterpartHandshake.signCounterpartRefundTransaction(
-          throughWire(userHandshake.refundTransaction)).get),
-        userHandshake.refundTransaction.calculateSignature(
+        throughWire(counterpartHandshake.signCounterpartRefundTransaction(throughWire(tx)).get),
+        tx.calculateSignature(
           0,
           exchangeInfo.user.bitcoinKey,
-          userHandshake.commitmentTransaction.getOutput(0).getScriptPubKey,
+          handshake.commitmentTransaction.get.getOutput(0).getScriptPubKey,
           SigHash.ALL,
           false))
-      userHandshake.refundTransaction.getInput(0).setScriptSig(
-        ScriptBuilder.createMultiSigInputScript(signatures))
+      tx.getInput(0).setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures))
+      tx
     }
 
-    signRefund(exchangeInfo, userHandshake, counterpartHandshake)
-    signRefund(counterpartExchange, counterpartHandshake, userHandshake)
-
     sendToBlockChain(
-      counterpartHandshake.commitmentTransaction,
-      userHandshake.commitmentTransaction)
-
-    for (_ <- 1L to exchangeInfo.parameters.lockTime) { mineBlock() }
-    sendToBlockChain(counterpartHandshake.refundTransaction, userHandshake.refundTransaction)
+      counterpartHandshake.commitmentTransaction.get,
+      userHandshake.commitmentTransaction.get
+    )
+    mineUntilLockTime(exchangeInfo.parameters.lockTime)
+    sendToBlockChain(
+      signedRefund(exchangeInfo, userHandshake, counterpartHandshake),
+      signedRefund(counterpartExchangeInfo, counterpartHandshake, userHandshake)
+    )
   }
 }

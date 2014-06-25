@@ -19,8 +19,8 @@ import com.coinffeine.common.bitcoin._
 class MockHandshake[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C],
                                        walletFactory: BitcoinAmount => Wallet,
                                        network: Network)  extends Handshake[C] {
-  override val commitmentTransaction = randomTransaction()
-  override val refundTransaction = randomTransaction()
+  override val commitmentTransaction = randomImmutableTransaction()
+  override val unsignedRefundTransaction = randomImmutableTransaction()
   val counterpartCommitmentTransaction = randomTransaction()
   val counterpartRefund = randomTransaction()
   val invalidRefundTransaction = randomTransaction()
@@ -34,6 +34,8 @@ class MockHandshake[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C
 
   override def validateRefundSignature(sig: TransactionSignature) =
     if (sig == refundSignature) Success(()) else Failure(new Error("Invalid signature!"))
+
+  private def randomImmutableTransaction() = ImmutableTransaction(randomTransaction())
 
   private def randomTransaction(): MutableTransaction = {
     val destination = new PublicKey()
