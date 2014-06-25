@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Role, Exchange}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
@@ -15,6 +15,8 @@ object HandshakeActor {
   /** Sent to the actor to start the handshake
     *
     * @constructor
+    * @param exchange         Exchange to start the handshake for
+    * @param role             Which role to take
     * @param handshake        Class that contains the logic to perform the handshake
     * @param constants        Protocol constants
     * @param messageGateway   Communications gateway
@@ -22,7 +24,9 @@ object HandshakeActor {
     * @param resultListeners  Actors to be notified of the handshake result
     */
   case class StartHandshake[C <: FiatCurrency](
-      handshake: Handshake[C],
+      exchange: Exchange[C],
+      role: Role,
+      @deprecated handshake: Handshake[C],
       constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,

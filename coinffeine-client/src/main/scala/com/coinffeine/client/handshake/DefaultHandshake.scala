@@ -4,57 +4,66 @@ import scala.collection.JavaConversions._
 import scala.util.Try
 
 import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.core.TransactionConfidence.ConfidenceType
 import com.google.bitcoin.script.ScriptBuilder
 
 import com.coinffeine.client.ExchangeInfo
-import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
+import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.impl.TransactionProcessor
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
+import com.coinffeine.common.exchange.impl.{TransactionProcessor, UnsignedRefundTransaction}
 
-abstract class DefaultHandshake[C <: FiatCurrency](
-    val exchangeInfo: ExchangeInfo[C],
-    amountToCommit: BitcoinAmount,
-    userWallet: Wallet) extends Handshake[C] {
+class DefaultHandshake[C <: FiatCurrency](
+    exchangeInfo: ExchangeInfo[C], userWallet: Wallet) extends Handshake[C] {
   require(userWallet.hasKey(exchangeInfo.user.bitcoinKey),
     "User wallet does not contain the user's private key")
 
-  override val commitmentTransaction: MutableTransaction =
+  override val exchange = exchangeInfo.exchange
+  override val role = exchangeInfo.role
+
+  override val myDeposit = ImmutableTransaction(
     TransactionProcessor.createMultiSignedDeposit(
-      userWallet, amountToCommit, Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
-      exchangeInfo.parameters.network
+      userWallet,
+      role.myDepositAmount(exchange.amounts),
+      Seq(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey),
+      exchange.parameters.network
     )
+  )
 
-  private val committedFunds = commitmentTransaction.getOutput(0)
-  override val refundTransaction: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.parameters.network)
-    tx.setLockTime(exchangeInfo.parameters.lockTime)
-    tx.addInput(committedFunds).setSequenceNumber(0)
-    tx.addOutput(committedFunds.getValue, exchangeInfo.user.bitcoinKey)
-    ensureValidRefundTransaction(tx)
-    tx
-  }
+  override val myUnsignedRefund = UnsignedRefundTransaction(
+    deposit = myDeposit,
+    outputKey = role.me(exchange).bitcoinKey,
+    outputAmount = role.myRefundAmount(exchange.amounts),
+    lockTime = exchange.parameters.lockTime,
+    network = exchange.parameters.network
+  )
 
-  override def signCounterpartRefundTransaction(
-      counterpartRefundTx: MutableTransaction): Try[TransactionSignature] = Try {
-    ensureValidRefundTransaction(counterpartRefundTx)
+  override def signHerRefund(counterpartRefundTx: ImmutableTransaction): TransactionSignature = {
+    ensureValidRefundTransaction(counterpartRefundTx, role.herRefundAmount(exchange.amounts))
     val connectedPubKeyScript = ScriptBuilder.createMultiSigOutputScript(
       2, List(exchangeInfo.user.bitcoinKey, exchangeInfo.counterpart.bitcoinKey))
-    counterpartRefundTx.calculateSignature(
+    counterpartRefundTx.get.calculateSignature(
       0, exchangeInfo.user.bitcoinKey, connectedPubKeyScript, SigHash.ALL, false)
   }
 
-  private def ensureValidRefundTransaction(refundTx: MutableTransaction) = {
+  private def ensureValidRefundTransaction(tx: ImmutableTransaction,
+                                           expectedAmount: BitcoinAmount) = {
+    def requireProperty(cond: MutableTransaction => Boolean, cause: String): Unit = {
+      if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
+    }
+    def validateAmount(tx: MutableTransaction): Boolean = {
+      val amount = Currency.Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
+      amount == expectedAmount
+    }
     // TODO: Is this enough to ensure we can sign?
-    require(refundTx.isTimeLocked)
-    require(refundTx.getLockTime == exchangeInfo.parameters.lockTime)
-    require(refundTx.getInputs.size == 1)
-    require(refundTx.getConfidence.getConfidenceType == ConfidenceType.UNKNOWN)
+    requireProperty(_.isTimeLocked, "lack a time lock")
+    requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
+    requireProperty(_.getInputs.size == 1, "should have one input")
+    requireProperty(validateAmount, "wrong refund amount")
   }
 
   override def validateRefundSignature(signature: TransactionSignature): Try[Unit] = Try {
     require(TransactionProcessor.isValidSignature(
-      refundTransaction, index = 0, signature, exchangeInfo.counterpart.bitcoinKey,
+      myUnsignedRefund.get, index = 0, signature, exchangeInfo.counterpart.bitcoinKey,
       List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey)))
   }
 }

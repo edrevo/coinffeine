@@ -3,6 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
+import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 private[impl] class DefaultHandshake[C <: FiatCurrency](
    role: Role,

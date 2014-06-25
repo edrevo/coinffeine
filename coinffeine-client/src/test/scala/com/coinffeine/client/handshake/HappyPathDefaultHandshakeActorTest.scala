@@ -47,7 +47,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "reject signature of invalid counterpart refund transactions" in {
     val invalidRequest =
       RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.invalidRefundTransaction))
-    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart.connection))
+    gateway.send(actor, ReceiveMessage(invalidRequest, counterpart))
     gateway.expectNoMsg(100 millis)
   }
 
@@ -64,7 +64,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(
       actor, fromCounterpart(RefundTxSignatureResponse(exchangeId, handshake.refundSignature)))
-    shouldForward (ExchangeCommitment(exchangeId, ImmutableTransaction(handshake.commitmentTransaction))) to broker
+    shouldForward (ExchangeCommitment(exchangeId, handshake.myDeposit)) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {
@@ -75,12 +75,12 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     listener.expectNoMsg(100 millis)
     gateway.send(actor, fromBroker(CommitmentNotification(
       exchangeId,
-      handshake.commitmentTransaction.getHash,
+      handshake.myDeposit.get.getHash,
       handshake.counterpartCommitmentTransaction.getHash
     )))
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
-      WatchTransactionConfirmation(handshake.commitmentTransaction.getHash, confirmations),
+      WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
       WatchTransactionConfirmation(handshake.counterpartCommitmentTransaction.getHash, confirmations)
     )
   }
@@ -88,14 +88,14 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   it should "wait until commitments are confirmed" in {
     listener.expectNoMsg(100 millis)
     for (tx <- Seq(
-      handshake.commitmentTransaction.getHash,
+      handshake.myDeposit.get.getHash,
       handshake.counterpartCommitmentTransaction.getHash
     )) {
       blockchain.send(actor, TransactionConfirmed(tx, 1))
     }
     val result = listener.expectMsgClass(classOf[HandshakeSuccess])
     result.refundSig should be (handshake.refundSignature)
-    result.buyerCommitmentTxId should be (handshake.commitmentTransaction.getHash)
+    result.buyerCommitmentTxId should be (handshake.myDeposit.get.getHash)
     result.sellerCommitmentTxId should be (handshake.counterpartCommitmentTransaction.getHash)
   }
 

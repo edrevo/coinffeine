@@ -2,6 +2,7 @@ package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 class DefaultHandshakeTest extends ExchangeTest {
 
@@ -18,9 +19,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       val signature = sellerHandshake.signHerRefund(buyerHandshake.myUnsignedRefund)
       val signedBuyerRefund = buyerHandshake.signMyRefund(signature).get
       sendToBlockChain(buyerHandshake.myDeposit.get)
-      while(signedBuyerRefund.getLockTime > blockStore.getChainHead.getHeight) {
-        mineBlock()
-      }
+      mineUntilLockTime(exchange.parameters.lockTime)
       sendToBlockChain(signedBuyerRefund)
       balance(buyerWallet) should be (0.1.BTC)
     }
@@ -32,7 +31,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.setLockTime(exchange.parameters.lockTime - 10)
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithWrongLockTime)
       }
     }
@@ -44,7 +43,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.setLockTime(0)
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithNoLockTime)
       }
     }
@@ -56,7 +55,7 @@ class DefaultHandshakeTest extends ExchangeTest {
         tx.clearInputs()
         tx
       }
-      an [sellerHandshake.InvalidRefundTransaction] should be thrownBy {
+      an [InvalidRefundTransaction] should be thrownBy {
         sellerHandshake.signHerRefund(depositWithoutInputs)
       }
     }

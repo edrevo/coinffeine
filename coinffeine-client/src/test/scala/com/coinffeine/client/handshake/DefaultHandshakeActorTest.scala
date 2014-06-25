@@ -19,33 +19,34 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def protocolConstants: ProtocolConstants
 
-  lazy val handshake =
-    new MockHandshake(sampleExchangeInfo, amount => createWallet(new KeyPair, amount), network)
+  lazy val handshake = new MockHandshake(sampleExchangeInfo.exchange, sampleExchangeInfo.role,
+    amount => createWallet(new KeyPair, amount), network)
   val listener = TestProbe()
   val blockchain = TestProbe()
   val actor = system.actorOf(Props[DefaultHandshakeActor[Euro.type]], "handshake-actor")
   listener.watch(actor)
 
-  def givenActorIsInitialized(): Unit =
-    actor ! StartHandshake(handshake, protocolConstants, gateway.ref, blockchain.ref, Set(listener.ref))
+  def givenActorIsInitialized(): Unit = {
+    actor ! StartHandshake(handshake.exchange, handshake.role, handshake, protocolConstants,
+      gateway.ref, blockchain.ref, Set(listener.ref))
+  }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest =
-      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.refundTransaction))
+    val refundSignatureRequest = RefundTxSignatureRequest(exchangeId, handshake.myUnsignedRefund)
     shouldForward (refundSignatureRequest) to counterpart
   }
 
   def shouldSignCounterpartRefund(): Unit = {
     val request =
       RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
-    gateway.send(actor, ReceiveMessage(request, handshake.exchangeInfo.counterpart.connection))
+    gateway.send(actor, ReceiveMessage(request, sampleExchangeInfo.counterpart.connection))
     val refundSignatureRequest =
       RefundTxSignatureResponse(exchangeId, handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart
   }
 
-  override def counterpart = handshake.exchangeInfo.counterpart.connection
-  override def broker = handshake.exchangeInfo.broker.connection
+  override def counterpart = sampleExchangeInfo.counterpart.connection
+  override def broker = handshake.exchange.broker.connection
 
   override protected def resetBlockchainBetweenTests = false
 }

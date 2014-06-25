@@ -5,22 +5,24 @@ import scala.util.{Failure, Random, Success}
 
 import com.google.bitcoin.core.Wallet.SendRequest
 
-import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 /** Create a mock handshake with random transactions.
   *
-  * @param exchangeInfo   Info about the exchange being mocked
+  * @param exchange       Info about the exchange being mocked
   * @param walletFactory  Creates wallets with a minimum balance on demand
   * @param network        Network in which transactions are generated
   */
-class MockHandshake[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C],
+class MockHandshake[C <: FiatCurrency](override val exchange: Exchange[C],
+                                       override val role: Role,
                                        walletFactory: BitcoinAmount => Wallet,
                                        network: Network)  extends Handshake[C] {
-  override val commitmentTransaction = randomTransaction()
-  override val refundTransaction = randomTransaction()
+  override val myDeposit = randomImmutableTransaction()
+  override val myUnsignedRefund = randomImmutableTransaction()
   val counterpartCommitmentTransaction = randomTransaction()
   val counterpartRefund = randomTransaction()
   val invalidRefundTransaction = randomTransaction()
@@ -28,12 +30,14 @@ class MockHandshake[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C
   val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
   val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
 
-  override def signCounterpartRefundTransaction(txToSign: MutableTransaction) =
-    if (txToSign == counterpartRefund) Success(counterpartRefundSignature)
-    else Failure(new Error("Invalid refundSig"))
+  override def signHerRefund(txToSign: ImmutableTransaction) =
+    if (txToSign.get == counterpartRefund) counterpartRefundSignature
+    else throw new InvalidRefundTransaction(txToSign, "Invalid refundSig")
 
   override def validateRefundSignature(sig: TransactionSignature) =
     if (sig == refundSignature) Success(()) else Failure(new Error("Invalid signature!"))
+
+  private def randomImmutableTransaction() = ImmutableTransaction(randomTransaction())
 
   private def randomTransaction(): MutableTransaction = {
     val destination = new PublicKey()

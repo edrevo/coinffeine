@@ -58,8 +58,9 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     fiatAddress = "", initialBalance = Seq.empty))
 
   trait Fixture {
-    val handshake =
-      new MockHandshake(exchangeInfo, amount => createWallet(new KeyPair, amount), network)
+    val handshake = new MockHandshake(
+      exchangeInfo.exchange, exchangeInfo.role, amount => createWallet(new KeyPair, amount), network
+    )
     private def handshakeFactory(exchangeInfo: ExchangeInfo[Euro.type],
                                  wallet: Wallet): Handshake[Euro.type] = handshake
 
@@ -90,7 +91,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(
+      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
@@ -119,7 +120,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val error = new Error("Handshake error")
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(
+      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.!(HandshakeFailure(error))(handshakeActor)
@@ -134,7 +135,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(
+      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
@@ -156,7 +157,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref)
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(
+      queueItem.msg should be (StartHandshake(handshake.exchange, handshake.role,
         handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
