@@ -80,8 +80,8 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     )))
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
-      NotifyWhenConfirmed(handshake.commitmentTransaction.getHash, confirmations),
-      NotifyWhenConfirmed(handshake.counterpartCommitmentTransaction.getHash, confirmations)
+      WatchTransactionConfirmation(handshake.commitmentTransaction.getHash, confirmations),
+      WatchTransactionConfirmation(handshake.counterpartCommitmentTransaction.getHash, confirmations)
     )
   }
 

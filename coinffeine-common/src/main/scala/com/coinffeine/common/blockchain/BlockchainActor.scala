@@ -1,8 +1,7 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
-
-import com.coinffeine.common.bitcoin.{Hash, MutableTransaction}
+import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, PublicKey}
 
 /** A BlockchainActor keeps a blockchain and can:
   *
@@ -11,31 +10,42 @@ import com.coinffeine.common.bitcoin.{Hash, MutableTransaction}
   */
 object BlockchainActor {
 
-  /** The blockchain actor will send either `TransactionConfirmed` or `TransactionRejected`
-    * to whoever sends this message.
+  /** A message sent to the blockchain actor requesting to watch for transactions on the given
+    * public key.
     */
-  case class NotifyWhenConfirmed(transactionHash: Hash, confirmations: Int)
+  case class WatchPublicKey(publicKey: PublicKey)
 
-  /** Sent when the TX reaches the requested number of confirmations. */
+  /** A message sent to the blockchain actor requesting to watch for confirmation of the
+    * given block.
+    *
+    * The blockchain actor will send either `TransactionConfirmed` or `TransactionRejected`
+    * as response.
+    */
+  case class WatchTransactionConfirmation(transactionHash: Hash, confirmations: Int)
+
+  /** A message sent by the blockchain actor to notify that the transaction has reached the
+    * requested number of confirmations. */
   case class TransactionConfirmed(transactionHash: Hash, confirmations: Int)
 
-  /** Sent if the TX becomes invalid (i.e. input funds have been spent otherwise) while
-    * waiting for it to be confirmed.
-    */
+  /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
   case class TransactionRejected(transactionHash: Hash)
 
-  case class PublishTransaction(transaction: MutableTransaction)
-
-  /** The blockchain actor will send either a `TransactionFor` or `TransactionNotFoundWith`
-    * to whoever sends this message.
+  /** A message sent to the blockchain actor to retrieve a transaction from its hash.
+    *
+    * The blockchain actor will send either a `TransactionFound` or `TransactionNotFound`
+    * as response
     */
-  case class GetTransactionFor(hash: Hash)
+  case class RetrieveTransaction(hash: Hash)
 
-  /** Sent if a transaction is found in the blockchain for the given hash */
-  case class TransactionFor(hash: Hash, tx: MutableTransaction)
+  /** A message sent by the blockchain actor to indicate a transaction was found in the blockchain
+    * for the given hash.
+    */
+  case class TransactionFound(hash: Hash, tx: MutableTransaction)
 
-  /** Sent if there is no transaction in the blockchain for the given hash */
-  case class TransactionNotFoundWith(hash: Hash)
+  /** A message sent by the blockchain actor to indicate a transaction was not found in the
+    * blockchain for the given hash.
+    */
+  case class TransactionNotFound(hash: Hash)
 
   trait Component {
     def blockchainActorProps(): Props

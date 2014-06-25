@@ -18,7 +18,7 @@ import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, PeerConnection}
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.blockchain.BlockchainActor.{GetTransactionFor, TransactionFor, TransactionNotFoundWith}
+import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
@@ -95,10 +95,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
     }
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.reply(TransactionFor(dummyTxId, dummyTx))
-    blockchain.reply(TransactionFor(dummyTxId, dummyTx))
+    blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
+    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
 
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
@@ -138,10 +139,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
     }
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.reply(TransactionNotFoundWith(dummyTxId))
-    blockchain.reply(TransactionFor(dummyTxId, dummyTx))
+    blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.reply(TransactionNotFound(dummyTxId))
+    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
 
     val error = new CommitmentTxNotInBlockChain(dummyTxId)
     listener.expectMsg(ExchangeFailure(error))
@@ -159,10 +161,11 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       queueItem.sender should be (actor)
       actor.!(HandshakeSuccess(dummyTxId, dummyTxId, dummySig))(handshakeActor)
     }
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.expectMsg(GetTransactionFor(dummyTxId))
-    blockchain.reply(TransactionFor(dummyTxId, dummyTx))
-    blockchain.reply(TransactionFor(dummyTxId, dummyTx))
+    blockchain.expectMsg(WatchPublicKey(exchangeInfo.counterpart.bitcoinKey))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
+    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
+    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
 
     val error = new Error("exchange failure")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>

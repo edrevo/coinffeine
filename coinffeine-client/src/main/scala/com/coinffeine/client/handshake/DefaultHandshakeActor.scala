@@ -83,7 +83,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     private def getNotifiedByBroker(refundSig: TransactionSignature): Receive = {
       case ReceiveMessage(CommitmentNotification(_, buyerTx, sellerTx), _) =>
         Set(buyerTx, sellerTx).foreach { tx =>
-          blockchain ! NotifyWhenConfirmed(tx, commitmentConfirmations)
+          blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
         }
         log.info("Handshake {}: The broker published {} and {}, waiting for confirmations",
           exchangeInfo.id, buyerTx, sellerTx)
