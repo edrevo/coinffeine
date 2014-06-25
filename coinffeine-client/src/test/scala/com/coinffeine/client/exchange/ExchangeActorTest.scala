@@ -34,12 +34,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
-  private val exchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
+  private val mockExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
       paymentProc: ActorRef,
       tx1: MutableTransaction,
-      tx2: MutableTransaction): Exchange[Euro.type] with BuyerUser[Euro.type] = exchange
+      tx2: MutableTransaction): Exchange[Euro.type] with BuyerUser[Euro.type] = mockExchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
@@ -105,7 +105,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, protocolConstants, gateway.ref, Set(actor)))
+        mockExchange, protocolConstants, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
     }
@@ -172,7 +172,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, protocolConstants, gateway.ref, Set(actor)))
+        mockExchange, protocolConstants, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }

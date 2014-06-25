@@ -1,27 +1,15 @@
 package com.coinffeine.client.handshake
 
-import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import com.coinffeine.common.exchange.impl.{TransactionProcessor, UnsignedRefundTransaction}
 
 class DefaultHandshake[C <: FiatCurrency](
-    exchangeInfo: ExchangeInfo[C], userWallet: Wallet) extends Handshake[C] {
-  require(userWallet.hasKey(exchangeInfo.user.bitcoinKey),
-    "User wallet does not contain the user's private key")
-
-  override val exchange = exchangeInfo.exchange
-  override val role = exchangeInfo.role
-
-  override val myDeposit = ImmutableTransaction(
-    TransactionProcessor.createMultiSignedDeposit(
-      userWallet,
-      role.myDepositAmount(exchange.amounts),
-      Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey),
-      exchange.parameters.network
-    )
-  )
+    override val role: Role,
+    override val exchange: Exchange[C],
+    override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund = UnsignedRefundTransaction(
     deposit = myDeposit,

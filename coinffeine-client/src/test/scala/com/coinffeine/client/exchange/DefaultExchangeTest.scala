@@ -1,7 +1,5 @@
 package com.coinffeine.client.exchange
 
-import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
-
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,11 +13,13 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.SampleExchangeInfo
-import com.coinffeine.client.handshake.DefaultHandshake
+import com.coinffeine.client.handshake.DefaultExchangeProtocol
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
+import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
@@ -29,14 +29,22 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
 
+    val exchangeProtocol = new DefaultExchangeProtocol()
+
     lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
-    lazy val sellerHandshake = new DefaultHandshake(sellerExchangeInfo, sellerWallet)
+    lazy val sellerHandshake = exchangeProtocol.createHandshake(
+      sellerExchangeInfo.exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
+      sellerWallet.getChangeAddress
+    )
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
       sellerExchangeInfo.user.paymentProcessorAccount, Seq(0 EUR)))
 
     lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
-    lazy val buyerHandshake = new DefaultHandshake(buyerExchangeInfo, buyerWallet)
+    lazy val buyerHandshake = exchangeProtocol.createHandshake(
+      buyerExchangeInfo.exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
+      buyerWallet.getChangeAddress
+    )
     val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
       buyerExchangeInfo.user.paymentProcessorAccount, Seq(1000 EUR)))
   }
