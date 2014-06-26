@@ -70,7 +70,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
         case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.forall(newTxs.keySet.contains)) {
-            val exchange = microPaymentChannelFactory(
+            val channel = microPaymentChannelFactory(
               exchangeInfo,
               paymentProcessor,
               newTxs(sellerCommitmentTxId),
@@ -78,7 +78,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
             val microPaymentChannelActorRef = context.actorOf(
               microPaymentChannelActorProps, MicroPaymentChannelActorName)
             microPaymentChannelActorRef ! StartMicroPaymentChannel[C, R](
-              exchange, constants, messageGateway, resultListeners = Set(self))
+              exchange, role, channel, constants, messageGateway, resultListeners = Set(self)
+            )
             context.become(inMicropaymentChannel)
           } else {
             context.become(withReceivedTxs(newTxs))
@@ -112,8 +113,8 @@ object ExchangeActor {
   ) => ProtoMicroPaymentChannel[C] with Role
 
   case class StartExchange[C <: FiatCurrency](
-    role: Role,
     exchange: Exchange[C],
+    role: Role,
     exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
     paymentProcessor: ActorRef,

@@ -30,7 +30,8 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(
+      exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = Exchange.Id("other-id")
     val relevantOfferAccepted = StepSignatures(exchangeId, 5, dummySig, dummySig)

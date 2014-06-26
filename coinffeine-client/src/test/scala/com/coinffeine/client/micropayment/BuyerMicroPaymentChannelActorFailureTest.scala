@@ -11,8 +11,8 @@ import com.coinffeine.client.exchange.{BuyerUser, MockProtoMicroPaymentChannel}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.MicroPaymentChannel.{StepSignatures => Signatures}
 import com.coinffeine.common.bitcoin.TransactionSignature
+import com.coinffeine.common.exchange.MicroPaymentChannel.{StepSignatures => Signatures}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
@@ -33,14 +33,16 @@ class BuyerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("buy
 
   "The buyer exchange actor" should "return a failure message if the seller does not provide the" +
     " step signature within the specified timeout" in new Fixture{
-      actor ! StartMicroPaymentChannel(mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+      actor ! StartMicroPaymentChannel(
+        exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
       val failure = listener.expectMsgClass(classOf[ExchangeFailure])
       failure.lastOffer should be (None)
       failure.cause.isInstanceOf[TimeoutException] should be (true)
   }
 
   it should "return the last signed offer when a timeout happens" in new Fixture{
-    actor ! StartMicroPaymentChannel(mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(
+      exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
     actor ! fromCounterpart(StepSignatures(exchangeInfo.id, 1, dummySig, dummySig))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be (Some(mockExchange.getSignedOffer(1, Signatures(dummySig, dummySig))))
@@ -55,7 +57,8 @@ class BuyerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("buy
           signature0: TransactionSignature,
           signature1: TransactionSignature): Try[Unit] = Failure(error)
     }
-    actor ! StartMicroPaymentChannel(rejectingExchange, protocolConstants, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(
+      exchange, exchangeInfo.role, rejectingExchange, protocolConstants, gateway.ref, Set(listener.ref))
     actor ! fromCounterpart(StepSignatures(exchangeInfo.id, 1, dummySig, dummySig))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be (None)

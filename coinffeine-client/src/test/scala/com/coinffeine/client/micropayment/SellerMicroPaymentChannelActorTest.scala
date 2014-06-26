@@ -31,7 +31,8 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
   listener.watch(actor)
 
-  actor ! StartMicroPaymentChannel(mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+  actor ! StartMicroPaymentChannel(
+    exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

@@ -34,28 +34,29 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     import init._
     import init.constants.exchangeSignatureTimeout
 
-    private val exchangeInfo = exchange.exchangeInfo
-    private val forwarding = new MessageForwarding(
-      messageGateway, exchangeInfo.counterpart.connection, exchangeInfo.broker.connection)
-    private val finalStep = exchangeInfo.parameters.breakdown.totalSteps
+    private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val finalStep = exchange.parameters.breakdown.totalSteps
 
     private var lastSignedOffer: Option[MutableTransaction] = None
 
     def startExchange(): Unit = {
       subscribeToMessages()
       context.become(waitForNextStepSignature(1))
-      log.info(s"Exchange ${exchangeInfo.id}: Exchange started")
+      log.info(s"Exchange ${exchange.id}: Exchange started")
     }
 
-    private def subscribeToMessages(): Unit = messageGateway ! Subscribe {
-      case ReceiveMessage(StepSignatures(exchangeInfo.`id`, _, _, _), exchangeInfo.counterpart.`connection`) => true
-      case _ => false
+    private def subscribeToMessages(): Unit = {
+      val counterpart = role.her(exchange).connection
+      messageGateway ! Subscribe {
+        case ReceiveMessage(StepSignatures(exchange.`id`, _, _, _), `counterpart`) => true
+        case _ => false
+      }
     }
 
     private def handleTimeout(step: Int): Receive= {
       case StepSignatureTimeout =>
         val errorMsg = s"Timed out waiting for the seller to provide the signature for step $step" +
-          s" (out of ${exchangeInfo.parameters.breakdown.intermediateSteps}})"
+          s" (out of ${exchange.parameters.breakdown.intermediateSteps}})"
         log.warning(errorMsg)
         finishWith(ExchangeFailure(
           TimeoutException(errorMsg),
@@ -84,9 +85,9 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private val waitForFinalSignature: Receive = withStepTimeout(finalStep) {
-      waitForValidSignature(finalStep, exchange.validateSellersFinalSignature) {
+      waitForValidSignature(finalStep, channel.validateSellersFinalSignature) {
         (signature0, signature1) =>
-          log.info(s"Exchange ${exchangeInfo.id}: exchange finished with success")
+          log.info(s"Exchange ${exchange.id}: exchange finished with success")
           // TODO: Publish transaction to blockchain
           finishWith(ExchangeSuccess)
       }
@@ -98,18 +99,18 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private def waitForNextStepSignature(step: Int): Receive = withStepTimeout(step) {
-      waitForValidSignature(step, exchange.validateSellersSignature(step, _, _)) {
+      waitForValidSignature(step, channel.validateSellersSignature(step, _, _)) {
         (signature0, signature1) =>
           import context.dispatcher
-          lastSignedOffer = Some(exchange.getSignedOffer(step, Signatures(signature0, signature1)))
+          lastSignedOffer = Some(channel.getSignedOffer(step, Signatures(signature0, signature1)))
           forwarding.forwardToCounterpart(
-            exchange.pay(step).map(payment => PaymentProof(exchangeInfo.id, payment.id)))
+            channel.pay(step).map(payment => PaymentProof(exchange.id, payment.id)))
           context.become(nextWait(step))
       }
     }
 
     private def nextWait(step: Int): Receive =
-      if (step == exchangeInfo.parameters.breakdown.intermediateSteps) waitForFinalSignature
+      if (step == exchange.parameters.breakdown.intermediateSteps) waitForFinalSignature
       else waitForNextStepSignature(step + 1)
   }
 }
