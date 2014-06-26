@@ -5,7 +5,6 @@ import scala.util.{Failure, Try}
 import akka.actor._
 
 import com.coinffeine.client.MessageForwarding
-import com.coinffeine.client.exchange.SellerUser
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
@@ -20,10 +19,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
   extends Actor with ActorLogging with Stash with StepTimeout {
 
   override def receive: Receive = {
-    case init: StartMicroPaymentChannel[C, SellerUser[C]] => new InitializedSellerExchange(init)
+    case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init)
   }
 
-  private class InitializedSellerExchange(init: StartMicroPaymentChannel[C, SellerUser[C]]) {
+  private class InitializedSellerExchange(init: StartMicroPaymentChannel[C]) {
     import init._
     import init.constants.exchangePaymentProofTimeout
 

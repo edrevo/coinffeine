@@ -13,11 +13,11 @@ import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
-class ExchangeActor[C <: FiatCurrency, R <: UserRole](
+class ExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,
     microPaymentChannelActorProps: Props,
     handshakeFactory: HandshakeFactory[C],
-    microPaymentChannelFactory: MicropaymentChannelFactory[C, R],
+    microPaymentChannelFactory: MicropaymentChannelFactory[C],
     constants: ProtocolConstants,
     resultListeners: Set[ActorRef]) extends Actor with ActorLogging {
 
@@ -77,7 +77,7 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
               newTxs(buyerCommitmentTxId))
             val microPaymentChannelActorRef = context.actorOf(
               microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            microPaymentChannelActorRef ! StartMicroPaymentChannel[C, R](
+            microPaymentChannelActorRef ! StartMicroPaymentChannel[C](
               exchange, role, channel, constants, messageGateway, resultListeners = Set(self)
             )
             context.become(inMicropaymentChannel)
@@ -105,12 +105,12 @@ object ExchangeActor {
   val MicroPaymentChannelActorName = "exchange"
 
   type HandshakeFactory[C <: FiatCurrency] = (Exchange[C], Role, Wallet) => Handshake[C]
-  type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
+  type MicropaymentChannelFactory[C <: FiatCurrency] = (
     ExchangeInfo[C],
     ActorRef,
     MutableTransaction, // sellerCommitmentTx
     MutableTransaction // buyerCommitmentTx
-  ) => ProtoMicroPaymentChannel[C] with Role
+  ) => ProtoMicroPaymentChannel[C]
 
   case class StartExchange[C <: FiatCurrency](
     exchange: Exchange[C],

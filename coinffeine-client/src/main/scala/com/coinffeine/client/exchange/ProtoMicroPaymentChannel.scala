@@ -10,10 +10,6 @@ import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.paymentprocessor.AnyPayment
 
 trait ProtoMicroPaymentChannel[C <: FiatCurrency] {
-  this: UserRole =>
-
-  val exchangeInfo: ExchangeInfo[C]
-
   /** Returns the bitcoin transaction that corresponds with the offer for the passed in step */
   def getOffer(step: Int): MutableTransaction
 

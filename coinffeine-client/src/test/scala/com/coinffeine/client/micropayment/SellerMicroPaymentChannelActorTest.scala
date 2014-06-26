@@ -8,7 +8,7 @@ import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, SellerUser}
+import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
@@ -25,7 +25,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with SellerUser[Euro.type]
+  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo)
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")

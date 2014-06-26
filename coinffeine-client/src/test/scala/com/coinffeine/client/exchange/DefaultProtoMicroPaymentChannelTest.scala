@@ -47,19 +47,21 @@ class DefaultProtoMicroPaymentChannelTest
       buyerExchangeInfo.user.paymentProcessorAccount, Seq(1000 EUR)))
   }
 
-  private trait WithExchange extends WithBasicSetup {
+  private trait WithChannels extends WithBasicSetup {
     sendToBlockChain(sellerHandshake.myDeposit.get)
     sendToBlockChain(buyerHandshake.myDeposit.get)
-    val sellerExchange = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
-      sellerExchangeInfo,
+    val sellerChannel = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
+      exchange,
+      SellerRole,
       sellerPaymentProc,
       sellerHandshake.myDeposit,
-      buyerHandshake.myDeposit) with SellerUser[Currency.Euro.type]
-    val buyerExchange = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
-      buyerExchangeInfo,
+      buyerHandshake.myDeposit)
+    val buyerChannel = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
+      exchange,
+      BuyerRole,
       buyerPaymentProc,
       sellerHandshake.myDeposit,
-      buyerHandshake.myDeposit) with BuyerUser[Currency.Euro.type]
+      buyerHandshake.myDeposit)
   }
 
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
@@ -69,11 +71,15 @@ class DefaultProtoMicroPaymentChannelTest
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
     sendToBlockChain(buyerHandshake.myDeposit.get)
     sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy { new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
-      sellerExchangeInfo,
-      sellerPaymentProc,
-      ImmutableTransaction(invalidFundsCommitment),
-      buyerHandshake.myDeposit) with SellerUser[Currency.Euro.type] }
+    an [IllegalArgumentException] should be thrownBy {
+      new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
+        exchange,
+        SellerRole,
+        sellerPaymentProc,
+        ImmutableTransaction(invalidFundsCommitment),
+        buyerHandshake.myDeposit
+      )
+    }
   }
 
   it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
@@ -83,24 +89,28 @@ class DefaultProtoMicroPaymentChannelTest
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
     sendToBlockChain(sellerHandshake.myDeposit.get)
     sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy { new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
-      sellerExchangeInfo,
-      sellerPaymentProc,
-      sellerHandshake.myDeposit,
-      ImmutableTransaction(invalidFundsCommitment)) with SellerUser[Currency.Euro.type] }
+    an [IllegalArgumentException] should be thrownBy {
+      new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
+        exchange,
+        SellerRole,
+        sellerPaymentProc,
+        sellerHandshake.myDeposit,
+        ImmutableTransaction(invalidFundsCommitment)
+      )
+    }
   }
 
-  it should "have a final offer that splits the amount as expected" in new WithExchange {
-    val finalOffer = sellerExchange.finalOffer
+  it should "have a final offer that splits the amount as expected" in new WithChannels {
+    val finalOffer = sellerChannel.finalOffer
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (addAmounts(finalOffer.getOutputs))
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
 
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 0, buyerExchange.finalSignatures.buyerDepositSignature, sellerExchange.finalSignatures.buyerDepositSignature)
+      finalOffer, index = 0, buyerChannel.finalSignatures.buyerDepositSignature, sellerChannel.finalSignatures.buyerDepositSignature)
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 1, buyerExchange.finalSignatures.sellerDepositSignature, sellerExchange.finalSignatures.sellerDepositSignature)
+      finalOffer, index = 1, buyerChannel.finalSignatures.sellerDepositSignature, sellerChannel.finalSignatures.sellerDepositSignature)
     sendToBlockChain(finalOffer)
 
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
@@ -109,26 +119,26 @@ class DefaultProtoMicroPaymentChannelTest
       5.BTC + sellerExchangeInfo.parameters.bitcoinAmount)
   }
 
-  it should "validate the seller's final signature" in new WithExchange {
-    val StepSignatures(signature0, signature1) = sellerExchange.finalSignatures
-    buyerExchange.validateSellersFinalSignature(signature0, signature1) should be ('success)
-    sellerExchange.validateSellersFinalSignature(signature0, signature1) should be ('success)
-    buyerExchange.validateSellersFinalSignature(signature1, signature0) should be ('failure)
+  it should "validate the seller's final signature" in new WithChannels {
+    val StepSignatures(signature0, signature1) = sellerChannel.finalSignatures
+    buyerChannel.validateSellersFinalSignature(signature0, signature1) should be ('success)
+    sellerChannel.validateSellersFinalSignature(signature0, signature1) should be ('success)
+    buyerChannel.validateSellersFinalSignature(signature1, signature0) should be ('failure)
 
-    val StepSignatures(buyerSignature0, buyerSignature1) = buyerExchange.finalSignatures
-    buyerExchange.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
-    sellerExchange.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
+    val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.finalSignatures
+    buyerChannel.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
+    sellerChannel.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
   }
 
   for (step <- 1 to sampleExchangeInfo.parameters.breakdown.intermediateSteps) {
-    it should s"have an intermediate offer $step that splits the amount as expected" in new WithExchange {
-      val stepOffer = sellerExchange.getOffer(step)
+    it should s"have an intermediate offer $step that splits the amount as expected" in new WithChannels {
+      val stepOffer = sellerChannel.getOffer(step)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
         be (addAmounts(stepOffer.getOutputs) + (sellerExchangeInfo.btcStepAmount * 3))
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
         be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
 
-      sendToBlockChain(buyerExchange.getSignedOffer(step, sellerExchange.signStep(step)))
+      sendToBlockChain(buyerChannel.getSignedOffer(step, sellerChannel.signStep(step)))
 
       val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
@@ -136,21 +146,21 @@ class DefaultProtoMicroPaymentChannelTest
       Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (expectedBuyerBalance)
     }
 
-    it should s"validate the seller's signatures correctly for step $step" in new WithExchange {
-      val StepSignatures(signature0, signature1) = sellerExchange.signStep(step)
-      buyerExchange.validateSellersSignature(step, signature0, signature1) should be ('success)
-      sellerExchange.validateSellersSignature(step, signature0, signature1) should be ('success)
-      buyerExchange.validateSellersSignature(step, signature1, signature0) should be ('failure)
-      val StepSignatures(buyerSignature0, buyerSignature1) = buyerExchange.signStep(step)
-      buyerExchange.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
-      sellerExchange.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
+    it should s"validate the seller's signatures correctly for step $step" in new WithChannels {
+      val StepSignatures(signature0, signature1) = sellerChannel.signStep(step)
+      buyerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)
+      sellerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)
+      buyerChannel.validateSellersSignature(step, signature1, signature0) should be ('failure)
+      val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.signStep(step)
+      buyerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
+      sellerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
     }
 
-    it should s"validate payments for step $step" in new WithExchange {
+    it should s"validate payments for step $step" in new WithChannels {
       for (currentStep <- 1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps) {
         val validation = for {
-          payment <- buyerExchange.pay(currentStep)
-          _ <- sellerExchange.validatePayment(step, payment.id)
+          payment <- buyerChannel.pay(currentStep)
+          _ <- sellerChannel.validatePayment(step, payment.id)
         } yield ()
         if (currentStep == step)
           validation.futureValue should be (())
@@ -162,13 +172,13 @@ class DefaultProtoMicroPaymentChannelTest
     }
   }
 
-  it should "transfer the expected fiat amount" in new WithExchange {
+  it should "transfer the expected fiat amount" in new WithChannels {
     val balances = for {
         prevBuyerBalance <- buyerPaymentProc.ask(
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
         prevSellerBalance <- sellerPaymentProc.ask(
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-        payments <- Future.traverse(1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps)(buyerExchange.pay)
+        payments <- Future.traverse(1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps)(buyerChannel.pay)
         afterBuyerBalance <- buyerPaymentProc.ask(
           PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
         afterSellerBalance <- sellerPaymentProc.ask(

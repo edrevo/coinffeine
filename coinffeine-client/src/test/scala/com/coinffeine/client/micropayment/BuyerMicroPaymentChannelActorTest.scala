@@ -6,7 +6,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{BuyerUser, MockProtoMicroPaymentChannel}
+import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
@@ -21,7 +21,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   val listener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants()
-  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type]
+  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo)
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")

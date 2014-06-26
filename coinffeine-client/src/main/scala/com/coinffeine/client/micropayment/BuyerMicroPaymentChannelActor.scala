@@ -5,7 +5,6 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 
 import com.coinffeine.client.MessageForwarding
-import com.coinffeine.client.exchange.BuyerUser
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
@@ -26,11 +25,11 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
   override def postStop(): Unit = stepTimers.foreach(_.cancel())
 
   override def receive: Receive = {
-    case init: StartMicroPaymentChannel[C, BuyerUser[C]] =>
+    case init: StartMicroPaymentChannel[C] =>
       new InitializedBuyer(init).startExchange()
   }
 
-  private class InitializedBuyer(init: StartMicroPaymentChannel[C, BuyerUser[C]]) {
+  private class InitializedBuyer(init: StartMicroPaymentChannel[C]) {
     import init._
     import init.constants.exchangeSignatureTimeout
 

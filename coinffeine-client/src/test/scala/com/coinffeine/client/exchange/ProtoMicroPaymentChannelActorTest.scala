@@ -34,12 +34,12 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
-  private val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type]
+  private val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo)
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
       paymentProc: ActorRef,
       tx1: MutableTransaction,
-      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] with BuyerUser[Euro.type] = mockExchange
+      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] = mockExchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
@@ -64,7 +64,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     val listener = TestProbe()
     val blockchain = TestProbe()
     val actor = system.actorOf(
-      Props(new ExchangeActor[Euro.type, BuyerUser[Euro.type]](
+      Props(new ExchangeActor[Euro.type](
         handshakeProps,
         exchangeProps,
         (_, _, _) => handshake,

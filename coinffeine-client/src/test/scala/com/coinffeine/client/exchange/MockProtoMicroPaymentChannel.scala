@@ -11,8 +11,7 @@ import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.paymentprocessor.Payment
 
-class MockProtoMicroPaymentChannel[C <: FiatCurrency](override val exchangeInfo: ExchangeInfo[C]) extends ProtoMicroPaymentChannel[C] {
-  this: UserRole =>
+class MockProtoMicroPaymentChannel[C <: FiatCurrency](exchangeInfo: ExchangeInfo[C]) extends ProtoMicroPaymentChannel[C] {
 
   private val offers = (1 to exchangeInfo.parameters.breakdown.intermediateSteps).map(idx => {
     val tx = new MutableTransaction(exchangeInfo.parameters.network)
