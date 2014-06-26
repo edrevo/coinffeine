@@ -89,7 +89,7 @@ class DefaultProtoMicroPaymentChannelTest
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (addAmounts(finalOffer.getOutputs))
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
-      be (exchange.parameters.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
+      be (exchange.amounts.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
 
     TransactionProcessor.setMultipleSignatures(
       finalOffer, index = 0, buyerChannel.finalSignatures.buyerDepositSignature,
@@ -100,9 +100,9 @@ class DefaultProtoMicroPaymentChannelTest
     sendToBlockChain(finalOffer)
 
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
-      200.BTC - exchange.parameters.bitcoinAmount)
+      200.BTC - exchange.amounts.bitcoinAmount)
     Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (
-      5.BTC + exchange.parameters.bitcoinAmount)
+      5.BTC + exchange.amounts.bitcoinAmount)
   }
 
   it should "validate the seller's final signature" in new WithChannels {
@@ -122,7 +122,7 @@ class DefaultProtoMicroPaymentChannelTest
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
         be (addAmounts(stepOffer.getOutputs) + (exchange.amounts.stepFiatAmount * 3))
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
-        be (exchange.parameters.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
+        be (exchange.amounts.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
 
       sendToBlockChain(buyerChannel.getSignedOffer(step, sellerChannel.signStep(step)))
 
