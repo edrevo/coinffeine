@@ -1,11 +1,8 @@
 package com.coinffeine.client.exchange
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits._
 import scala.util.Try
 
 import akka.actor.ActorRef
-import akka.pattern._
 
 import com.coinffeine.client.MultiSigInfo
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
@@ -83,24 +80,6 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
       signature0,
       signature1,
       s"The provided signature is invalid for the offer in step $step")
-
-  override def validatePayment(step: Int, paymentId: String): Future[Unit] = {
-    for {
-      found <- paymentProcessor.ask(
-        PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentProcessor.PaymentFound[_]]
-    } yield {
-      val payment = found.payment
-      require(payment.amount == exchange.amounts.stepFiatAmount,
-        "Payment amount does not match expected amount")
-      require(payment.receiverId == exchange.seller.paymentProcessorAccount,
-        "Payment is not being sent to the seller")
-      require(payment.senderId == exchange.buyer.paymentProcessorAccount,
-        "Payment is not coming from the buyer")
-      require(payment.description == getPaymentDescription(step),
-        "Payment does not have the required description")
-      ()
-    }
-  }
 
   override def validateSellersFinalSignature(
       signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit] =

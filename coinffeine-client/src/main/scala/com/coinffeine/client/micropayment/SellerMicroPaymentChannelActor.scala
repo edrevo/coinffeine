@@ -1,22 +1,30 @@
 package com.coinffeine.client.micropayment
 
+import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 import akka.actor._
+import akka.pattern._
 
 import com.coinffeine.client.MessageForwarding
+import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import com.coinffeine.common.paymentprocessor.PaymentProcessor.PaymentFound
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
+import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.FiatAmount
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
 class SellerMicroPaymentChannelActor[C <: FiatCurrency]
   extends Actor with ActorLogging with Stash with StepTimeout {
+
+  import context.dispatcher
 
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init)
@@ -46,8 +54,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       {
         case ReceiveMessage(PaymentProof(_, paymentId), _) =>
           cancelTimeout()
-          import context.dispatcher
-          channel.validatePayment(step, paymentId).onComplete { tryResult =>
+          validatePayment(step, paymentId).onComplete { tryResult =>
             self ! PaymentValidationResult(tryResult)
           }
           context.become(waitForPaymentValidation(paymentId, step))
@@ -94,6 +101,23 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
     private def finishWith(result: Any): Unit = {
       resultListeners.foreach { _ ! result }
       context.stop(self)
+    }
+
+    private def validatePayment(step: Int, paymentId: String): Future[Unit] = {
+      implicit val timeout = PaymentProcessor.RequestTimeout
+      for {
+        PaymentFound(payment) <- paymentProcessor
+          .ask(PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentFound[C]]
+      } yield {
+        require(payment.amount == exchange.amounts.stepFiatAmount,
+          s"Payment $step amount does not match expected amount")
+        require(payment.receiverId == exchange.seller.paymentProcessorAccount,
+          s"Payment $step is not being sent to the seller")
+        require(payment.senderId == exchange.buyer.paymentProcessorAccount,
+          s"Payment $step is not coming from the buyer")
+        require(payment.description == PaymentDescription(exchange.id, step),
+          s"Payment $step does not have the required description")
+      }
     }
   }
 }

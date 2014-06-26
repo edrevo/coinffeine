@@ -5,14 +5,17 @@ import scala.language.postfixOps
 
 import akka.actor.Props
 import akka.testkit.TestProbe
+import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
+import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, PaymentDescription}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.paymentprocessor.Payment
+import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
@@ -60,13 +63,16 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+    expectPayment(1)
     shouldForward(StepSignatures(exchangeInfo.id, 2, mockExchange.signStep(2).toTuple)) to counterpart
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+    expectPayment(2)
     for (i <- 3 to exchangeInfo.parameters.breakdown.intermediateSteps) {
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+      expectPayment(i)
       shouldForward(StepSignatures(exchangeInfo.id, i, mockExchange.signStep(i).toTuple)) to counterpart
     }
   }
@@ -78,5 +84,17 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send a notification to the listeners once the exchange has finished" in {
     listener.expectMsg(ExchangeSuccess)
+  }
+
+  private def expectPayment(step: Int): Unit = {
+    val FindPayment(paymentId) = paymentProcessor.expectMsgClass(classOf[FindPayment])
+    paymentProcessor.reply(PaymentFound(Payment(
+      id = paymentId,
+      senderId = exchange.buyer.paymentProcessorAccount,
+      receiverId = exchange.seller.paymentProcessorAccount,
+      description = PaymentDescription(exchange.id, step),
+      amount = exchange.amounts.stepFiatAmount,
+      date = DateTime.now()
+    )))
   }
 }
