@@ -8,7 +8,6 @@ import akka.util.{Timeout => AkkaTimeout}
 import com.google.bitcoin.core.Transaction.SigHash
 
 import com.coinffeine.client.SampleExchangeInfo
-import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
@@ -28,17 +27,12 @@ class DefaultProtoMicroPaymentChannelTest
       sellerExchangeInfo.exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
       sellerWallet.getChangeAddress
     )
-    val paymentProcFactory = new MockPaymentProcessorFactory()
-    val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
-      sellerExchangeInfo.user.paymentProcessorAccount, Seq(0 EUR)))
 
     lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
     lazy val buyerHandshake = exchangeProtocol.createHandshake(
       buyerExchangeInfo.exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
       buyerWallet.getChangeAddress
     )
-    val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
-      buyerExchangeInfo.user.paymentProcessorAccount, Seq(1000 EUR)))
   }
 
   private trait WithChannels extends WithBasicSetup {
@@ -47,13 +41,11 @@ class DefaultProtoMicroPaymentChannelTest
     val sellerChannel = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       exchange,
       SellerRole,
-      sellerPaymentProc,
       sellerHandshake.myDeposit,
       buyerHandshake.myDeposit)
     val buyerChannel = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       exchange,
       BuyerRole,
-      buyerPaymentProc,
       sellerHandshake.myDeposit,
       buyerHandshake.myDeposit)
   }
@@ -69,7 +61,6 @@ class DefaultProtoMicroPaymentChannelTest
       new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
         exchange,
         SellerRole,
-        sellerPaymentProc,
         ImmutableTransaction(invalidFundsCommitment),
         buyerHandshake.myDeposit
       )
@@ -87,7 +78,6 @@ class DefaultProtoMicroPaymentChannelTest
       new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
         exchange,
         SellerRole,
-        sellerPaymentProc,
         sellerHandshake.myDeposit,
         ImmutableTransaction(invalidFundsCommitment)
       )

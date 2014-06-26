@@ -2,8 +2,6 @@ package com.coinffeine.client.exchange
 
 import scala.util.Try
 
-import akka.actor.ActorRef
-
 import com.coinffeine.client.MultiSigInfo
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin._
@@ -15,7 +13,6 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
 class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
     exchange: Exchange[C],
     role: Role,
-    paymentProcessor: ActorRef,
     sellerCommitmentTx: ImmutableTransaction,
     buyerCommitmentTx: ImmutableTransaction) extends ProtoMicroPaymentChannel[C] {
 
@@ -98,8 +95,6 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
         TransactionProcessor.signMultiSignedOutput(offer, 1, key, requiredSignatures)
     )
   }
-
-  private def getPaymentDescription(step: Int) = PaymentDescription(exchange.id, step)
 
   private def validateSellersSignature(
       tx: MutableTransaction,
