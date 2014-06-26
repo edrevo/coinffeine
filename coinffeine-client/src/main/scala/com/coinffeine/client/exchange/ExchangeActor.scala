@@ -2,15 +2,16 @@ package com.coinffeine.client.exchange
 
 import akka.actor._
 
+import com.coinffeine.common
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.handshake.Handshake
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Role
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency, R <: UserRole](
@@ -35,10 +36,10 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
       // We have to watch the counterpart public key to be aware of its deposit tx
       blockchain ! WatchPublicKey(exchangeInfo.counterpart.bitcoinKey)
 
-      val handshake = handshakeFactory(exchangeInfo, userWallet)
+      val handshake = handshakeFactory(init.exchange, exchangeInfo.role, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        handshake.exchange,
-        handshake.role,
+        exchange,
+        role,
         handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
       context.become(inHandshake)
     }
@@ -54,7 +55,8 @@ class ExchangeActor[C <: FiatCurrency, R <: UserRole](
     }
 
     private val inHandshake: Receive = {
-      case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTxSig) =>
+      case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTx) =>
+        // TODO: next step for refundTx
         context.child(HandshakeActorName).map(context.stop)
         blockchain ! RetrieveTransaction(sellerCommitmentTxId)
         blockchain ! RetrieveTransaction(buyerCommitmentTxId)
@@ -102,7 +104,7 @@ object ExchangeActor {
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
 
-  type HandshakeFactory[C <: FiatCurrency] = (ExchangeInfo[C], Wallet) => Handshake[C]
+  type HandshakeFactory[C <: FiatCurrency] = (common.exchange.Exchange[C], Role, Wallet) => common.exchange.Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
     ExchangeInfo[C],
     ActorRef,
@@ -111,6 +113,8 @@ object ExchangeActor {
   ) => Exchange[C] with Role
 
   case class StartExchange[C <: FiatCurrency](
+    role: Role,
+    exchange: common.exchange.Exchange[C],
     exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
     paymentProcessor: ActorRef,

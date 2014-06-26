@@ -13,7 +13,6 @@ import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange._
 
-
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
@@ -40,7 +39,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
     forwarding.forwardToCounterpart(StepSignatures(
       exchangeInfo.id,
       1,
-      exchange.signStep(1)))
+      exchange.signStep(1).toTuple))
     context.become(waitForPaymentProof(1))
 
     private def waitForPaymentProof(step: Int): Receive = {
@@ -79,7 +78,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
         nextStep,
-        exchange.signStep(currentStep)))
+        exchange.signStep(currentStep).toTuple))
       context.become(waitForPaymentProof(nextStep))
     }
 
@@ -88,7 +87,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchangeInfo.id,
         exchangeInfo.parameters.breakdown.totalSteps,
-        exchange.finalSignature))
+        exchange.finalSignatures.toTuple))
       finishWith(ExchangeSuccess)
     }
 

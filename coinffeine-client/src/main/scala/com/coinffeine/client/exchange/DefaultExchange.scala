@@ -8,12 +8,11 @@ import scala.util.Try
 import akka.actor.ActorRef
 import akka.pattern._
 import akka.util.Timeout
-import com.google.bitcoin.core.Transaction.SigHash
 
 import com.coinffeine.client.{ExchangeInfo, MultiSigInfo}
-import com.coinffeine.common.{Currency, FiatCurrency}
-import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
@@ -23,6 +22,8 @@ class DefaultExchange[C <: FiatCurrency](
     sellerCommitmentTx: ImmutableTransaction,
     buyerCommitmentTx: ImmutableTransaction) extends Exchange[C] {
   this: UserRole =>
+
+  import com.coinffeine.client.exchange.DefaultExchange._
 
   private implicit val paymentProcessorTimeout = Timeout(5.seconds)
   private val sellerFunds = sellerCommitmentTx.get.getOutput(0)
@@ -61,16 +62,22 @@ class DefaultExchange[C <: FiatCurrency](
       getPaymentDescription(step))).mapTo[PaymentProcessor.Paid[C]]
   } yield paid.payment
 
-  override def getOffer(step: Int): MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.parameters.network)
-    tx.addInput(sellerFunds)
-    tx.addInput(buyerFunds)
-    tx.addOutput((exchangeInfo.btcStepAmount * step).asSatoshi, buyersKey)
-    tx.addOutput(
-      (exchangeInfo.parameters.bitcoinAmount - (exchangeInfo.btcStepAmount * step)).asSatoshi,
-      sellersKey)
-    tx
-  }
+  override def getOffer(step: Int): MutableTransaction = getOffer(
+    buyerAmount = exchangeInfo.btcStepAmount * step,
+    sellerAmount = exchangeInfo.parameters.bitcoinAmount - exchangeInfo.btcStepAmount * step
+  )
+
+  override def finalOffer: MutableTransaction = getOffer(
+    buyerAmount = exchangeInfo.parameters.bitcoinAmount + exchangeInfo.btcStepAmount * 2,
+    sellerAmount = exchangeInfo.btcStepAmount
+  )
+
+  private def getOffer(buyerAmount: BitcoinAmount, sellerAmount: BitcoinAmount): MutableTransaction =
+    TransactionProcessor.createUnsignedTransaction(
+      inputs = Seq(buyerFunds, sellerFunds),
+      outputs = Seq(buyersKey -> buyerAmount, sellersKey -> sellerAmount),
+      network = exchangeInfo.parameters.network
+    )
 
   override def validateSellersSignature(
       step: Int,
@@ -81,17 +88,6 @@ class DefaultExchange[C <: FiatCurrency](
       signature0,
       signature1,
       s"The provided signature is invalid for the offer in step $step")
-
-  override def finalOffer: MutableTransaction = {
-    val tx = new MutableTransaction(exchangeInfo.parameters.network)
-    tx.addInput(sellerFunds)
-    tx.addInput(buyerFunds)
-    tx.addOutput(
-      (exchangeInfo.parameters.bitcoinAmount + (exchangeInfo.btcStepAmount * 2)).asSatoshi,
-      buyersKey)
-    tx.addOutput(exchangeInfo.btcStepAmount.asSatoshi, sellersKey)
-    tx
-  }
 
   override def validatePayment(step: Int, paymentId: String): Future[Unit] = {
     for {
@@ -119,18 +115,17 @@ class DefaultExchange[C <: FiatCurrency](
       signature1,
       s"The provided signature is invalid for the final offer")
 
-  override protected def sign(offer: MutableTransaction): (TransactionSignature, TransactionSignature) = {
-    val userInputSignature = TransactionProcessor.signMultiSignedOutput(
-      offer, userInputIndex, exchangeInfo.user.bitcoinKey,
-      List(exchangeInfo.counterpart.bitcoinKey, exchangeInfo.user.bitcoinKey)
-    )
-    val counterpartInputSignature = TransactionProcessor.signMultiSignedOutput(
-      offer, counterPartInputIndex, exchangeInfo.user.bitcoinKey,
-      List(exchangeInfo.user.bitcoinKey, exchangeInfo.counterpart.bitcoinKey)
-    )
-    if (userInputIndex == 0) (userInputSignature, counterpartInputSignature)
-    else (counterpartInputSignature, userInputSignature)
-  }
+  private val requiredSignatures = Seq(
+    exchangeInfo.exchange.buyer.bitcoinKey,
+    exchangeInfo.exchange.seller.bitcoinKey
+  )
+
+  override protected def sign(offer: MutableTransaction) = StepSignatures(
+    buyerDepositSignature = TransactionProcessor.signMultiSignedOutput(
+      offer, 0, exchangeInfo.user.bitcoinKey, requiredSignatures),
+    sellerDepositSignature = TransactionProcessor.signMultiSignedOutput(
+      offer, 1, exchangeInfo.user.bitcoinKey, requiredSignatures)
+  )
 
   private def getPaymentDescription(step: Int) = s"Payment for ${exchangeInfo.id}, step $step"
 
@@ -148,27 +143,23 @@ class DefaultExchange[C <: FiatCurrency](
       inputIndex: Int,
       signature: TransactionSignature,
       validationErrorMessage: String): Unit = {
-    val input = tx.getInput(inputIndex)
-    require(sellersKey.verify(
-      tx.hashForSignature(
-        inputIndex,
-        input.getConnectedOutput.getScriptPubKey,
-        SigHash.ALL,
-        false),
-      signature),
-      s"Invalid signature for input $inputIndex: $validationErrorMessage")
+    require(
+      TransactionProcessor.isValidSignature(tx, inputIndex, signature, sellersKey, requiredSignatures),
+      s"Invalid signature for input $inputIndex: $validationErrorMessage"
+    )
   }
 
   /** Returns a signed transaction ready to be broadcast */
-  override def getSignedOffer(
-      step: Int, counterpartSignatures: (TransactionSignature, TransactionSignature)) = {
+  override def getSignedOffer(step: Int, herSignatures: StepSignatures) = {
     val tx = getOffer(step)
-    val userSignatures = sign(tx)
-    val (idx0InputSignatures, idx1InputSignatures) =
-      if (userInputIndex == 0) (Seq(counterpartSignatures._1, userSignatures._1), Seq(userSignatures._2, counterpartSignatures._2))
-      else (Seq(userSignatures._1, counterpartSignatures._1), Seq(counterpartSignatures._2, userSignatures._2))
-    TransactionProcessor.setMultipleSignatures(tx, 0, idx0InputSignatures: _*)
-    TransactionProcessor.setMultipleSignatures(tx, 1, idx1InputSignatures: _*)
+    val signatures = Seq(sign(tx), herSignatures)
+    TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, signatures.map(_.buyerDepositSignature): _*)
+    TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, signatures.map(_.sellerDepositSignature): _*)
     tx
   }
+}
+
+object DefaultExchange {
+  val BuyerDepositInputIndex = 0
+  val SellerDepositInputIndex = 1
 }

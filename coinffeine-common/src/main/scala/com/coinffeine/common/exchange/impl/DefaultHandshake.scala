@@ -20,9 +20,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
 
   @throws[InvalidRefundTransaction]
   override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
-    signRefundTransaction(
-      tx = herRefund.get,
-      expectedAmount = role.herRefundAmount(exchange.amounts))
+    signRefundTransaction(herRefund.get, expectedAmount = role.herRefundAmount(exchange.amounts))
   }
 
   @throws[InvalidRefundSignature]
@@ -44,6 +42,12 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
     }
   }
 
+  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = {
+    val buyerDeposit = role.buyer(myDeposit, herDeposit)
+    val sellerDeposit = role.seller(myDeposit, herDeposit)
+    new DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
+  }
+
   private def signRefundTransaction(tx: MutableTransaction,
                                     expectedAmount: BitcoinAmount): TransactionSignature = {
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
@@ -53,12 +57,6 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
       signAs = role.me(exchange).bitcoinKey,
       requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
     )
-  }
-
-  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = {
-    val buyerDeposit = role.buyer(myDeposit, herDeposit)
-    val sellerDeposit = role.seller(myDeposit, herDeposit)
-    new DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
   }
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,

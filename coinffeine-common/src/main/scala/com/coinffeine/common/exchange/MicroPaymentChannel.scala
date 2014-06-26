@@ -36,5 +36,8 @@ object MicroPaymentChannel {
 
   /** Signatures for a step transaction of both deposits. */
   case class StepSignatures(buyerDepositSignature: TransactionSignature,
-                            sellerDepositSignature: TransactionSignature)
+                            sellerDepositSignature: TransactionSignature) {
+    def toTuple: (TransactionSignature, TransactionSignature) =
+      (buyerDepositSignature, sellerDepositSignature)
+  }
 }

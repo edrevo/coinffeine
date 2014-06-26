@@ -11,30 +11,29 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
 
   val exchangeId = Exchange.Id("id")
 
-  val sellerExchangeInfo: ExchangeInfo[Euro.type] = ExchangeInfo(
-    SellerRole,
-    Exchange(
-      exchangeId,
-      parameters = Exchange.Parameters(
-        bitcoinAmount = 10.BTC,
-        fiatAmount = 10.EUR,
-        breakdown = Exchange.StepBreakdown(intermediateSteps = 10),
-        lockTime = 25,
-        network
-      ),
-      buyer = Exchange.PeerInfo(
-        connection = PeerConnection("buyer"),
-        paymentProcessorAccount = "buyer",
-        bitcoinKey = new PublicKey()
-      ),
-      seller = Exchange.PeerInfo(
-        connection = PeerConnection("seller"),
-        paymentProcessorAccount = "seller",
-        bitcoinKey = new KeyPair()
-      ),
-      broker = Exchange.BrokerInfo(PeerConnection("broker"))
-    )
+  val exchange = Exchange(
+    exchangeId,
+    parameters = Exchange.Parameters(
+      bitcoinAmount = 10.BTC,
+      fiatAmount = 10.EUR,
+      breakdown = Exchange.StepBreakdown(intermediateSteps = 10),
+      lockTime = 25,
+      network
+    ),
+    buyer = Exchange.PeerInfo(
+      connection = PeerConnection("buyer"),
+      paymentProcessorAccount = "buyer",
+      bitcoinKey = new PublicKey()
+    ),
+    seller = Exchange.PeerInfo(
+      connection = PeerConnection("seller"),
+      paymentProcessorAccount = "seller",
+      bitcoinKey = new KeyPair()
+    ),
+    broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )
+
+  val sellerExchangeInfo: ExchangeInfo[Euro.type] = ExchangeInfo(SellerRole, exchange)
   val buyerExchangeInfo: ExchangeInfo[Euro.type] = sellerExchangeInfo.copy(role = BuyerRole)
   val sampleExchangeInfo = sellerExchangeInfo
 }

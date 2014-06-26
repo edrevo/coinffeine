@@ -17,7 +17,7 @@ class BrokerAbortionDefaultHandshakeActorTest
 
   "Handshakes aborted by the broker" should "make the handshake to fail" in {
     givenActorIsInitialized()
-    gateway.send(actor, fromBroker(ExchangeAborted(handshake.exchange.id, "test abortion")))
+    gateway.send(actor, fromBroker(ExchangeAborted(exchange.id, "test abortion")))
     val result = listener.expectMsgClass(classOf[HandshakeFailure])
     result.e.toString should include ("test abortion")
   }

@@ -1,7 +1,5 @@
 package com.coinffeine.client.handshake
 
-import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
-
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -10,8 +8,9 @@ import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.DefaultHandshakeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Hash, TransactionSignature}
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -57,15 +56,14 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     }
 
     private val receiveRefundSignature: Receive = {
-      case ReceiveMessage(RefundTxSignatureResponse(_, refundSignature), _) =>
-        handshake.validateRefundSignature(refundSignature) match {
-          case Success(_) =>
-            forwarding.forwardToBroker(
-              ExchangeCommitment(exchange.id, handshake.myDeposit))
-            log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
-            context.become(waitForPublication(refundSignature))
-
-          case Failure(cause) =>
+      case ReceiveMessage(RefundTxSignatureResponse(_, herSignature), _) =>
+        try {
+          val myRefund = handshake.signMyRefund(herSignature)
+          forwarding.forwardToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
+          log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
+          context.become(waitForPublication(myRefund))
+        } catch {
+          case cause: InvalidRefundSignature =>
             requestRefundSignature()
             log.warning("Handshake {}: Rejecting invalid refund signature: {}", exchange.id, cause)
         }
@@ -80,14 +78,14 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
         finishWithResult(Failure(cause))
     }
 
-    private def getNotifiedByBroker(refundSig: TransactionSignature): Receive = {
+    private def getNotifiedByBroker(refund: ImmutableTransaction): Receive = {
       case ReceiveMessage(CommitmentNotification(_, buyerTx, sellerTx), _) =>
         Set(buyerTx, sellerTx).foreach { tx =>
           blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
         }
         log.info("Handshake {}: The broker published {} and {}, waiting for confirmations",
           exchange.id, buyerTx, sellerTx)
-        context.become(waitForConfirmations(sellerTx, buyerTx, refundSig))
+        context.become(waitForConfirmations(sellerTx, buyerTx, refund))
     }
 
     private val abortOnBrokerNotification: Receive = {
@@ -99,18 +97,18 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     private val waitForRefundSignature =
       receiveRefundSignature orElse signCounterpartRefund orElse abortOnBrokerNotification
 
-    private def waitForPublication(refundSig: TransactionSignature) =
-      getNotifiedByBroker(refundSig) orElse signCounterpartRefund orElse abortOnBrokerNotification
+    private def waitForPublication(refund: ImmutableTransaction) =
+      getNotifiedByBroker(refund) orElse signCounterpartRefund orElse abortOnBrokerNotification
 
     private def waitForConfirmations(
-        sellerTx: Hash, buyerTx: Hash, refundSig: TransactionSignature): Receive = {
+        sellerTx: Hash, buyerTx: Hash, refund: ImmutableTransaction): Receive = {
       def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
         case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
           val stillPending = pendingConfirmation - tx
           if (stillPending.nonEmpty) {
             context.become(waitForPendingConfirmations(stillPending))
           } else {
-            finishWithResult(Success(HandshakeSuccess(sellerTx, buyerTx, refundSig)))
+            finishWithResult(Success(HandshakeSuccess(sellerTx, buyerTx, refund)))
           }
 
         case TransactionRejected(tx) =>

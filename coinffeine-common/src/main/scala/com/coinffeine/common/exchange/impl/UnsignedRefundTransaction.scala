@@ -3,8 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.coinffeine.common.BitcoinAmount
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, Network, PublicKey}
 
-// TODO: make it private[impl]
-case class UnsignedRefundTransaction(
+private[impl] case class UnsignedRefundTransaction(
     deposit: ImmutableTransaction,
     outputKey: PublicKey,
     outputAmount: BitcoinAmount,

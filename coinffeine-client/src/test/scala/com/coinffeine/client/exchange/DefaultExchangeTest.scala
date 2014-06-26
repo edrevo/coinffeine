@@ -9,32 +9,40 @@ import akka.actor.ActorSystem
 import akka.pattern._
 import akka.util.{Timeout => AkkaTimeout}
 import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.script.ScriptBuilder
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.SampleExchangeInfo
-import com.coinffeine.client.handshake.DefaultHandshake
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
+import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
+import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
+import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
+class DefaultExchangeTest
+  extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
 
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
 
     lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
-    lazy val sellerHandshake = new DefaultHandshake(sellerExchangeInfo, sellerWallet)
+    lazy val sellerHandshake = exchangeProtocol.createHandshake(
+      sellerExchangeInfo.exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
+      sellerWallet.getChangeAddress
+    )
     val paymentProcFactory = new MockPaymentProcessorFactory()
     val sellerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
       sellerExchangeInfo.user.paymentProcessorAccount, Seq(0 EUR)))
 
     lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
-    lazy val buyerHandshake = new DefaultHandshake(buyerExchangeInfo, buyerWallet)
+    lazy val buyerHandshake = exchangeProtocol.createHandshake(
+      buyerExchangeInfo.exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
+      buyerWallet.getChangeAddress
+    )
     val buyerPaymentProc = actorSystem.actorOf(paymentProcFactory.newProcessor(
       buyerExchangeInfo.user.paymentProcessorAccount, Seq(1000 EUR)))
   }
@@ -84,16 +92,17 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
 
   it should "have a final offer that splits the amount as expected" in new WithExchange {
     val finalOffer = sellerExchange.finalOffer
-    addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should be (addAmounts(finalOffer.getOutputs))
-    addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should be
-      sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3)
-    finalOffer.getInput(0).setScriptSig(
-      ScriptBuilder.createMultiSigInputScript(
-        buyerExchange.finalSignature._1, sellerExchange.finalSignature._1))
-    finalOffer.getInput(1).setScriptSig(
-      ScriptBuilder.createMultiSigInputScript(
-        sellerExchange.finalSignature._2, buyerExchange.finalSignature._2))
+    addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
+      be (addAmounts(finalOffer.getOutputs))
+    addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
+      be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
+
+    TransactionProcessor.setMultipleSignatures(
+      finalOffer, index = 0, buyerExchange.finalSignatures.buyerDepositSignature, sellerExchange.finalSignatures.buyerDepositSignature)
+    TransactionProcessor.setMultipleSignatures(
+      finalOffer, index = 1, buyerExchange.finalSignatures.sellerDepositSignature, sellerExchange.finalSignatures.sellerDepositSignature)
     sendToBlockChain(finalOffer)
+
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
       200.BTC - sellerExchangeInfo.parameters.bitcoinAmount)
     Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (
@@ -101,11 +110,12 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   }
 
   it should "validate the seller's final signature" in new WithExchange {
-    val (signature0, signature1) = sellerExchange.finalSignature
+    val StepSignatures(signature0, signature1) = sellerExchange.finalSignatures
     buyerExchange.validateSellersFinalSignature(signature0, signature1) should be ('success)
     sellerExchange.validateSellersFinalSignature(signature0, signature1) should be ('success)
     buyerExchange.validateSellersFinalSignature(signature1, signature0) should be ('failure)
-    val (buyerSignature0, buyerSignature1) = buyerExchange.finalSignature
+
+    val StepSignatures(buyerSignature0, buyerSignature1) = buyerExchange.finalSignatures
     buyerExchange.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
     sellerExchange.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
   }
@@ -113,12 +123,13 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
   for (step <- 1 to sampleExchangeInfo.parameters.breakdown.intermediateSteps) {
     it should s"have an intermediate offer $step that splits the amount as expected" in new WithExchange {
       val stepOffer = sellerExchange.getOffer(step)
-      addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should be
-        addAmounts(stepOffer.getOutputs) - (sellerExchangeInfo.btcStepAmount * 3)
-      addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should be
-        sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3)
-      val signedStepOffer = sellerExchange.getSignedOffer(step, buyerExchange.signStep(step))
-      sendToBlockChain(signedStepOffer)
+      addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
+        be (addAmounts(stepOffer.getOutputs) + (sellerExchangeInfo.btcStepAmount * 3))
+      addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
+        be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
+
+      sendToBlockChain(buyerExchange.getSignedOffer(step, sellerExchange.signStep(step)))
+
       val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
       val expectedBuyerBalance = (5 BTC) + sellerExchangeInfo.btcStepAmount * (step - 2)
@@ -126,11 +137,11 @@ class DefaultExchangeTest extends BitcoinjTest with SampleExchangeInfo {
     }
 
     it should s"validate the seller's signatures correctly for step $step" in new WithExchange {
-      val (signature0, signature1) = sellerExchange.signStep(step)
+      val StepSignatures(signature0, signature1) = sellerExchange.signStep(step)
       buyerExchange.validateSellersSignature(step, signature0, signature1) should be ('success)
       sellerExchange.validateSellersSignature(step, signature0, signature1) should be ('success)
       buyerExchange.validateSellersSignature(step, signature1, signature0) should be ('failure)
-      val (buyerSignature0, buyerSignature1) = buyerExchange.signStep(step)
+      val StepSignatures(buyerSignature0, buyerSignature1) = buyerExchange.signStep(step)
       buyerExchange.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
       sellerExchange.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
     }
