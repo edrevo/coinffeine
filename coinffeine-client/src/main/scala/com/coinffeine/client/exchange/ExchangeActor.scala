@@ -2,7 +2,6 @@ package com.coinffeine.client.exchange
 
 import akka.actor._
 
-import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
@@ -29,27 +28,28 @@ class ExchangeActor[C <: FiatCurrency](
     import init._
 
     def start(): Unit = {
-      require(userWallet.getKeys.contains(exchangeInfo.user.bitcoinKey))
-      log.info(s"Starting exchange ${exchangeInfo.id}")
+      require(userWallet.getKeys.contains(role.me(exchange).bitcoinKey))
+      log.info(s"Starting exchange ${exchange.id}")
+      watchForCounterpartDeposit()
+      startHandshake()
+      context.become(inHandshake)
+    }
 
-      // We have to watch the counterpart public key to be aware of its deposit tx
-      blockchain ! WatchPublicKey(exchangeInfo.counterpart.bitcoinKey)
-
-      val handshake = handshakeFactory(init.exchange, exchangeInfo.role, userWallet)
+    private def startHandshake(): Unit = {
+      val handshake = handshakeFactory(init.exchange, role, userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
         exchange,
         role,
         handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
-      context.become(inHandshake)
     }
 
     private val inMicropaymentChannel: Receive = {
       case MicroPaymentChannelActor.ExchangeSuccess =>
-        log.info(s"Finishing exchange '${exchangeInfo.id}' successfully")
+        log.info(s"Finishing exchange '${exchange.id}' successfully")
         finishWith(ExchangeSuccess)
       case MicroPaymentChannelActor.ExchangeFailure(e, lastOffer) =>
         // TODO: handle failure with AbortActor
-        log.warning(s"Finishing exchange '${exchangeInfo.id}' with a failure due to ${e.toString}")
+        log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         finishWith(ExchangeFailure(e))
     }
 
@@ -71,7 +71,8 @@ class ExchangeActor[C <: FiatCurrency](
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.forall(newTxs.keySet.contains)) {
             val channel = microPaymentChannelFactory(
-              exchangeInfo,
+              exchange,
+              role,
               paymentProcessor,
               newTxs(sellerCommitmentTxId),
               newTxs(buyerCommitmentTxId))
@@ -96,6 +97,10 @@ class ExchangeActor[C <: FiatCurrency](
       if (self == null) println("null self")
       context.stop(self)
     }
+
+    private def watchForCounterpartDeposit(): Unit = {
+      blockchain ! WatchPublicKey(role.her(exchange).bitcoinKey)
+    }
   }
 }
 
@@ -106,7 +111,8 @@ object ExchangeActor {
 
   type HandshakeFactory[C <: FiatCurrency] = (Exchange[C], Role, Wallet) => Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency] = (
-    ExchangeInfo[C],
+    Exchange[C],
+    Role,
     ActorRef,
     MutableTransaction, // sellerCommitmentTx
     MutableTransaction // buyerCommitmentTx
@@ -115,7 +121,6 @@ object ExchangeActor {
   case class StartExchange[C <: FiatCurrency](
     exchange: Exchange[C],
     role: Role,
-    exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
     paymentProcessor: ActorRef,
     messageGateway: ActorRef,

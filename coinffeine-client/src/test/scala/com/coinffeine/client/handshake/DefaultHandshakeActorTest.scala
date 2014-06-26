@@ -5,6 +5,7 @@ import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
+import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
@@ -15,38 +16,36 @@ import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureReque
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
-  extends CoinffeineClientTest(systemName) with BitcoinjTest with MockitoSugar {
+  extends CoinffeineClientTest(systemName) with SellerPerspective with BitcoinjTest with MockitoSugar {
 
   def protocolConstants: ProtocolConstants
 
-  lazy val handshake = new MockHandshake(exchange, sampleExchangeInfo.role,
-    amount => createWallet(new KeyPair, amount), network)
+  lazy val handshake =
+    new MockHandshake(exchange, userRole, amount => createWallet(new KeyPair, amount), network)
   val listener = TestProbe()
   val blockchain = TestProbe()
   val actor = system.actorOf(Props[DefaultHandshakeActor[Euro.type]], "handshake-actor")
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake(exchange, sampleExchangeInfo.role, handshake, protocolConstants,
-      gateway.ref, blockchain.ref, Set(listener.ref))
+    actor ! StartHandshake(
+      exchange, userRole, handshake, protocolConstants, gateway.ref, blockchain.ref, Set(listener.ref)
+    )
   }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest = RefundTxSignatureRequest(exchangeId, handshake.myUnsignedRefund)
-    shouldForward (refundSignatureRequest) to counterpart
+    val refundSignatureRequest = RefundTxSignatureRequest(exchange.id, handshake.myUnsignedRefund)
+    shouldForward (refundSignatureRequest) to counterpart.connection
   }
 
   def shouldSignCounterpartRefund(): Unit = {
     val request =
-      RefundTxSignatureRequest(exchangeId, ImmutableTransaction(handshake.counterpartRefund))
-    gateway.send(actor, ReceiveMessage(request, sampleExchangeInfo.counterpart.connection))
+      RefundTxSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
+    gateway.send(actor, ReceiveMessage(request, userRole.her(exchange).connection))
     val refundSignatureRequest =
-      RefundTxSignatureResponse(exchangeId, handshake.counterpartRefundSignature)
-    shouldForward (refundSignatureRequest) to counterpart
+      RefundTxSignatureResponse(exchange.id, handshake.counterpartRefundSignature)
+    shouldForward (refundSignatureRequest) to counterpart.connection
   }
-
-  override def counterpart = sampleExchangeInfo.counterpart.connection
-  override def broker = exchange.broker.connection
 
   override protected def resetBlockchainBetweenTests = false
 }

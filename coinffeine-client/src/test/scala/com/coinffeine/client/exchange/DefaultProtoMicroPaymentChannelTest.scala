@@ -22,15 +22,15 @@ class DefaultProtoMicroPaymentChannelTest
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
 
-    lazy val sellerWallet = createWallet(sellerExchangeInfo.user.bitcoinKey, 200 BTC)
+    lazy val sellerWallet = createWallet(exchange.seller.bitcoinKey, 200 BTC)
     lazy val sellerHandshake = exchangeProtocol.createHandshake(
-      sellerExchangeInfo.exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
+      exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
       sellerWallet.getChangeAddress
     )
 
-    lazy val buyerWallet = createWallet(buyerExchangeInfo.user.bitcoinKey, 5 BTC)
+    lazy val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 5 BTC)
     lazy val buyerHandshake = exchangeProtocol.createHandshake(
-      buyerExchangeInfo.exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
+      exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
       buyerWallet.getChangeAddress
     )
   }
@@ -51,7 +51,7 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(sellerExchangeInfo.parameters.network)
+    val invalidFundsCommitment = new MutableTransaction(exchange.parameters.network)
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
@@ -68,7 +68,7 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(buyerExchangeInfo.parameters.network)
+    val invalidFundsCommitment = new MutableTransaction(exchange.parameters.network)
     invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
@@ -89,18 +89,20 @@ class DefaultProtoMicroPaymentChannelTest
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (addAmounts(finalOffer.getOutputs))
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
-      be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
+      be (exchange.parameters.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
 
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 0, buyerChannel.finalSignatures.buyerDepositSignature, sellerChannel.finalSignatures.buyerDepositSignature)
+      finalOffer, index = 0, buyerChannel.finalSignatures.buyerDepositSignature,
+      sellerChannel.finalSignatures.buyerDepositSignature)
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 1, buyerChannel.finalSignatures.sellerDepositSignature, sellerChannel.finalSignatures.sellerDepositSignature)
+      finalOffer, index = 1, buyerChannel.finalSignatures.sellerDepositSignature,
+      sellerChannel.finalSignatures.sellerDepositSignature)
     sendToBlockChain(finalOffer)
 
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
-      200.BTC - sellerExchangeInfo.parameters.bitcoinAmount)
+      200.BTC - exchange.parameters.bitcoinAmount)
     Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (
-      5.BTC + sellerExchangeInfo.parameters.bitcoinAmount)
+      5.BTC + exchange.parameters.bitcoinAmount)
   }
 
   it should "validate the seller's final signature" in new WithChannels {
@@ -114,19 +116,19 @@ class DefaultProtoMicroPaymentChannelTest
     sellerChannel.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
   }
 
-  for (step <- 1 to sampleExchangeInfo.parameters.breakdown.intermediateSteps) {
+  for (step <- 1 to exchange.parameters.breakdown.intermediateSteps) {
     it should s"have an intermediate offer $step that splits the amount as expected" in new WithChannels {
       val stepOffer = sellerChannel.getOffer(step)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
-        be (addAmounts(stepOffer.getOutputs) + (sellerExchangeInfo.btcStepAmount * 3))
+        be (addAmounts(stepOffer.getOutputs) + (exchange.amounts.stepFiatAmount * 3))
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
-        be (sellerExchangeInfo.parameters.bitcoinAmount + (sellerExchangeInfo.btcStepAmount * 3))
+        be (exchange.parameters.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
 
       sendToBlockChain(buyerChannel.getSignedOffer(step, sellerChannel.signStep(step)))
 
-      val expectedSellerBalance = (200 BTC) - sellerExchangeInfo.btcStepAmount * (step + 1)
+      val expectedSellerBalance = (200 BTC) - exchange.amounts.stepFiatAmount * (step + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
-      val expectedBuyerBalance = (5 BTC) + sellerExchangeInfo.btcStepAmount * (step - 2)
+      val expectedBuyerBalance = (5 BTC) + exchange.amounts.stepFiatAmount * (step - 2)
       Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (expectedBuyerBalance)
     }
 

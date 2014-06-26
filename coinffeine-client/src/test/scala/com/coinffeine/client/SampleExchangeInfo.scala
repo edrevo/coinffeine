@@ -1,18 +1,17 @@
 package com.coinffeine.client
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
-import com.coinffeine.common.exchange.{BuyerRole, Exchange, SellerRole}
+import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
 
-  val exchangeId = Exchange.Id("id")
+  val broker = PeerConnection("broker")
 
   val exchange = Exchange(
-    exchangeId,
+    id = Exchange.Id("id"),
     parameters = Exchange.Parameters(
       bitcoinAmount = 10.BTC,
       fiatAmount = 10.EUR,
@@ -30,10 +29,6 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
       paymentProcessorAccount = "seller",
       bitcoinKey = new KeyPair()
     ),
-    broker = Exchange.BrokerInfo(PeerConnection("broker"))
+    broker = Exchange.BrokerInfo(broker)
   )
-
-  val sellerExchangeInfo: ExchangeInfo[Euro.type] = ExchangeInfo(SellerRole, exchange)
-  val buyerExchangeInfo: ExchangeInfo[Euro.type] = sellerExchangeInfo.copy(role = BuyerRole)
-  val sampleExchangeInfo = sellerExchangeInfo
 }
