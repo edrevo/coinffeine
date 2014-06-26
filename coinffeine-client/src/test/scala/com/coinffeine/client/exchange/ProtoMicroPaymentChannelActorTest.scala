@@ -21,7 +21,7 @@ import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 
-class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
+class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
     with BitcoinjTest with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
@@ -34,12 +34,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
-  private val mockExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
+  private val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type]
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
       paymentProc: ActorRef,
       tx1: MutableTransaction,
-      tx2: MutableTransaction): Exchange[Euro.type] with BuyerUser[Euro.type] = mockExchange
+      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] with BuyerUser[Euro.type] = mockExchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 

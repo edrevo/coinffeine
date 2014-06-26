@@ -3,7 +3,7 @@ package com.coinffeine.client.micropayment
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{BuyerUser, MockExchange, SellerUser}
+import com.coinffeine.client.exchange.{BuyerUser, MockProtoMicroPaymentChannel, SellerUser}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
@@ -16,8 +16,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val sellerListener = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants()
-  val buyerExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
-  val sellerExchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
+  val buyerExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type]
+  val sellerExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with SellerUser[Euro.type]
 
   class MessageForwarder(to: ActorRef) extends Actor {
     override val receive: Receive = {

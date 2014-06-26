@@ -32,7 +32,7 @@ sealed trait UserRole {
 
 /** This trait can be mixed with an Exchange if the user is acting like a buyer */
 trait BuyerUser[C <: FiatCurrency] extends UserRole {
-  this: Exchange[C] =>
+  this: ProtoMicroPaymentChannel[C] =>
 
   override lazy val buyersKey: KeyPair = exchangeInfo.user.bitcoinKey
   override lazy val sellersKey: KeyPair = exchangeInfo.counterpart.bitcoinKey
@@ -44,7 +44,7 @@ trait BuyerUser[C <: FiatCurrency] extends UserRole {
 
 /** This trait can be mixed with an Exchange if the user is acting like a seller */
 trait SellerUser[C <: FiatCurrency] extends UserRole {
-  this: Exchange[C] =>
+  this: ProtoMicroPaymentChannel[C] =>
 
   override lazy val buyersKey: KeyPair = exchangeInfo.counterpart.bitcoinKey
   override lazy val sellersKey: KeyPair = exchangeInfo.user.bitcoinKey

@@ -8,7 +8,7 @@ import akka.testkit.TestProbe
 import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{MockExchange, SellerUser}
+import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, SellerUser}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.PeerConnection
@@ -20,7 +20,7 @@ class SellerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("bu
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val protocolConstants = ProtocolConstants(exchangePaymentProofTimeout = 0.5 seconds)
-  val mockExchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
+  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with SellerUser[Euro.type]
   val dummySig = TransactionSignature.dummy
 
   trait Fixture {

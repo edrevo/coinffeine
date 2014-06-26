@@ -16,14 +16,14 @@ import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 
-class DefaultExchange[C <: FiatCurrency](
+class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
     override val exchangeInfo: ExchangeInfo[C],
     paymentProcessor: ActorRef,
     sellerCommitmentTx: ImmutableTransaction,
-    buyerCommitmentTx: ImmutableTransaction) extends Exchange[C] {
+    buyerCommitmentTx: ImmutableTransaction) extends ProtoMicroPaymentChannel[C] {
   this: UserRole =>
 
-  import com.coinffeine.client.exchange.DefaultExchange._
+  import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
   private implicit val paymentProcessorTimeout = Timeout(5.seconds)
   private val sellerFunds = sellerCommitmentTx.get.getOutput(0)
@@ -159,7 +159,7 @@ class DefaultExchange[C <: FiatCurrency](
   }
 }
 
-object DefaultExchange {
+object DefaultProtoMicroPaymentChannel {
   val BuyerDepositInputIndex = 0
   val SellerDepositInputIndex = 1
 }

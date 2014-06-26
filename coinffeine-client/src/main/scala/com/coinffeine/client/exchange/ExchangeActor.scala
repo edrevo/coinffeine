@@ -2,7 +2,6 @@ package com.coinffeine.client.exchange
 
 import akka.actor._
 
-import com.coinffeine.common
 import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.handshake.HandshakeActor._
@@ -11,7 +10,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPay
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.Role
+import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency, R <: UserRole](
@@ -104,17 +103,17 @@ object ExchangeActor {
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
 
-  type HandshakeFactory[C <: FiatCurrency] = (common.exchange.Exchange[C], Role, Wallet) => common.exchange.Handshake[C]
+  type HandshakeFactory[C <: FiatCurrency] = (Exchange[C], Role, Wallet) => Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency, Role <: UserRole] = (
     ExchangeInfo[C],
     ActorRef,
     MutableTransaction, // sellerCommitmentTx
     MutableTransaction // buyerCommitmentTx
-  ) => Exchange[C] with Role
+  ) => ProtoMicroPaymentChannel[C] with Role
 
   case class StartExchange[C <: FiatCurrency](
     role: Role,
-    exchange: common.exchange.Exchange[C],
+    exchange: Exchange[C],
     exchangeInfo: ExchangeInfo[C],
     userWallet: Wallet,
     paymentProcessor: ActorRef,

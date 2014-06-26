@@ -7,7 +7,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{BuyerUser, MockExchange}
+import com.coinffeine.client.exchange.{BuyerUser, MockProtoMicroPaymentChannel}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
@@ -22,7 +22,7 @@ class BuyerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("buy
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val protocolConstants = ProtocolConstants(exchangeSignatureTimeout = 0.5 seconds)
-  val mockExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
+  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type]
   val dummySig = TransactionSignature.dummy
 
   trait Fixture {
@@ -49,7 +49,7 @@ class BuyerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("buy
 
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
     val error = new Error("Some error")
-    val rejectingExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type] {
+    val rejectingExchange = new MockProtoMicroPaymentChannel(exchangeInfo) with BuyerUser[Euro.type] {
       override def validateSellersSignature(
           step: Int,
           signature0: TransactionSignature,

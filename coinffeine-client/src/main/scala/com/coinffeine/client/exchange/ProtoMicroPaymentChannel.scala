@@ -9,7 +9,7 @@ import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.paymentprocessor.AnyPayment
 
-trait Exchange[C <: FiatCurrency] {
+trait ProtoMicroPaymentChannel[C <: FiatCurrency] {
   this: UserRole =>
 
   val exchangeInfo: ExchangeInfo[C]

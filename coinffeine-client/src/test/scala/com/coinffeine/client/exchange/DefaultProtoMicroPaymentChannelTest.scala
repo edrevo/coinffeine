@@ -22,7 +22,7 @@ import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-class DefaultExchangeTest
+class DefaultProtoMicroPaymentChannelTest
   extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
 
   private trait WithBasicSetup {
@@ -50,12 +50,12 @@ class DefaultExchangeTest
   private trait WithExchange extends WithBasicSetup {
     sendToBlockChain(sellerHandshake.myDeposit.get)
     sendToBlockChain(buyerHandshake.myDeposit.get)
-    val sellerExchange = new DefaultExchange[Currency.Euro.type](
+    val sellerExchange = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
       sellerHandshake.myDeposit,
       buyerHandshake.myDeposit) with SellerUser[Currency.Euro.type]
-    val buyerExchange = new DefaultExchange[Currency.Euro.type](
+    val buyerExchange = new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       buyerExchangeInfo,
       buyerPaymentProc,
       sellerHandshake.myDeposit,
@@ -69,7 +69,7 @@ class DefaultExchangeTest
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
     sendToBlockChain(buyerHandshake.myDeposit.get)
     sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy { new DefaultExchange[Currency.Euro.type](
+    an [IllegalArgumentException] should be thrownBy { new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
       ImmutableTransaction(invalidFundsCommitment),
@@ -83,7 +83,7 @@ class DefaultExchangeTest
     invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
     sendToBlockChain(sellerHandshake.myDeposit.get)
     sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy { new DefaultExchange[Currency.Euro.type](
+    an [IllegalArgumentException] should be thrownBy { new DefaultProtoMicroPaymentChannel[Currency.Euro.type](
       sellerExchangeInfo,
       sellerPaymentProc,
       sellerHandshake.myDeposit,
