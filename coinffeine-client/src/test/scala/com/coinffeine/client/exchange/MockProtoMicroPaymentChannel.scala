@@ -23,8 +23,6 @@ class MockProtoMicroPaymentChannel[C <: FiatCurrency](exchangeInfo: ExchangeInfo
       signature0: TransactionSignature,
       signature1: TransactionSignature): Try[Unit] = Success {}
   override def getOffer(step: Int): MutableTransaction = offers(step - 1)
-  override def pay(step: Int): Future[Payment[C]] = Future.successful(Payment(
-    "paymentId", "sender", "receiver", exchangeInfo.fiatStepAmount, DateTime.now(), "description"))
   override def validatePayment(step: Int, paymentId: String): Future[Unit] = Future.successful {}
   override protected def sign(offer: MutableTransaction) =
     StepSignatures(TransactionSignature.dummy, TransactionSignature.dummy)

@@ -1,14 +1,19 @@
 package com.coinffeine.client.micropayment
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import akka.pattern._
 
 import com.coinffeine.client.MessageForwarding
+import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel.{StepSignatures => Signatures}
+import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
@@ -100,10 +105,8 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     private def waitForNextStepSignature(step: Int): Receive = withStepTimeout(step) {
       waitForValidSignature(step, channel.validateSellersSignature(step, _, _)) {
         (signature0, signature1) =>
-          import context.dispatcher
           lastSignedOffer = Some(channel.getSignedOffer(step, Signatures(signature0, signature1)))
-          forwarding.forwardToCounterpart(
-            channel.pay(step).map(payment => PaymentProof(exchange.id, payment.id)))
+          forwarding.forwardToCounterpart(pay(step))
           context.become(nextWait(step))
       }
     }
@@ -111,6 +114,20 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     private def nextWait(step: Int): Receive =
       if (step == exchange.parameters.breakdown.intermediateSteps) waitForFinalSignature
       else waitForNextStepSignature(step + 1)
+
+    private def pay(step: Int): Future[PaymentProof] = {
+      import context.dispatcher
+      implicit val timeout = PaymentProcessor.RequestTimeout
+
+      val paymentRequest = PaymentProcessor.Pay(
+        role.her(exchange).paymentProcessorAccount,
+        exchange.amounts.stepFiatAmount,
+        PaymentDescription(exchange.id, step)
+      )
+      for {
+        Paid(payment) <- paymentProcessor.ask(paymentRequest).mapTo[Paid[C]]
+      } yield PaymentProof(exchange.id, payment.id)
+    }
   }
 }
 

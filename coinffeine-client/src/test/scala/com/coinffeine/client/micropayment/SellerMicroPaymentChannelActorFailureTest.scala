@@ -25,6 +25,7 @@ class SellerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("bu
 
   trait Fixture {
     val listener = TestProbe()
+    val paymentProcessor = TestProbe()
     val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]])
     listener.watch(actor)
   }
@@ -32,7 +33,9 @@ class SellerMicroPaymentChannelActorFailureTest extends CoinffeineClientTest("bu
   "The seller exchange actor" should "return a failure message if the buyer does not provide the" +
     " necessary payment proof within the specified timeout" in new Fixture{
     actor ! StartMicroPaymentChannel(
-      exchange, exchangeInfo.role, channel, protocolConstants, gateway.ref, Set(listener.ref))
+      exchange, exchangeInfo.role, channel, protocolConstants, paymentProcessor.ref, gateway.ref,
+      Set(listener.ref)
+    )
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be (None)
     failure.cause.isInstanceOf[TimeoutException] should be (true)

@@ -20,6 +20,7 @@ import com.coinffeine.common.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
+  val paymentProcessor = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
@@ -32,7 +33,9 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+    exchange, exchangeInfo.role, mockExchange, protocolConstants, paymentProcessor.ref, gateway.ref,
+    Set(listener.ref)
+  )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

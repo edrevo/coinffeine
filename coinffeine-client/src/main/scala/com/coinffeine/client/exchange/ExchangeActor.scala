@@ -78,7 +78,7 @@ class ExchangeActor[C <: FiatCurrency](
             val microPaymentChannelActorRef = context.actorOf(
               microPaymentChannelActorProps, MicroPaymentChannelActorName)
             microPaymentChannelActorRef ! StartMicroPaymentChannel[C](
-              exchange, role, channel, constants, messageGateway, resultListeners = Set(self)
+              exchange, role, channel, constants, paymentProcessor, messageGateway, resultListeners = Set(self)
             )
             context.become(inMicropaymentChannel)
           } else {

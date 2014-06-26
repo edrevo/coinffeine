@@ -36,9 +36,6 @@ trait ProtoMicroPaymentChannel[C <: FiatCurrency] {
   /** Validates that the paymentId represents a valid payment for the step */
   def validatePayment(step: Int, paymentId: String): Future[Unit]
 
-  /** Performs a payment for a step of the exchange */
-  def pay(step: Int): Future[AnyPayment]
-
   /** Returns the user's signature for the transaction */
   protected def sign(offer: MutableTransaction): StepSignatures
 }

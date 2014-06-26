@@ -36,7 +36,7 @@ class MessageForwarding(messageGateway: ActorRef,
     messageGateway ! ForwardMessage(message, address)
 
   def forwardMessage(message: Future[PublicMessage], address: PeerConnection)
-                              (implicit context: ActorContext): Unit = {
+                    (implicit context: ActorContext): Unit = {
     implicit val executionContext = ExecutionContexts.global()
     message.map(ForwardMessage(_, address)).pipeTo(messageGateway)(context.self)
   }

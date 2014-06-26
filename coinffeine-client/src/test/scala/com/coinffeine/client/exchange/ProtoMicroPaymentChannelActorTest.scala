@@ -54,8 +54,10 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     wallet.addKey(exchangeInfo.user.bitcoinKey)
     wallet
   }
-  private val dummyPaymentProcessor = system.actorOf(new MockPaymentProcessorFactory(List.empty).newProcessor(
-    fiatAddress = "", initialBalance = Seq.empty))
+  private val dummyPaymentProcessor = system.actorOf(
+    new MockPaymentProcessorFactory(List.empty)
+      .newProcessor(fiatAddress = "", initialBalance = Seq.empty)
+  )
 
   trait Fixture {
     val handshake = new MockHandshake(
@@ -103,7 +105,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(actor)))
+        exchange, exchangeInfo.role, mockExchange, protocolConstants, dummyPaymentProcessor, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
     }
@@ -173,7 +175,9 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, exchangeInfo.role, mockExchange, protocolConstants, gateway.ref, Set(actor)))
+        exchange, exchangeInfo.role, mockExchange, protocolConstants, dummyPaymentProcessor,
+        gateway.ref, Set(actor)
+      ))
       queueItem.sender should be (actor)
       actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }

@@ -1,16 +1,11 @@
 package com.coinffeine.client.exchange
 
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
-import akka.pattern._
 import akka.util.{Timeout => AkkaTimeout}
 import com.google.bitcoin.core.Transaction.SigHash
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.time.{Seconds, Span}
 
 import com.coinffeine.client.SampleExchangeInfo
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
@@ -20,7 +15,6 @@ import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, 
 import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultProtoMicroPaymentChannelTest
   extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
@@ -154,45 +148,6 @@ class DefaultProtoMicroPaymentChannelTest
       val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.signStep(step)
       buyerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
       sellerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
-    }
-
-    it should s"validate payments for step $step" in new WithChannels {
-      for (currentStep <- 1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps) {
-        val validation = for {
-          payment <- buyerChannel.pay(currentStep)
-          _ <- sellerChannel.validatePayment(step, payment.id)
-        } yield ()
-        if (currentStep == step)
-          validation.futureValue should be (())
-        else
-          validation.map(_ => false).recover {
-            case _: IllegalArgumentException => true
-          }.futureValue should be (true)
-      }
-    }
-  }
-
-  it should "transfer the expected fiat amount" in new WithChannels {
-    val balances = for {
-        prevBuyerBalance <- buyerPaymentProc.ask(
-          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-        prevSellerBalance <- sellerPaymentProc.ask(
-          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-        payments <- Future.traverse(1 to buyerExchangeInfo.parameters.breakdown.intermediateSteps)(buyerChannel.pay)
-        afterBuyerBalance <- buyerPaymentProc.ask(
-          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-        afterSellerBalance <- sellerPaymentProc.ask(
-          PaymentProcessor.RetrieveBalance(Currency.Euro)).mapTo[PaymentProcessor.BalanceRetrieved[Currency.Euro.type]]
-    } yield (prevBuyerBalance.balance, afterBuyerBalance.balance,
-        prevSellerBalance.balance, afterSellerBalance.balance)
-    whenReady(balances, Timeout(Span(30, Seconds))) { balances =>
-      val prevBuyerBalance = balances._1
-      val afterBuyerBalance = balances._2
-      val prevSellerBalance = balances._3
-      val afterSellerBalance = balances._4
-
-      prevBuyerBalance should be (afterBuyerBalance + buyerExchangeInfo.parameters.fiatAmount)
-      prevSellerBalance should be (afterSellerBalance - buyerExchangeInfo.parameters.fiatAmount)
     }
   }
 

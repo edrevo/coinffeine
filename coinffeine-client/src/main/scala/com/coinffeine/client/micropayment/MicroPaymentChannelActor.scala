@@ -19,6 +19,7 @@ object MicroPaymentChannelActor {
       role: Role,
       channel: ProtoMicroPaymentChannel[C],
       constants: ProtocolConstants,
+      paymentProcessor: ActorRef,
       messageGateway: ActorRef,
       resultListeners: Set[ActorRef]
   )

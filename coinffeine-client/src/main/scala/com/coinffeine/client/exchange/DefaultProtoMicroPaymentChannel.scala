@@ -2,12 +2,10 @@ package com.coinffeine.client.exchange
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.duration._
 import scala.util.Try
 
 import akka.actor.ActorRef
 import akka.pattern._
-import akka.util.Timeout
 
 import com.coinffeine.client.MultiSigInfo
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
@@ -15,7 +13,7 @@ import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
 import com.coinffeine.common.exchange.impl.TransactionProcessor
-import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
+import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
     exchange: Exchange[C],
@@ -26,7 +24,7 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
 
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
-  private implicit val paymentProcessorTimeout = Timeout(5.seconds)
+  private implicit val paymentProcessorTimeout = PaymentProcessor.RequestTimeout
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
   private val sellerFunds = sellerCommitmentTx.get.getOutput(0)
   private val buyerFunds = buyerCommitmentTx.get.getOutput(0)
@@ -56,13 +54,6 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
         exchange.parameters.bitcoinAmount + exchange.amounts.stepBitcoinAmount,
       "The amount of committed funds by the seller does not match the expected amount")
   }
-
-  override def pay(step: Int): Future[Payment[C]] = for {
-    paid <- paymentProcessor.ask(PaymentProcessor.Pay(
-      role.her(exchange).paymentProcessorAccount,
-      exchange.amounts.stepFiatAmount,
-      getPaymentDescription(step))).mapTo[PaymentProcessor.Paid[C]]
-  } yield paid.payment
 
   override def getOffer(step: Int): MutableTransaction = getOffer(
     buyerAmount = exchange.amounts.stepBitcoinAmount * step,
@@ -129,7 +120,7 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
     )
   }
 
-  private def getPaymentDescription(step: Int) = s"Payment for ${exchange.id}, step $step"
+  private def getPaymentDescription(step: Int) = PaymentDescription(exchange.id, step)
 
   private def validateSellersSignature(
       tx: MutableTransaction,
