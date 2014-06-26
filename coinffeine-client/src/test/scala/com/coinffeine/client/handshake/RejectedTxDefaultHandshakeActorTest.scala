@@ -19,9 +19,9 @@ class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rej
   "Handshakes in which TX are rejected" should "have a failed handshake result" in {
     givenActorIsInitialized()
     gateway.send(
-      actor, fromCounterpart(RefundTxSignatureResponse(exchangeId, handshake.refundSignature)))
+      actor, fromCounterpart(RefundTxSignatureResponse(exchange.id, handshake.refundSignature)))
     gateway.send(actor, fromBroker(CommitmentNotification(
-      exchangeId,
+      exchange.id,
       handshake.myDeposit.get.getHash,
       handshake.counterpartCommitmentTransaction.getHash
     )))
