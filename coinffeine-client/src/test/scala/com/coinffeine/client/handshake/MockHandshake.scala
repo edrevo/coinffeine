@@ -1,33 +1,24 @@
 package com.coinffeine.client.handshake
 
 import java.math.BigInteger
-import scala.util.Random
 
-import com.google.bitcoin.core.Wallet.SendRequest
-
-import com.coinffeine.common
-import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
-import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 /** Create a mock handshake with random transactions.
   *
   * @param exchange       Info about the exchange being mocked
-  * @param walletFactory  Creates wallets with a minimum balance on demand
-  * @param network        Network in which transactions are generated
+  * @param role           Role being played
   */
-class MockHandshake[C <: FiatCurrency](exchange: Exchange[C],
-                                       role: Role,
-                                       walletFactory: BitcoinAmount => Wallet,
-                                       network: Network) extends common.exchange.Handshake[C] {
-  override val myDeposit = randomImmutableTransaction()
-  override val myUnsignedRefund = randomImmutableTransaction()
-  val mySignedRefund = randomImmutableTransaction()
-  val counterpartCommitmentTransaction = randomTransaction()
-  val counterpartRefund = randomTransaction()
-  val invalidRefundTransaction = randomTransaction()
+class MockHandshake[C <: FiatCurrency](exchange: Exchange[C], role: Role) extends Handshake[C] {
+  override val myDeposit = dummyImmutableTransaction(1)
+  override val myUnsignedRefund = dummyImmutableTransaction(2)
+  val mySignedRefund = dummyImmutableTransaction(3)
+  val counterpartCommitmentTransaction = dummyTransaction(4)
+  val counterpartRefund = dummyTransaction(5)
+  val invalidRefundTransaction = dummyTransaction(6)
 
   val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
   val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
@@ -40,13 +31,13 @@ class MockHandshake[C <: FiatCurrency](exchange: Exchange[C],
     if (sig == refundSignature) mySignedRefund
     else throw new InvalidRefundSignature(myUnsignedRefund, sig)
 
-  private def randomImmutableTransaction() = ImmutableTransaction(randomTransaction())
+  private def dummyImmutableTransaction(lockTime: Int) =
+    ImmutableTransaction(dummyTransaction(lockTime))
 
-  private def randomTransaction(): MutableTransaction = {
-    val destination = new PublicKey()
-    val amount = MutableTransaction.MinimumNonDustAmount * (Random.nextInt(10) + 10)
-    val wallet = walletFactory(amount + 0.01.BTC)
-    wallet.sendCoinsOffline(SendRequest.to(network, destination, amount.asSatoshi))
+  private def dummyTransaction(lockTime: Int): MutableTransaction = {
+    val tx = new MutableTransaction(exchange.parameters.network)
+    tx.setLockTime(lockTime)
+    tx
   }
 
   override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = ???

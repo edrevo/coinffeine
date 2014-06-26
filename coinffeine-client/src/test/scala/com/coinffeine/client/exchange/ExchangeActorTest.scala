@@ -12,7 +12,7 @@ import org.scalatest.concurrent.Eventually
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.handshake.MockHandshake
+import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
@@ -23,7 +23,7 @@ import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
-class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
+class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with SellerPerspective with BitcoinjTest with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
@@ -48,30 +48,23 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   private val dummyTxId = new Hash(List.fill(64)("F").mkString)
   private val dummyTx = new MutableTransaction(network)
   private val dummyRefund = ImmutableTransaction(dummyTx)
-  private val userWallet = {
-    val wallet = new Wallet(network)
-    wallet.addKey(user.bitcoinKey)
-    wallet
-  }
   private val dummyPaymentProcessor = system.actorOf(
     new MockPaymentProcessorFactory(List.empty)
       .newProcessor(fiatAddress = "", initialBalance = Seq.empty)
   )
 
   trait Fixture {
-    val handshake = new MockHandshake(
-      exchange, userRole, amount => createWallet(new KeyPair, amount), network
-    )
     val listener = TestProbe()
     val blockchain = TestProbe()
-    val actor = system.actorOf(
-      Props(new ExchangeActor[Euro.type](
-        handshakeProps,
-        exchangeProps,
-        (_, _, _) => handshake,
-        channelFactory,
-        protocolConstants,
-        Set(listener.ref))))
+    val wallet = createWallet(user.bitcoinKey, exchange.amounts.sellerDeposit)
+    val actor = system.actorOf(Props(new ExchangeActor[Euro.type](
+      handshakeProps,
+      exchangeProps,
+      new MockExchangeProtocol,
+      channelFactory,
+      protocolConstants,
+      Set(listener.ref)
+    )))
     listener.watch(actor)
 
     def withActor(actorName: String)(body: ActorRef => Unit) = {
@@ -84,7 +77,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
 
     def startExchange(): Unit = {
       actor ! StartExchange(
-        exchange, userRole, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+        exchange, userRole, wallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
       )
     }
   }
@@ -94,8 +87,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     startExchange()
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(exchange, userRole,
-        handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
+      queueItem.msg shouldBe a [StartHandshake[_]]
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }
@@ -122,8 +114,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     val error = new Error("Handshake error")
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(exchange, userRole,
-        handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
+      queueItem.msg shouldBe a [StartHandshake[_]]
       queueItem.sender should be (actor)
       actor.tell(HandshakeFailure(error), handshakeActor)
     }
@@ -136,8 +127,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     startExchange()
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(exchange, userRole,
-        handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
+      queueItem.msg shouldBe a [StartHandshake[_]]
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }
@@ -157,8 +147,7 @@ class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     startExchange()
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg should be (StartHandshake(exchange, userRole,
-        handshake, protocolConstants, gateway.ref, blockchain.ref, Set(actor)))
+      queueItem.msg shouldBe a [StartHandshake[_]]
       queueItem.sender should be (actor)
       actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
     }

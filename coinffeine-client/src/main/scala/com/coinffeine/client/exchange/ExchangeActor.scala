@@ -9,13 +9,13 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPay
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,
     microPaymentChannelActorProps: Props,
-    handshakeFactory: HandshakeFactory[C],
+    exchangeProtocol: ExchangeProtocol,
     microPaymentChannelFactory: MicropaymentChannelFactory[C],
     constants: ProtocolConstants,
     resultListeners: Set[ActorRef]) extends Actor with ActorLogging {
@@ -36,11 +36,13 @@ class ExchangeActor[C <: FiatCurrency](
     }
 
     private def startHandshake(): Unit = {
-      val handshake = handshakeFactory(init.exchange, role, userWallet)
+      // TODO: ask the wallet actor for funds
+      val funds = UnspentOutput.collect(role.myDepositAmount(exchange.amounts), userWallet)
+      val handshake =
+        exchangeProtocol.createHandshake(exchange, role, funds, userWallet.getChangeAddress)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange,
-        role,
-        handshake, constants, messageGateway, blockchain, resultListeners = Set(self))
+        exchange, role, handshake, constants, messageGateway, blockchain, resultListeners = Set(self)
+      )
     }
 
     private val inMicropaymentChannel: Receive = {
@@ -109,7 +111,6 @@ object ExchangeActor {
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
 
-  type HandshakeFactory[C <: FiatCurrency] = (Exchange[C], Role, Wallet) => Handshake[C]
   type MicropaymentChannelFactory[C <: FiatCurrency] = (
     Exchange[C],
     Role,

@@ -20,8 +20,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def protocolConstants: ProtocolConstants
 
-  lazy val handshake =
-    new MockHandshake(exchange, userRole, amount => createWallet(new KeyPair, amount), network)
+  lazy val handshake = new MockHandshake(exchange, userRole)
   val listener = TestProbe()
   val blockchain = TestProbe()
   val actor = system.actorOf(Props[DefaultHandshakeActor[Euro.type]], "handshake-actor")
