@@ -2,10 +2,9 @@ package com.coinffeine.client.handshake
 
 import akka.actor.{ActorRef, Props}
 
-import com.coinffeine.common
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
@@ -27,7 +26,7 @@ object HandshakeActor {
   case class StartHandshake[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
-      handshake: common.exchange.Handshake[C],
+      handshake: Handshake[C],
       constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,

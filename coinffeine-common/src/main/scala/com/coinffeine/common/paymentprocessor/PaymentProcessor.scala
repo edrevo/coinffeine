@@ -1,6 +1,9 @@
 package com.coinffeine.common.paymentprocessor
 
+import scala.concurrent.duration._
+
 import akka.actor.Props
+import akka.util.Timeout
 
 import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
@@ -72,6 +75,9 @@ object PaymentProcessor {
     * given currency cannot be retrieved.
     */
   case class BalanceRetrievalFailed[C <: FiatCurrency](currency: C, error: Throwable)
+
+  /** Payment processor requests should be considered to have failed after this period */
+  val RequestTimeout = Timeout(5.seconds)
 
   /** A component able to provide the Akka properties needed to instantiate a new
     * Payment processor actor.

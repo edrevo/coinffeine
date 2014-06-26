@@ -4,5 +4,5 @@ import com.coinffeine.common.FiatCurrency
 
 package object exchange {
 
-  type AnyExchange = Exchange[_ <: FiatCurrency]
+  type AnyExchange = ProtoMicroPaymentChannel[_ <: FiatCurrency]
 }

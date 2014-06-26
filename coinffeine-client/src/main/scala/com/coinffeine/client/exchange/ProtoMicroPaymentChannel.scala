@@ -1,19 +1,12 @@
 package com.coinffeine.client.exchange
 
-import scala.concurrent.Future
 import scala.util.Try
 
-import com.coinffeine.client.ExchangeInfo
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
-import com.coinffeine.common.paymentprocessor.AnyPayment
 
-trait Exchange[C <: FiatCurrency] {
-  this: UserRole =>
-
-  val exchangeInfo: ExchangeInfo[C]
-
+trait ProtoMicroPaymentChannel[C <: FiatCurrency] {
   /** Returns the bitcoin transaction that corresponds with the offer for the passed in step */
   def getOffer(step: Int): MutableTransaction
 
@@ -36,12 +29,6 @@ trait Exchange[C <: FiatCurrency] {
   /** Validates that the signatures are valid for the final offer */
   def validateSellersFinalSignature(
     signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit]
-
-  /** Validates that the paymentId represents a valid payment for the step */
-  def validatePayment(step: Int, paymentId: String): Future[Unit]
-
-  /** Performs a payment for a step of the exchange */
-  def pay(step: Int): Future[AnyPayment]
 
   /** Returns the user's signature for the transaction */
   protected def sign(offer: MutableTransaction): StepSignatures

@@ -21,7 +21,7 @@ import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 
-class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
+class ProtoMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
     with BitcoinjTest with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
@@ -34,12 +34,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
-  private val mockExchange = new MockExchange(exchangeInfo) with BuyerUser[Euro.type]
+  private val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo)
   private def exchangeFactory(
       exchangeInfo: ExchangeInfo[Euro.type],
       paymentProc: ActorRef,
       tx1: MutableTransaction,
-      tx2: MutableTransaction): Exchange[Euro.type] with BuyerUser[Euro.type] = mockExchange
+      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] = mockExchange
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
@@ -54,8 +54,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     wallet.addKey(exchangeInfo.user.bitcoinKey)
     wallet
   }
-  private val dummyPaymentProcessor = system.actorOf(new MockPaymentProcessorFactory(List.empty).newProcessor(
-    fiatAddress = "", initialBalance = Seq.empty))
+  private val dummyPaymentProcessor = system.actorOf(
+    new MockPaymentProcessorFactory(List.empty)
+      .newProcessor(fiatAddress = "", initialBalance = Seq.empty)
+  )
 
   trait Fixture {
     val handshake = new MockHandshake(
@@ -64,7 +66,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val listener = TestProbe()
     val blockchain = TestProbe()
     val actor = system.actorOf(
-      Props(new ExchangeActor[Euro.type, BuyerUser[Euro.type]](
+      Props(new ExchangeActor[Euro.type](
         handshakeProps,
         exchangeProps,
         (_, _, _) => handshake,
@@ -85,7 +87,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   "The exchange actor" should "report an exchange success if both handshake " +
       "and exchange work as expected" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+      exchange, exchangeInfo.role, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
     )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
@@ -103,7 +105,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        mockExchange, protocolConstants, gateway.ref, Set(actor)))
+        exchange, exchangeInfo.role, mockExchange, protocolConstants, dummyPaymentProcessor, gateway.ref, Set(actor)))
       queueItem.sender should be (actor)
       actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
     }
@@ -114,7 +116,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the handshake fails" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+      exchange, exchangeInfo.role, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
     )
     val error = new Error("Handshake error")
     withActor(HandshakeActorName) { handshakeActor =>
@@ -131,7 +133,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the blockchain can't find the commitment txs" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+      exchange, exchangeInfo.role, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
     )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
@@ -154,7 +156,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the actual exchange fails" in new Fixture {
     actor ! StartExchange(
-      exchangeInfo.role, exchange, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+      exchange, exchangeInfo.role, exchangeInfo, userWallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
     )
     withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
@@ -173,7 +175,9 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        mockExchange, protocolConstants, gateway.ref, Set(actor)))
+        exchange, exchangeInfo.role, mockExchange, protocolConstants, dummyPaymentProcessor,
+        gateway.ref, Set(actor)
+      ))
       queueItem.sender should be (actor)
       actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }

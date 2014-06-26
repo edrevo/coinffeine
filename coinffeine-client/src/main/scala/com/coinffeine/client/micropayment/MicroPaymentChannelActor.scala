@@ -2,9 +2,10 @@ package com.coinffeine.client.micropayment
 
 import akka.actor.ActorRef
 
-import com.coinffeine.client.exchange.{Exchange, UserRole}
+import com.coinffeine.client.exchange.ProtoMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
@@ -13,9 +14,12 @@ import com.coinffeine.common.protocol.ProtocolConstants
 object MicroPaymentChannelActor {
 
   /** Sent to the the actor to start the actual exchange through the micropayment channel. */
-  case class StartMicroPaymentChannel[C <: FiatCurrency, Role <: UserRole](
-      exchange: Exchange[C] with Role,
+  case class StartMicroPaymentChannel[C <: FiatCurrency](
+      exchange: Exchange[C],
+      role: Role,
+      channel: ProtoMicroPaymentChannel[C],
       constants: ProtocolConstants,
+      paymentProcessor: ActorRef,
       messageGateway: ActorRef,
       resultListeners: Set[ActorRef]
   )

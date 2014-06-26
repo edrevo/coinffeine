@@ -5,14 +5,17 @@ import scala.language.postfixOps
 
 import akka.actor.Props
 import akka.testkit.TestProbe
+import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.exchange.{MockExchange, SellerUser}
+import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, PaymentDescription}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.paymentprocessor.Payment
+import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
@@ -20,18 +23,22 @@ import com.coinffeine.common.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange") with MockitoSugar {
   val listener = TestProbe()
+  val paymentProcessor = TestProbe()
   val exchangeInfo = sampleExchangeInfo
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val mockExchange = new MockExchange(exchangeInfo) with SellerUser[Euro.type]
+  val mockExchange = new MockProtoMicroPaymentChannel(exchangeInfo)
   override val broker: PeerConnection = exchangeInfo.broker.connection
   override val counterpart: PeerConnection = exchangeInfo.counterpart.connection
   val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
   listener.watch(actor)
 
-  actor ! StartMicroPaymentChannel(mockExchange, protocolConstants, gateway.ref, Set(listener.ref))
+  actor ! StartMicroPaymentChannel(
+    exchange, exchangeInfo.role, mockExchange, protocolConstants, paymentProcessor.ref, gateway.ref,
+    Set(listener.ref)
+  )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
@@ -56,13 +63,16 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+    expectPayment(1)
     shouldForward(StepSignatures(exchangeInfo.id, 2, mockExchange.signStep(2).toTuple)) to counterpart
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+    expectPayment(2)
     for (i <- 3 to exchangeInfo.parameters.breakdown.intermediateSteps) {
       actor ! fromCounterpart(PaymentProof(exchangeInfo.id, "PROOF!"))
+      expectPayment(i)
       shouldForward(StepSignatures(exchangeInfo.id, i, mockExchange.signStep(i).toTuple)) to counterpart
     }
   }
@@ -74,5 +84,17 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send a notification to the listeners once the exchange has finished" in {
     listener.expectMsg(ExchangeSuccess)
+  }
+
+  private def expectPayment(step: Int): Unit = {
+    val FindPayment(paymentId) = paymentProcessor.expectMsgClass(classOf[FindPayment])
+    paymentProcessor.reply(PaymentFound(Payment(
+      id = paymentId,
+      senderId = exchange.buyer.paymentProcessorAccount,
+      receiverId = exchange.seller.paymentProcessorAccount,
+      description = PaymentDescription(exchange.id, step),
+      amount = exchange.amounts.stepFiatAmount,
+      date = DateTime.now()
+    )))
   }
 }
