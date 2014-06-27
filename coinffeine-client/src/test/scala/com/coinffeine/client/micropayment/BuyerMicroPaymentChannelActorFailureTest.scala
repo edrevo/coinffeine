@@ -1,7 +1,7 @@
 package com.coinffeine.client.micropayment
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Try}
+import scala.util.Failure
 
 import akka.actor.Props
 import akka.testkit.TestProbe
@@ -13,7 +13,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.BuyerRole
-import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Step, StepSignatures => Signatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Signatures, Step}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
@@ -22,7 +22,7 @@ class BuyerMicroPaymentChannelActorFailureTest
 
   val protocolConstants = ProtocolConstants(exchangeSignatureTimeout = 0.5 seconds)
   val channel = new MockProtoMicroPaymentChannel(exchange)
-  val dummySig = TransactionSignature.dummy
+  val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
 
   trait Fixture {
     val listener = TestProbe()
@@ -38,35 +38,31 @@ class BuyerMicroPaymentChannelActorFailureTest
 
   "The buyer exchange actor" should "return a failure message if the seller does not provide the" +
     " step signature within the specified timeout" in new Fixture {
-      startMicroPaymentChannel()
-      val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-      failure.lastOffer should be (None)
-      failure.cause.isInstanceOf[TimeoutException] should be (true)
+    startMicroPaymentChannel()
+    val failure = listener.expectMsgClass(classOf[ExchangeFailure])
+    failure.lastOffer should be (None)
+    failure.cause shouldBe a [TimeoutException]
   }
 
   it should "return the last signed offer when a timeout happens" in new Fixture{
     startMicroPaymentChannel()
-    actor ! fromCounterpart(StepSignatures(exchange.id, 1, dummySig, dummySig))
+    actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (Some(channel.getSignedOffer(
-      IntermediateStep(1), Signatures(dummySig, dummySig))))
-    failure.cause.isInstanceOf[TimeoutException] should be (true)
+    failure.lastOffer should be (Some(channel.getSignedOffer(IntermediateStep(1), signatures)))
+    failure.cause shouldBe a [TimeoutException]
   }
 
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
     val error = new Error("Some error")
     val rejectingChannel = new MockProtoMicroPaymentChannel(exchange) {
-      override def validateSellersSignature(
-          step: Step,
-          signature0: TransactionSignature,
-          signature1: TransactionSignature): Try[Unit] = Failure(error)
+      override def validateSellersSignature(step: Step, signatures: Signatures) = Failure(error)
     }
     startMicroPaymentChannel(rejectingChannel)
-    actor ! fromCounterpart(StepSignatures(exchange.id, 1, dummySig, dummySig))
+    actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be ('empty)
-    failure.cause.isInstanceOf[InvalidStepSignature] should be (true)
-    failure.cause.asInstanceOf[InvalidStepSignature].step should be (IntermediateStep(1))
-    failure.cause.asInstanceOf[InvalidStepSignature].cause should be (error)
+    failure.cause.isInstanceOf[InvalidStepSignatures] should be (true)
+    failure.cause.asInstanceOf[InvalidStepSignatures].step should be (IntermediateStep(1))
+    failure.cause.asInstanceOf[InvalidStepSignatures].cause should be (error)
   }
 }

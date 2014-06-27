@@ -10,8 +10,8 @@ import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Step, StepSignatures => Signatures}
+import com.coinffeine.common.bitcoin.MutableTransaction
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures, Step}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -50,7 +50,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     private def subscribeToMessages(): Unit = {
       val counterpart = role.her(exchange).connection
       messageGateway ! Subscribe {
-        case ReceiveMessage(StepSignatures(exchange.`id`, _, _, _), `counterpart`) => true
+        case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) => true
         case _ => false
       }
     }
@@ -69,7 +69,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private val waitForFinalSignature: Receive = withStepTimeout(FinalStep) {
-      waitForValidSignature(FinalStep) { (signature0, signature1) =>
+      waitForValidSignature(FinalStep) { signatures =>
         log.info(s"Exchange ${exchange.id}: exchange finished with success")
         // TODO: Publish transaction to blockchain
         finishWith(ExchangeSuccess)
@@ -77,15 +77,14 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     }
 
     private def waitForNextStepSignature(step: IntermediateStep): Receive = withStepTimeout(step) {
-      waitForValidSignature(step) { (signature0, signature1) =>
-        lastSignedOffer = Some(channel.getSignedOffer(step, Signatures(signature0, signature1)))
+      waitForValidSignature(step) { signatures =>
+        lastSignedOffer = Some(channel.getSignedOffer(step, signatures))
         forwarding.forwardToCounterpart(pay(step))
         context.become(nextWait(step))
       }
     }
 
-    private def waitForValidSignature(
-        step: Step)(body: (TransactionSignature, TransactionSignature) => Unit): Receive = {
+    private def waitForValidSignature(step: Step)(body: Signatures => Unit): Receive = {
 
       val stepNumber = step match {
         case IntermediateStep(i) => i
@@ -93,15 +92,14 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
       }
 
       {
-        case ReceiveMessage(StepSignatures(_, `stepNumber`, signature0, signature1), _) =>
-          channel.validateSellersSignature(step, signature0, signature1) match {
+        case ReceiveMessage(StepSignatures(_, `stepNumber`, signatures), _) =>
+          channel.validateSellersSignature(step, signatures) match {
             case Success(_) =>
-              body(signature0, signature1)
+              body(signatures)
             case Failure(cause) =>
-              log.warning(s"Received invalid signature for step $step: " +
-                s"($signature0, $signature1). Reason: $cause")
+              log.warning(s"Received invalid signature for step $step: ($signatures). Reason: $cause")
               finishWith(ExchangeFailure(
-                InvalidStepSignature(step, signature0, signature1, cause), lastSignedOffer))
+                InvalidStepSignatures(step, signatures, cause), lastSignedOffer))
           }
       }
     }

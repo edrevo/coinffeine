@@ -2,8 +2,6 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigDecimal
 import java.util.Currency
-import com.coinffeine.common.exchange.Exchange
-
 import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
@@ -11,6 +9,8 @@ import com.google.protobuf.ByteString
 import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin.Hash
+import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._
@@ -241,15 +241,19 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def fromProtobuf(message: msg.StepSignature) = StepSignatures(
       exchangeId = Exchange.Id(message.getExchangeId),
       step = message.getStep,
-      idx0Signature = txSerialization.deserializeSignature(message.getIdx0Signature),
-      idx1Signature = txSerialization.deserializeSignature(message.getIdx1Signature)
+      signatures = Signatures(
+        buyerDepositSignature =
+          txSerialization.deserializeSignature(message.getBuyerDepositSignature),
+        sellerDepositSignature =
+          txSerialization.deserializeSignature(message.getSellerDepositSignature)
+      )
     )
 
     override def toProtobuf(obj: StepSignatures) = msg.StepSignature.newBuilder
       .setExchangeId(obj.exchangeId.value)
       .setStep(obj.step)
-      .setIdx0Signature(txSerialization.serialize(obj.idx0Signature))
-      .setIdx1Signature(txSerialization.serialize(obj.idx1Signature))
+      .setBuyerDepositSignature(txSerialization.serialize(obj.signatures.buyerDepositSignature))
+      .setSellerDepositSignature(txSerialization.serialize(obj.signatures.sellerDepositSignature))
       .build()
   }
 

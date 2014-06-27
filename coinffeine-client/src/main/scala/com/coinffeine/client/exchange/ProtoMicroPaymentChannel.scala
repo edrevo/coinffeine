@@ -11,18 +11,17 @@ trait ProtoMicroPaymentChannel[C <: FiatCurrency] {
   def getOffer(step: Step): MutableTransaction
 
   /** Returns a signed transaction ready to be broadcast */
-  def getSignedOffer(step: IntermediateStep, counterpartSignatures: StepSignatures): MutableTransaction
+  def getSignedOffer(step: IntermediateStep, counterpartSignatures: Signatures): MutableTransaction
 
   /** Returns the transaction signature for the corresponding step */
-  def signStep(step: Step): StepSignatures = sign(getOffer(step))
+  def signStep(step: Step): Signatures = sign(getOffer(step))
 
   /** Returns the transaction signature for the final step */
-  def signFinalStep: StepSignatures = signStep(FinalStep)
+  def signFinalStep: Signatures = signStep(FinalStep)
 
   /** Validates that the signatures are valid for the offer in the passed in step */
-  def validateSellersSignature(
-    step: Step, signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit]
+  def validateSellersSignature(step: Step, signatures: Signatures): Try[Unit]
 
   /** Returns the user's signature for the transaction */
-  protected def sign(offer: MutableTransaction): StepSignatures
+  protected def sign(offer: MutableTransaction): Signatures
 }

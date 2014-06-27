@@ -12,7 +12,7 @@ import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, StepSignatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures}
 import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
 
 class DefaultProtoMicroPaymentChannelTest
@@ -106,14 +106,18 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "validate the seller's final signature" in new WithChannels {
-    val StepSignatures(signature0, signature1) = sellerChannel.signFinalStep
-    buyerChannel.validateSellersSignature(FinalStep, signature0, signature1) should be ('success)
-    sellerChannel.validateSellersSignature(FinalStep, signature0, signature1) should be ('success)
-    buyerChannel.validateSellersSignature(FinalStep, signature1, signature0) should be ('failure)
+    val signatures = sellerChannel.signFinalStep
+    buyerChannel.validateSellersSignature(FinalStep, signatures) should be ('success)
+    sellerChannel.validateSellersSignature(FinalStep, signatures) should be ('success)
+    val swappedSignatures = Signatures(
+      buyerDepositSignature = signatures.sellerDepositSignature,
+      sellerDepositSignature = signatures.buyerDepositSignature
+    )
+    buyerChannel.validateSellersSignature(FinalStep, swappedSignatures) should be ('failure)
 
-    val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.signFinalStep
-    buyerChannel.validateSellersSignature(FinalStep, buyerSignature0, buyerSignature1) should be ('failure)
-    sellerChannel.validateSellersSignature(FinalStep, buyerSignature0, buyerSignature1) should be ('failure)
+    val buyerSignatures = buyerChannel.signFinalStep
+    buyerChannel.validateSellersSignature(FinalStep, buyerSignatures) should be ('failure)
+    sellerChannel.validateSellersSignature(FinalStep, buyerSignatures) should be ('failure)
   }
 
   for (i <- 1 to exchange.parameters.breakdown.intermediateSteps) {
@@ -135,13 +139,18 @@ class DefaultProtoMicroPaymentChannelTest
     }
 
     it should s"validate the seller's signatures correctly for $step" in new WithChannels {
-      val StepSignatures(signature0, signature1) = sellerChannel.signStep(step)
-      buyerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)
-      sellerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)
-      buyerChannel.validateSellersSignature(step, signature1, signature0) should be ('failure)
-      val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.signStep(step)
-      buyerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
-      sellerChannel.validateSellersSignature(step, buyerSignature0, buyerSignature1) should be ('failure)
+      val signatures = sellerChannel.signStep(step)
+      buyerChannel.validateSellersSignature(step, signatures) should be ('success)
+      sellerChannel.validateSellersSignature(step, signatures) should be ('success)
+      val swappedSignatures = Signatures(
+        buyerDepositSignature = signatures.sellerDepositSignature,
+        sellerDepositSignature = signatures.buyerDepositSignature
+      )
+      buyerChannel.validateSellersSignature(step, swappedSignatures) should be ('failure)
+
+      val buyerSignatures = buyerChannel.signStep(step)
+      buyerChannel.validateSellersSignature(step, buyerSignatures) should be ('failure)
+      sellerChannel.validateSellersSignature(step, buyerSignatures) should be ('failure)
     }
   }
 

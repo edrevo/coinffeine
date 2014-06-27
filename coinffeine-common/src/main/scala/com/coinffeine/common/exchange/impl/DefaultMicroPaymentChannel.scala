@@ -3,7 +3,7 @@ package com.coinffeine.common.exchange.impl
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, StepSignatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures}
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel(
@@ -37,7 +37,7 @@ private[impl] class DefaultMicroPaymentChannel(
     )
   }
 
-  override def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean = {
+  override def validateCurrentTransactionSignatures(herSignatures: Signatures): Boolean = {
     val tx = currentUnsignedTransaction.get
     val herKey = role.her(exchange).bitcoinKey
 
@@ -51,7 +51,7 @@ private[impl] class DefaultMicroPaymentChannel(
   override def signCurrentTransaction = {
     val tx = currentUnsignedTransaction.get
     val signingKey = role.me(exchange).bitcoinKey
-    StepSignatures(
+    Signatures(
       buyerDepositSignature = TransactionProcessor.signMultiSignedOutput(
         tx, BuyerDepositInputIndex, signingKey, requiredSignatures),
       sellerDepositSignature = TransactionProcessor.signMultiSignedOutput(
@@ -68,7 +68,7 @@ private[impl] class DefaultMicroPaymentChannel(
     new DefaultMicroPaymentChannel(role, exchange, deposits, nextStep)
   }
 
-  override def closingTransaction(herSignatures: StepSignatures) = {
+  override def closingTransaction(herSignatures: Signatures) = {
     val tx = currentUnsignedTransaction.get
     val signatures = Seq(signCurrentTransaction, herSignatures)
     val buyerSignatures = signatures.map(_.buyerDepositSignature)

@@ -16,10 +16,7 @@ class MockProtoMicroPaymentChannel[C <: FiatCurrency](exchange: Exchange[C])
     tx
   })
 
-  override def validateSellersSignature(
-      step: Step,
-      signature0: TransactionSignature,
-      signature1: TransactionSignature): Try[Unit] = Success {}
+  override def validateSellersSignature(step: Step, signatures: Signatures): Try[Unit] = Success {}
 
   override def getOffer(step: Step): MutableTransaction = step match {
     case IntermediateStep(i) => offers(i - 1)
@@ -30,8 +27,8 @@ class MockProtoMicroPaymentChannel[C <: FiatCurrency](exchange: Exchange[C])
   }
 
   override protected def sign(offer: MutableTransaction) =
-    StepSignatures(TransactionSignature.dummy, TransactionSignature.dummy)
+    Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
 
-  override def getSignedOffer(step: IntermediateStep, counterpartSignatures: StepSignatures) =
+  override def getSignedOffer(step: IntermediateStep, counterpartSignatures: Signatures) =
     getOffer(step)
 }

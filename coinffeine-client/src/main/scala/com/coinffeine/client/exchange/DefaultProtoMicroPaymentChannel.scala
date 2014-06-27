@@ -71,19 +71,16 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
       network = exchange.parameters.network
     )
 
-  override def validateSellersSignature(
-      step: Step,
-      signature0: TransactionSignature,
-      signature1: TransactionSignature): Try[Unit] =
+  override def validateSellersSignature(step: Step, signatures: Signatures): Try[Unit] =
     validateSellersSignature(
       getOffer(step),
-      signature0,
-      signature1,
-      s"The provided signature is invalid for the offer in $step")
+      signatures,
+      s"The provided signature is invalid for the offer in $step"
+    )
 
   override protected def sign(offer: MutableTransaction) = {
     val key = role.me(exchange).bitcoinKey
-    StepSignatures(
+    Signatures(
       buyerDepositSignature =
         TransactionProcessor.signMultiSignedOutput(offer, 0, key, requiredSignatures),
       sellerDepositSignature =
@@ -93,11 +90,12 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
 
   private def validateSellersSignature(
       tx: MutableTransaction,
-      signature0: TransactionSignature,
-      signature1: TransactionSignature,
+      signatures: Signatures,
       validationErrorMessage: String): Try[Unit] = Try {
-    validateSellersSignature(tx, 0, signature0, validationErrorMessage)
-    validateSellersSignature(tx, 1, signature1, validationErrorMessage)
+    validateSellersSignature(
+      tx, BuyerDepositInputIndex, signatures.buyerDepositSignature, validationErrorMessage)
+    validateSellersSignature(
+      tx, SellerDepositInputIndex, signatures.sellerDepositSignature, validationErrorMessage)
   }
 
   private def validateSellersSignature(
@@ -112,7 +110,7 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
   }
 
   /** Returns a signed transaction ready to be broadcast */
-  override def getSignedOffer(step: IntermediateStep, herSignatures: StepSignatures) = {
+  override def getSignedOffer(step: IntermediateStep, herSignatures: Signatures) = {
     val tx = getOffer(step)
     val signatures = Seq(sign(tx), herSignatures)
     TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, signatures.map(_.buyerDepositSignature): _*)

@@ -7,9 +7,9 @@ trait MicroPaymentChannel {
 
   def currentStep: Step
 
-  def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean
+  def validateCurrentTransactionSignatures(herSignatures: Signatures): Boolean
 
-  def signCurrentTransaction: StepSignatures
+  def signCurrentTransaction: Signatures
 
   def nextStep: MicroPaymentChannel
 
@@ -22,7 +22,7 @@ trait MicroPaymentChannel {
     *  * For an intermediate step, just the confirmed steps amounts for the buyer and the
     *    rest of the amount to exchange for the seller. Note that deposits are lost as fees.
     */
-  def closingTransaction(herSignatures: StepSignatures): ImmutableTransaction
+  def closingTransaction(herSignatures: Signatures): ImmutableTransaction
 }
 
 object MicroPaymentChannel {
@@ -34,8 +34,8 @@ object MicroPaymentChannel {
   case object FinalStep extends Step
 
   /** Signatures for a step transaction of both deposits. */
-  case class StepSignatures(buyerDepositSignature: TransactionSignature,
-                            sellerDepositSignature: TransactionSignature) {
+  case class Signatures(buyerDepositSignature: TransactionSignature,
+                        sellerDepositSignature: TransactionSignature) {
     def toTuple: (TransactionSignature, TransactionSignature) =
       (buyerDepositSignature, sellerDepositSignature)
   }

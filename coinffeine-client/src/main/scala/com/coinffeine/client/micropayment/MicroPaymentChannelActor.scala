@@ -4,9 +4,9 @@ import akka.actor.ActorRef
 
 import com.coinffeine.client.exchange.ProtoMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
+import com.coinffeine.common.bitcoin.MutableTransaction
 import com.coinffeine.common.exchange.{Exchange, Role}
-import com.coinffeine.common.exchange.MicroPaymentChannel.Step
+import com.coinffeine.common.exchange.MicroPaymentChannel.{Signatures, Step}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
@@ -35,11 +35,6 @@ object MicroPaymentChannelActor {
 
   case class TimeoutException(message: String) extends RuntimeException(message)
 
-  case class InvalidStepSignature(
-      step: Step,
-      sig0: TransactionSignature,
-      sig1: TransactionSignature,
-      cause: Throwable) extends RuntimeException(
-    s"Received an invalid step signature for $step. Received: ($sig0, $sig1)",
-    cause)
+  case class InvalidStepSignatures(step: Step, sigs: Signatures, cause: Throwable)
+    extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)
 }
