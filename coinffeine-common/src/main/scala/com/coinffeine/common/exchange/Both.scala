@@ -13,6 +13,8 @@ case class Both[T](buyer: T, seller: T) {
     case SellerRole => seller
   }
 
+  def toSet: Set[T] = Set(buyer, seller)
+
   def toSeq: Seq[T] = Seq(buyer, seller)
 
   def toTuple: (T, T) = (buyer, seller)

@@ -10,6 +10,7 @@ import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Both
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
@@ -79,13 +80,13 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     }
 
     private def getNotifiedByBroker(refund: ImmutableTransaction): Receive = {
-      case ReceiveMessage(CommitmentNotification(_, buyerTx, sellerTx), _) =>
-        Set(buyerTx, sellerTx).foreach { tx =>
+      case ReceiveMessage(CommitmentNotification(_, bothCommitments), _) =>
+        bothCommitments.toSeq.foreach { tx =>
           blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
         }
-        log.info("Handshake {}: The broker published {} and {}, waiting for confirmations",
-          exchange.id, buyerTx, sellerTx)
-        context.become(waitForConfirmations(sellerTx, buyerTx, refund))
+        log.info("Handshake {}: The broker published {}, waiting for confirmations",
+          exchange.id, bothCommitments)
+        context.become(waitForConfirmations(bothCommitments, refund))
     }
 
     private val abortOnBrokerNotification: Receive = {
@@ -101,14 +102,14 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
       getNotifiedByBroker(refund) orElse signCounterpartRefund orElse abortOnBrokerNotification
 
     private def waitForConfirmations(
-        sellerTx: Hash, buyerTx: Hash, refund: ImmutableTransaction): Receive = {
+        bothCommitments: Both[Hash], refund: ImmutableTransaction): Receive = {
       def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
         case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
           val stillPending = pendingConfirmation - tx
           if (stillPending.nonEmpty) {
             context.become(waitForPendingConfirmations(stillPending))
           } else {
-            finishWithResult(Success(HandshakeSuccess(sellerTx, buyerTx, refund)))
+            finishWithResult(Success(HandshakeSuccess(bothCommitments, refund)))
           }
 
         case TransactionRejected(tx) =>
@@ -117,7 +118,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
           log.error("Handshake {}: {}", exchange.id, cause.getMessage)
           finishWithResult(Failure(cause))
       }
-      waitForPendingConfirmations(Set(buyerTx, sellerTx))
+      waitForPendingConfirmations(bothCommitments.toSet)
     }
 
     private def subscribeToMessages(): Unit = {
@@ -127,7 +128,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
       messageGateway ! Subscribe {
         case ReceiveMessage(RefundTxSignatureRequest(`id`, _), `counterpart`) => true
         case ReceiveMessage(RefundTxSignatureResponse(`id`, _), `counterpart`) => true
-        case ReceiveMessage(CommitmentNotification(`id`, _, _), `broker`) => true
+        case ReceiveMessage(CommitmentNotification(`id`, _), `broker`) => true
         case ReceiveMessage(ExchangeAborted(`id`, _), `broker`) => true
         case _ => false
       }

@@ -9,7 +9,7 @@ import com.google.protobuf.ByteString
 import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin.Hash
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -25,15 +25,17 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
       override def fromProtobuf(commitment: msg.CommitmentNotification) = CommitmentNotification(
         exchangeId = Exchange.Id(commitment.getExchangeId),
-        buyerTxId = new Hash(commitment.getBuyerTxId.toByteArray),
-        sellerTxId = new Hash(commitment.getSellerTxId.toByteArray)
+        bothCommitments = Both(
+          buyer = new Hash(commitment.getBuyerTxId.toByteArray),
+          seller = new Hash(commitment.getSellerTxId.toByteArray)
+        )
       )
 
       override def toProtobuf(commitment: CommitmentNotification) =
         msg.CommitmentNotification.newBuilder
           .setExchangeId(commitment.exchangeId.value)
-          .setBuyerTxId(ByteString.copyFrom(commitment.buyerTxId.getBytes))
-          .setSellerTxId(ByteString.copyFrom(commitment.sellerTxId.getBytes))
+          .setBuyerTxId(ByteString.copyFrom(commitment.bothCommitments.buyer.getBytes))
+          .setSellerTxId(ByteString.copyFrom(commitment.bothCommitments.seller.getBytes))
           .build
     }
 

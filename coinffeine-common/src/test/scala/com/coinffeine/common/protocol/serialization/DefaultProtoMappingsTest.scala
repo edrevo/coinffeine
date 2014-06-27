@@ -9,7 +9,7 @@ import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -74,11 +74,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
     orderSet, orderSetMessage)
 
-  val commitmentNotification = CommitmentNotification(
-    exchangeId = sampleExchangeId,
-    buyerTxId = sampleTxId,
-    sellerTxId = sampleTxId
-  )
+  val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setBuyerTxId(ByteString.copyFrom(sampleTxId.getBytes))
