@@ -12,26 +12,6 @@ import com.coinffeine.common.bitcoin._
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
 
-  @deprecated
-  def createMultiSignedDeposit(userWallet: Wallet,
-                               amountToCommit: BitcoinAmount,
-                               requiredSignatures: Seq[PublicKey],
-                               network: Network): MutableTransaction = {
-    require(amountToCommit.isPositive, "Amount to commit must be greater than zero")
-
-    val inputFunds = collectFunds(userWallet, amountToCommit)
-    val totalInputFunds = valueOf(inputFunds)
-    require(totalInputFunds >= amountToCommit,
-      "Input funds must cover the amount of funds to commit")
-
-    val tx = new MutableTransaction(network)
-    inputFunds.foreach(tx.addInput)
-    addMultisignOutput(tx, amountToCommit, requiredSignatures)
-    addChangeOutput(tx, totalInputFunds, amountToCommit, userWallet.getChangeAddress)
-    tx.signInputs(SigHash.ALL, userWallet)
-    tx
-  }
-
   def createMultiSignedDeposit(unspentOutputs: Seq[(MutableTransactionOutput, KeyPair)],
                                amountToCommit: BitcoinAmount,
                                changeAddress: Address,
