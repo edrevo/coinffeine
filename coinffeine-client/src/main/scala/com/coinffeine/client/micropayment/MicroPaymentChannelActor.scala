@@ -6,6 +6,7 @@ import com.coinffeine.client.exchange.ProtoMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Step
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
@@ -35,10 +36,10 @@ object MicroPaymentChannelActor {
   case class TimeoutException(message: String) extends RuntimeException(message)
 
   case class InvalidStepSignature(
-      step: Int,
+      step: Step,
       sig0: TransactionSignature,
       sig1: TransactionSignature,
       cause: Throwable) extends RuntimeException(
-    s"Received an invalid step signature for step $step. Received: ($sig0, $sig1)",
+    s"Received an invalid step signature for $step. Received: ($sig0, $sig1)",
     cause)
 }

@@ -12,7 +12,7 @@ import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
-import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, StepSignatures}
 import com.coinffeine.common.exchange.impl.{DefaultExchangeProtocol, TransactionProcessor}
 
 class DefaultProtoMicroPaymentChannelTest
@@ -85,18 +85,18 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "have a final offer that splits the amount as expected" in new WithChannels {
-    val finalOffer = sellerChannel.finalOffer
+    val finalOffer = sellerChannel.getOffer(FinalStep)
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (addAmounts(finalOffer.getOutputs))
     addAmounts(finalOffer.getInputs.map(_.getConnectedOutput)) should
       be (exchange.amounts.bitcoinAmount + (exchange.amounts.stepFiatAmount * 3))
 
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 0, buyerChannel.finalSignatures.buyerDepositSignature,
-      sellerChannel.finalSignatures.buyerDepositSignature)
+      finalOffer, index = 0, buyerChannel.signFinalStep.buyerDepositSignature,
+      sellerChannel.signFinalStep.buyerDepositSignature)
     TransactionProcessor.setMultipleSignatures(
-      finalOffer, index = 1, buyerChannel.finalSignatures.sellerDepositSignature,
-      sellerChannel.finalSignatures.sellerDepositSignature)
+      finalOffer, index = 1, buyerChannel.signFinalStep.sellerDepositSignature,
+      sellerChannel.signFinalStep.sellerDepositSignature)
     sendToBlockChain(finalOffer)
 
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
@@ -106,18 +106,20 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "validate the seller's final signature" in new WithChannels {
-    val StepSignatures(signature0, signature1) = sellerChannel.finalSignatures
-    buyerChannel.validateSellersFinalSignature(signature0, signature1) should be ('success)
-    sellerChannel.validateSellersFinalSignature(signature0, signature1) should be ('success)
-    buyerChannel.validateSellersFinalSignature(signature1, signature0) should be ('failure)
+    val StepSignatures(signature0, signature1) = sellerChannel.signFinalStep
+    buyerChannel.validateSellersSignature(FinalStep, signature0, signature1) should be ('success)
+    sellerChannel.validateSellersSignature(FinalStep, signature0, signature1) should be ('success)
+    buyerChannel.validateSellersSignature(FinalStep, signature1, signature0) should be ('failure)
 
-    val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.finalSignatures
-    buyerChannel.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
-    sellerChannel.validateSellersFinalSignature(buyerSignature0, buyerSignature1) should be ('failure)
+    val StepSignatures(buyerSignature0, buyerSignature1) = buyerChannel.signFinalStep
+    buyerChannel.validateSellersSignature(FinalStep, buyerSignature0, buyerSignature1) should be ('failure)
+    sellerChannel.validateSellersSignature(FinalStep, buyerSignature0, buyerSignature1) should be ('failure)
   }
 
-  for (step <- 1 to exchange.parameters.breakdown.intermediateSteps) {
-    it should s"have an intermediate offer $step that splits the amount as expected" in new WithChannels {
+  for (i <- 1 to exchange.parameters.breakdown.intermediateSteps) {
+    val step = IntermediateStep(i)
+
+    it should s"have an $step offer that splits the amount as expected" in new WithChannels {
       val stepOffer = sellerChannel.getOffer(step)
       addAmounts(stepOffer.getInputs.map(_.getConnectedOutput)) should
         be (addAmounts(stepOffer.getOutputs) + (exchange.amounts.stepFiatAmount * 3))
@@ -126,13 +128,13 @@ class DefaultProtoMicroPaymentChannelTest
 
       sendToBlockChain(buyerChannel.getSignedOffer(step, sellerChannel.signStep(step)))
 
-      val expectedSellerBalance = (200 BTC) - exchange.amounts.stepFiatAmount * (step + 1)
+      val expectedSellerBalance = (200 BTC) - exchange.amounts.stepFiatAmount * (i + 1)
       Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (expectedSellerBalance)
-      val expectedBuyerBalance = (5 BTC) + exchange.amounts.stepFiatAmount * (step - 2)
+      val expectedBuyerBalance = (5 BTC) + exchange.amounts.stepFiatAmount * (i - 2)
       Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (expectedBuyerBalance)
     }
 
-    it should s"validate the seller's signatures correctly for step $step" in new WithChannels {
+    it should s"validate the seller's signatures correctly for $step" in new WithChannels {
       val StepSignatures(signature0, signature1) = sellerChannel.signStep(step)
       buyerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)
       sellerChannel.validateSellersSignature(step, signature0, signature1) should be ('success)

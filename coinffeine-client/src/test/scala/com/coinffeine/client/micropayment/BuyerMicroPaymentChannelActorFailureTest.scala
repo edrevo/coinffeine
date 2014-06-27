@@ -13,7 +13,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.BuyerRole
-import com.coinffeine.common.exchange.MicroPaymentChannel.{StepSignatures => Signatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Step, StepSignatures => Signatures}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
@@ -48,7 +48,8 @@ class BuyerMicroPaymentChannelActorFailureTest
     startMicroPaymentChannel()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, dummySig, dummySig))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (Some(channel.getSignedOffer(1, Signatures(dummySig, dummySig))))
+    failure.lastOffer should be (Some(channel.getSignedOffer(
+      IntermediateStep(1), Signatures(dummySig, dummySig))))
     failure.cause.isInstanceOf[TimeoutException] should be (true)
   }
 
@@ -56,7 +57,7 @@ class BuyerMicroPaymentChannelActorFailureTest
     val error = new Error("Some error")
     val rejectingChannel = new MockProtoMicroPaymentChannel(exchange) {
       override def validateSellersSignature(
-          step: Int,
+          step: Step,
           signature0: TransactionSignature,
           signature1: TransactionSignature): Try[Unit] = Failure(error)
     }
@@ -65,7 +66,7 @@ class BuyerMicroPaymentChannelActorFailureTest
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be ('empty)
     failure.cause.isInstanceOf[InvalidStepSignature] should be (true)
-    failure.cause.asInstanceOf[InvalidStepSignature].step should be (1)
+    failure.cause.asInstanceOf[InvalidStepSignature].step should be (IntermediateStep(1))
     failure.cause.asInstanceOf[InvalidStepSignature].cause should be (error)
   }
 }

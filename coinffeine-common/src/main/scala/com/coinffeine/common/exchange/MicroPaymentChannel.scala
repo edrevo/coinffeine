@@ -28,8 +28,8 @@ trait MicroPaymentChannel {
 object MicroPaymentChannel {
 
   sealed trait Step
-  case class IntermediateStep(i: Int) extends Step {
-    require(i > 0, s"Step number must be positive ($i given)")
+  case class IntermediateStep(value: Int) extends Step {
+    require(value > 0, s"Step number must be positive ($value given)")
   }
   case object FinalStep extends Step
 
