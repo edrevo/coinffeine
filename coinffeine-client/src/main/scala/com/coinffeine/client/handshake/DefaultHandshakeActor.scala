@@ -22,7 +22,9 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
   private var timers = Seq.empty[Cancellable]
 
-  override def postStop(): Unit = timers.foreach(_.cancel())
+  override def postStop(): Unit = {
+    timers.foreach(_.cancel())
+  }
 
   override def receive = {
     case init: StartHandshake[C] => new InitializedHandshake(init).startHandshake()
@@ -71,7 +73,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
       case ResubmitRequestSignature =>
         requestRefundSignature()
-        log.info("Handshake {}: Re-requesting refund signature: {}", exchange.id)
+        log.info("Handshake {}: Re-requesting refund signature", exchange.id)
 
       case RequestSignatureTimeout =>
         val cause = RefundSignatureTimeoutException(exchange.id)

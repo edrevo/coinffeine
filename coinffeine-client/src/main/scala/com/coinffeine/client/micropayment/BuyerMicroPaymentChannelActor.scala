@@ -25,10 +25,9 @@ import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSigna
 class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
   extends Actor with ActorLogging with StepTimeout  {
 
-  // TODO: use or remove stepTimers
-  private var stepTimers = Seq.empty[Cancellable]
-
-  override def postStop(): Unit = stepTimers.foreach(_.cancel())
+  override def postStop(): Unit = {
+    cancelTimeout()
+  }
 
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C] =>
