@@ -11,4 +11,7 @@ class MockExchangeProtocol extends ExchangeProtocol {
       role: Role,
       unspentOutputs: Seq[UnspentOutput],
       changeAddress: Address): Handshake[C] = new MockHandshake[C](exchange, role)
+
+  override def createMicroPaymentChannel[C <: FiatCurrency](
+      exchange: Exchange[C], role: Role, deposits: Deposits): MicroPaymentChannel[C] = ???
 }

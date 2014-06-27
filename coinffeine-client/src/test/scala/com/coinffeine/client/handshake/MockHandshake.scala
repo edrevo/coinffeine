@@ -39,6 +39,4 @@ class MockHandshake[C <: FiatCurrency](exchange: Exchange[C], role: Role) extend
     tx.setLockTime(lockTime)
     tx
   }
-
-  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = ???
 }

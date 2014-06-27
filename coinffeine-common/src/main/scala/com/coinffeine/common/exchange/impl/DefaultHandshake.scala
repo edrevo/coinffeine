@@ -6,8 +6,8 @@ import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 private[impl] class DefaultHandshake[C <: FiatCurrency](
-   role: Role,
    exchange: Exchange[C],
+   role: Role,
    override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
@@ -40,12 +40,6 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
       TransactionProcessor.setMultipleSignatures(tx, 0, buyerSignature, sellerSignature)
       tx
     }
-  }
-
-  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = {
-    val buyerDeposit = role.buyer(myDeposit, herDeposit)
-    val sellerDeposit = role.seller(myDeposit, herDeposit)
-    new DefaultMicroPaymentChannel[C](role, exchange, Deposits(buyerDeposit, sellerDeposit))
   }
 
   private def signRefundTransaction(tx: MutableTransaction,

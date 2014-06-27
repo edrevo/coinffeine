@@ -20,7 +20,13 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey), exchange.parameters.network)
     }
-    new DefaultHandshake(role, exchange, myDeposit)
+    new DefaultHandshake(exchange, role, myDeposit)
+  }
+
+  override def createMicroPaymentChannel[C <: FiatCurrency](exchange: Exchange[C],
+                                                            role: Role,
+                                                            deposits: Deposits) = {
+    new DefaultMicroPaymentChannel[C](role, exchange, deposits)
   }
 }
 

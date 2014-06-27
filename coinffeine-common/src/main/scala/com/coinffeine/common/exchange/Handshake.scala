@@ -16,8 +16,6 @@ trait Handshake[C <: FiatCurrency] {
 
   @throws[InvalidRefundTransaction]("refund transaction was not valid (e.g. incorrect amount)")
   def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature
-
-  def createMicroPaymentChannel(herDeposit: ImmutableTransaction): MicroPaymentChannel[C]
 }
 
 object Handshake {
