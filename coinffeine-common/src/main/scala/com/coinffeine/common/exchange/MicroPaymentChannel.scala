@@ -1,10 +1,9 @@
 package com.coinffeine.common.exchange
 
-import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-trait MicroPaymentChannel[C <: FiatCurrency] {
+trait MicroPaymentChannel {
 
   def currentStep: Step
 
@@ -12,7 +11,7 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
 
   def signCurrentTransaction: StepSignatures
 
-  def nextStep: MicroPaymentChannel[C]
+  def nextStep: MicroPaymentChannel
 
   /** Given valid counterpart signatures it generates the closing transaction.
     *

@@ -5,10 +5,10 @@ import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, 
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
-private[impl] class DefaultHandshake[C <: FiatCurrency](
-   exchange: Exchange[C],
+private[impl] class DefaultHandshake(
+   exchange: Exchange[_ <: FiatCurrency],
    role: Role,
-   override val myDeposit: ImmutableTransaction) extends Handshake[C] {
+   override val myDeposit: ImmutableTransaction) extends Handshake {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,

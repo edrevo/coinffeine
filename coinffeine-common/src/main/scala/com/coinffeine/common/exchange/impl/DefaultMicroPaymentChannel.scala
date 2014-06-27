@@ -6,12 +6,12 @@ import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, StepSignatures}
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
-private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency](
+private[impl] class DefaultMicroPaymentChannel(
     role: Role,
-    exchange: Exchange[C],
+    exchange: Exchange[_ <: FiatCurrency],
     deposits: Deposits,
     override val currentStep: MicroPaymentChannel.Step = IntermediateStep(1))
-  extends MicroPaymentChannel[C] {
+  extends MicroPaymentChannel {
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
 
@@ -59,13 +59,13 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency](
     )
   }
 
-  override def nextStep: DefaultMicroPaymentChannel[C] = {
+  override def nextStep: DefaultMicroPaymentChannel = {
     val nextStep = currentStep match {
       case FinalStep => throw new IllegalArgumentException("Already at the last step")
       case IntermediateStep(exchange.parameters.breakdown.intermediateSteps) => FinalStep
       case IntermediateStep(i) => IntermediateStep(i + 1)
     }
-    new DefaultMicroPaymentChannel[C](role, exchange, deposits, nextStep)
+    new DefaultMicroPaymentChannel(role, exchange, deposits, nextStep)
   }
 
   override def closingTransaction(herSignatures: StepSignatures) = {
