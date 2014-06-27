@@ -242,9 +242,9 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       exchangeId = Exchange.Id(message.getExchangeId),
       step = message.getStep,
       signatures = Signatures(
-        buyerDepositSignature =
+        buyer =
           txSerialization.deserializeSignature(message.getBuyerDepositSignature),
-        sellerDepositSignature =
+        seller =
           txSerialization.deserializeSignature(message.getSellerDepositSignature)
       )
     )
@@ -252,8 +252,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def toProtobuf(obj: StepSignatures) = msg.StepSignature.newBuilder
       .setExchangeId(obj.exchangeId.value)
       .setStep(obj.step)
-      .setBuyerDepositSignature(txSerialization.serialize(obj.signatures.buyerDepositSignature))
-      .setSellerDepositSignature(txSerialization.serialize(obj.signatures.sellerDepositSignature))
+      .setBuyerDepositSignature(txSerialization.serialize(obj.signatures.buyer))
+      .setSellerDepositSignature(txSerialization.serialize(obj.signatures.seller))
       .build()
   }
 

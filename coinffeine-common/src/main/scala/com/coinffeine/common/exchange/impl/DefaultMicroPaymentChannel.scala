@@ -53,8 +53,8 @@ private[impl] class DefaultMicroPaymentChannel(
     }
 
     Try {
-      requireValidSignature(BuyerDepositInputIndex, herSignatures.buyerDepositSignature)
-      requireValidSignature(SellerDepositInputIndex, herSignatures.sellerDepositSignature)
+      requireValidSignature(BuyerDepositInputIndex, herSignatures.buyer)
+      requireValidSignature(SellerDepositInputIndex, herSignatures.seller)
     } recover {
       case NonFatal(cause) => throw InvalidSignaturesException(herSignatures, cause)
     }
@@ -64,9 +64,9 @@ private[impl] class DefaultMicroPaymentChannel(
     val tx = currentUnsignedTransaction.get
     val signingKey = role.me(exchange).bitcoinKey
     Signatures(
-      buyerDepositSignature = TransactionProcessor.signMultiSignedOutput(
+      buyer = TransactionProcessor.signMultiSignedOutput(
         tx, BuyerDepositInputIndex, signingKey, requiredSignatures),
-      sellerDepositSignature = TransactionProcessor.signMultiSignedOutput(
+      seller = TransactionProcessor.signMultiSignedOutput(
         tx, SellerDepositInputIndex, signingKey, requiredSignatures)
     )
   }
@@ -84,8 +84,8 @@ private[impl] class DefaultMicroPaymentChannel(
     validateCurrentTransactionSignatures(herSignatures).get
     val tx = currentUnsignedTransaction.get
     val signatures = Seq(signCurrentTransaction, herSignatures)
-    val buyerSignatures = signatures.map(_.buyerDepositSignature)
-    val sellerSignatures = signatures.map(_.sellerDepositSignature)
+    val buyerSignatures = signatures.map(_.buyer)
+    val sellerSignatures = signatures.map(_.seller)
     TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, buyerSignatures: _*)
     TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, sellerSignatures: _*)
     ImmutableTransaction(tx)

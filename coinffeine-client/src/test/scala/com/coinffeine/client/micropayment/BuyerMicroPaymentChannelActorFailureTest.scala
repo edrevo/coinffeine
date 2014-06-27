@@ -55,7 +55,7 @@ class BuyerMicroPaymentChannelActorFailureTest
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
     startMicroPaymentChannel()
     val invalidDeposits = signatures.copy(
-      buyerDepositSignature = MockProtoMicroPaymentChannel.InvalidSignature
+      buyer = MockProtoMicroPaymentChannel.InvalidSignature
     )
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
