@@ -5,8 +5,10 @@ import scala.util.Try
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{InvalidSignaturesException, FinalStep, IntermediateStep, Signatures}
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
+
+import scala.util.control.NonFatal
 
 private[impl] class DefaultMicroPaymentChannel(
     role: Role,
@@ -53,6 +55,8 @@ private[impl] class DefaultMicroPaymentChannel(
     Try {
       requireValidSignature(BuyerDepositInputIndex, herSignatures.buyerDepositSignature)
       requireValidSignature(SellerDepositInputIndex, herSignatures.sellerDepositSignature)
+    } recover {
+      case NonFatal(cause) => throw InvalidSignaturesException(herSignatures, cause)
     }
   }
 
@@ -77,6 +81,7 @@ private[impl] class DefaultMicroPaymentChannel(
   }
 
   override def closingTransaction(herSignatures: Signatures) = {
+    validateCurrentTransactionSignatures(herSignatures).get
     val tx = currentUnsignedTransaction.get
     val signatures = Seq(signCurrentTransaction, herSignatures)
     val buyerSignatures = signatures.map(_.buyerDepositSignature)

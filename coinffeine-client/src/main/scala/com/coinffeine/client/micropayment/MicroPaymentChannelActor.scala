@@ -2,10 +2,9 @@ package com.coinffeine.client.micropayment
 
 import akka.actor.ActorRef
 
-import com.coinffeine.client.exchange.ProtoMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.{Deposits, Exchange, Role}
 import com.coinffeine.common.exchange.MicroPaymentChannel.{Signatures, Step}
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -18,7 +17,7 @@ object MicroPaymentChannelActor {
   case class StartMicroPaymentChannel[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
-      channel: ProtoMicroPaymentChannel,
+      deposits: Deposits,
       constants: ProtocolConstants,
       paymentProcessor: ActorRef,
       messageGateway: ActorRef,

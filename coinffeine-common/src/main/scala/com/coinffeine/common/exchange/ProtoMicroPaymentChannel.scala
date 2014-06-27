@@ -1,4 +1,4 @@
-package com.coinffeine.client.exchange
+package com.coinffeine.common.exchange
 
 import scala.util.Try
 

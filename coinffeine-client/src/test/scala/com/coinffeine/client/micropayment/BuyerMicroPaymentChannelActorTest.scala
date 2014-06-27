@@ -8,7 +8,7 @@ import org.joda.time.DateTime
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
+import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
@@ -28,15 +28,17 @@ class BuyerMicroPaymentChannelActorTest
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
   val protocolConstants = ProtocolConstants()
-  val channel = new MockProtoMicroPaymentChannel(exchange)
-  val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]], "buyer-exchange-actor")
+  val actor = system.actorOf(
+    Props(new BuyerMicroPaymentChannelActor(new MockExchangeProtocol)),
+    "buyer-exchange-actor"
+  )
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
   listener.watch(actor)
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(exchange, BuyerRole, channel, protocolConstants,
-      paymentProcessor.ref, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits,
+      protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = Exchange.Id("other-id")

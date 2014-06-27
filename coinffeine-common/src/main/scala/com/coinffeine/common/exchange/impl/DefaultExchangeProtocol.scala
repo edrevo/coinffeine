@@ -26,6 +26,9 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
   override def createMicroPaymentChannel(
       exchange: Exchange[_  <: FiatCurrency], role: Role, deposits: Deposits) =
     new DefaultMicroPaymentChannel(role, exchange, deposits)
+
+  override def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency], role: Role,
+                                              deposits: Deposits): ProtoMicroPaymentChannel = ???
 }
 
 object DefaultExchangeProtocol {

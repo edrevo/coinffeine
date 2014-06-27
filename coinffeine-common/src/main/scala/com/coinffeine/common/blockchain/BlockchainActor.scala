@@ -1,7 +1,7 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
-import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, PublicKey}
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, MutableTransaction, PublicKey}
 
 /** A BlockchainActor keeps a blockchain and can:
   *
@@ -40,7 +40,7 @@ object BlockchainActor {
   /** A message sent by the blockchain actor to indicate a transaction was found in the blockchain
     * for the given hash.
     */
-  case class TransactionFound(hash: Hash, tx: MutableTransaction)
+  case class TransactionFound(hash: Hash, tx: ImmutableTransaction)
 
   /** A message sent by the blockchain actor to indicate a transaction was not found in the
     * blockchain for the given hash.

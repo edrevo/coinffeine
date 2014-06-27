@@ -29,6 +29,11 @@ trait ExchangeProtocol {
   def createMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
                                 role: Role,
                                 deposits: Deposits): MicroPaymentChannel
+
+  /** Temporary method needed until ProtoMicroPaymentChannel will converge with MicroPaymentChannel */
+  def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
+                                     role: Role,
+                                     deposits: Deposits): ProtoMicroPaymentChannel
 }
 
 object ExchangeProtocol {

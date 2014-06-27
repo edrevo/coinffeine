@@ -11,6 +11,12 @@ trait MicroPaymentChannel {
 
   def nextStep: MicroPaymentChannel
 
+  /** Check signature validity for the current step.
+    *
+    * @param herSignatures  Counterpart signatures for buyer and seller deposits
+    * @return               A success is everything is correct or a failure with an
+    *                       [[InvalidSignaturesException]] otherwise
+    */
   def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit]
 
   def signCurrentTransaction: Signatures
@@ -23,7 +29,11 @@ trait MicroPaymentChannel {
     *    amount for the buyer and the deposits for each participant.
     *  * For an intermediate step, just the confirmed steps amounts for the buyer and the
     *    rest of the amount to exchange for the seller. Note that deposits are lost as fees.
+    *
+    * @param herSignatures  Valid counterpart signatures
+    * @return               Ready to broadcast transaction
     */
+  @throws[InvalidSignaturesException]("if herSignatures are not valid")
   def closingTransaction(herSignatures: Signatures): ImmutableTransaction
 }
 
@@ -41,4 +51,7 @@ object MicroPaymentChannel {
     def toTuple: (TransactionSignature, TransactionSignature) =
       (buyerDepositSignature, sellerDepositSignature)
   }
+
+  case class InvalidSignaturesException(signatures: Signatures, cause: Throwable = null)
+    extends IllegalArgumentException(s"Invalid signatures $signatures", cause)
 }

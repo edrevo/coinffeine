@@ -11,8 +11,8 @@ import com.coinffeine.client.SampleExchangeInfo
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
-import com.coinffeine.common.exchange.{BuyerRole, SellerRole, UnspentOutput}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures}
+import com.coinffeine.common.exchange.{BuyerRole, Deposits, SellerRole, UnspentOutput}
+import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultExchangeProtocol
 
 class DefaultProtoMicroPaymentChannelTest
@@ -22,32 +22,25 @@ class DefaultProtoMicroPaymentChannelTest
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
 
-    lazy val sellerWallet = createWallet(exchange.seller.bitcoinKey, 200 BTC)
-    lazy val sellerHandshake = exchangeProtocol.createHandshake(
+    val sellerWallet = createWallet(exchange.seller.bitcoinKey, 200 BTC)
+    val sellerHandshake = exchangeProtocol.createHandshake(
       exchange, SellerRole, UnspentOutput.collect(11.BTC, sellerWallet),
       sellerWallet.getChangeAddress
     )
 
-    lazy val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 5 BTC)
-    lazy val buyerHandshake = exchangeProtocol.createHandshake(
+    val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 5 BTC)
+    val buyerHandshake = exchangeProtocol.createHandshake(
       exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
       buyerWallet.getChangeAddress
     )
+    val deposits = Deposits(buyerHandshake.myDeposit, sellerHandshake.myDeposit)
   }
 
   private trait WithChannels extends WithBasicSetup {
     sendToBlockChain(sellerHandshake.myDeposit.get)
     sendToBlockChain(buyerHandshake.myDeposit.get)
-    val sellerChannel = new DefaultProtoMicroPaymentChannel(
-      exchange,
-      SellerRole,
-      sellerHandshake.myDeposit,
-      buyerHandshake.myDeposit)
-    val buyerChannel = new DefaultProtoMicroPaymentChannel(
-      exchange,
-      BuyerRole,
-      sellerHandshake.myDeposit,
-      buyerHandshake.myDeposit)
+    val sellerChannel = new DefaultProtoMicroPaymentChannel(exchange, SellerRole, deposits)
+    val buyerChannel = new DefaultProtoMicroPaymentChannel(exchange, BuyerRole, deposits)
   }
 
   "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
@@ -60,8 +53,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      ImmutableTransaction(invalidFundsCommitment),
-      buyerHandshake.myDeposit
+      deposits.copy(sellerDeposit = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 
@@ -75,8 +67,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      sellerHandshake.myDeposit,
-      ImmutableTransaction(invalidFundsCommitment)
+      deposits.copy(buyerDeposit = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 

@@ -9,8 +9,8 @@ import akka.testkit.TestProbe
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
+import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
-import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.BuyerRole
 import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Signatures, Step}
@@ -21,18 +21,18 @@ class BuyerMicroPaymentChannelActorFailureTest
   extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {
 
   val protocolConstants = ProtocolConstants(exchangeSignatureTimeout = 0.5 seconds)
-  val channel = new MockProtoMicroPaymentChannel(exchange)
+  val exchangeProtocol = new MockExchangeProtocol
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
 
   trait Fixture {
     val listener = TestProbe()
     val paymentProcessor = TestProbe()
-    val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]])
+    val actor = system.actorOf(Props(new BuyerMicroPaymentChannelActor(new MockExchangeProtocol)))
     listener.watch(actor)
 
-    def startMicroPaymentChannel(channel: MockProtoMicroPaymentChannel = channel): Unit = {
-      actor ! StartMicroPaymentChannel(exchange, BuyerRole, channel, protocolConstants,
-        paymentProcessor.ref, gateway.ref, Set(listener.ref))
+    def startMicroPaymentChannel(): Unit = {
+      actor ! StartMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits,
+        protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
     }
   }
 
@@ -48,21 +48,19 @@ class BuyerMicroPaymentChannelActorFailureTest
     startMicroPaymentChannel()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (Some(channel.closingTransaction(IntermediateStep(1), signatures)))
+    failure.lastOffer should be ('defined)
     failure.cause shouldBe a [TimeoutException]
   }
 
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
-    val error = new Error("Some error")
-    val rejectingChannel = new MockProtoMicroPaymentChannel(exchange) {
-      override def validateStepTransactionSignatures(step: Step, signatures: Signatures) = Failure(error)
-    }
-    startMicroPaymentChannel(rejectingChannel)
-    actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
+    startMicroPaymentChannel()
+    val invalidDeposits = signatures.copy(
+      buyerDepositSignature = MockProtoMicroPaymentChannel.InvalidSignature
+    )
+    actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be ('empty)
     failure.cause.isInstanceOf[InvalidStepSignatures] should be (true)
     failure.cause.asInstanceOf[InvalidStepSignatures].step should be (IntermediateStep(1))
-    failure.cause.asInstanceOf[InvalidStepSignatures].cause should be (error)
   }
 }

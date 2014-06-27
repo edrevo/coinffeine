@@ -1,29 +1,27 @@
 package com.coinffeine.client.exchange
 
 import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.coinffeine.client.MultiSigInfo
 import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.{Deposits, Exchange, ProtoMicroPaymentChannel, Role}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 class DefaultProtoMicroPaymentChannel(
     exchange: Exchange[_ <: FiatCurrency],
     role: Role,
-    sellerCommitmentTx: ImmutableTransaction,
-    buyerCommitmentTx: ImmutableTransaction) extends ProtoMicroPaymentChannel {
+    deposits: Deposits) extends ProtoMicroPaymentChannel {
 
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
-  private implicit val paymentProcessorTimeout = PaymentProcessor.RequestTimeout
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
-  private val sellerFunds = sellerCommitmentTx.get.getOutput(0)
-  private val buyerFunds = buyerCommitmentTx.get.getOutput(0)
-  requireValidSellerFunds(sellerFunds)
+  private val buyerFunds = deposits.buyerDeposit.get.getOutput(0)
+  private val sellerFunds = deposits.sellerDeposit.get.getOutput(0)
   requireValidBuyerFunds(buyerFunds)
+  requireValidSellerFunds(sellerFunds)
 
   private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
     require(funds.getScriptPubKey.isSentToMultiSig,
@@ -92,12 +90,14 @@ class DefaultProtoMicroPaymentChannel(
 
   private def validateSellersSignature(
       tx: MutableTransaction,
-      signatures: Signatures,
+      herSignatures: Signatures,
       validationErrorMessage: String): Try[Unit] = Try {
     validateSellersSignature(
-      tx, BuyerDepositInputIndex, signatures.buyerDepositSignature, validationErrorMessage)
+      tx, BuyerDepositInputIndex, herSignatures.buyerDepositSignature, validationErrorMessage)
     validateSellersSignature(
-      tx, SellerDepositInputIndex, signatures.sellerDepositSignature, validationErrorMessage)
+      tx, SellerDepositInputIndex, herSignatures.sellerDepositSignature, validationErrorMessage)
+  } recover {
+    case NonFatal(cause) => throw InvalidSignaturesException(herSignatures, cause)
   }
 
   private def validateSellersSignature(

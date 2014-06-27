@@ -11,6 +11,7 @@ import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.exchange.ExchangeProtocol
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures, Step}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
@@ -21,7 +22,7 @@ import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSigna
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
+class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
   extends Actor with ActorLogging with StepTimeout  {
 
   // TODO: use or remove stepTimers
@@ -39,6 +40,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     import init.constants.exchangeSignatureTimeout
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val channel = exchangeProtocol.createProtoMicroPaymentChannel(exchange, role, deposits)
     private var lastSignedOffer: Option[ImmutableTransaction] = None
 
     def startExchange(): Unit = {

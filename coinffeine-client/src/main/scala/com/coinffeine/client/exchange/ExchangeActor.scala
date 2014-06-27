@@ -7,7 +7,7 @@ import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Hash, MutableTransaction, Wallet}
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, MutableTransaction, Wallet}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -16,7 +16,6 @@ class ExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,
     microPaymentChannelActorProps: Props,
     exchangeProtocol: ExchangeProtocol,
-    microPaymentChannelFactory: MicropaymentChannelFactory[C],
     constants: ProtocolConstants,
     resultListeners: Set[ActorRef]) extends Actor with ActorLogging {
 
@@ -68,20 +67,17 @@ class ExchangeActor[C <: FiatCurrency](
     private def receiveTransaction(
         sellerCommitmentTxId: Hash, buyerCommitmentTxId: Hash): Receive = {
       val commitmentTxIds = Seq(sellerCommitmentTxId, buyerCommitmentTxId)
-      def withReceivedTxs(receivedTxs: Map[Hash, MutableTransaction]): Receive = {
+      def withReceivedTxs(receivedTxs: Map[Hash, ImmutableTransaction]): Receive = {
         case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.forall(newTxs.keySet.contains)) {
-            val channel = microPaymentChannelFactory(
-              exchange,
-              role,
-              paymentProcessor,
-              newTxs(sellerCommitmentTxId),
-              newTxs(buyerCommitmentTxId))
-            val microPaymentChannelActorRef = context.actorOf(
-              microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            microPaymentChannelActorRef ! StartMicroPaymentChannel[C](
-              exchange, role, channel, constants, paymentProcessor, messageGateway, resultListeners = Set(self)
+            val deposits = Deposits(
+              buyerDeposit = newTxs(buyerCommitmentTxId),
+              sellerDeposit = newTxs(sellerCommitmentTxId)
+            )
+            val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
+            ref ! StartMicroPaymentChannel[C](
+              exchange, role, deposits, constants, paymentProcessor, messageGateway, resultListeners = Set(self)
             )
             context.become(inMicropaymentChannel)
           } else {

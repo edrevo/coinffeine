@@ -1,7 +1,5 @@
 package com.coinffeine.client.micropayment
 
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
-
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
@@ -13,6 +11,8 @@ import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.ExchangeProtocol
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.PaymentFound
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -22,7 +22,7 @@ import com.coinffeine.common.protocol.messages.exchange._
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerMicroPaymentChannelActor[C <: FiatCurrency]
+class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
   extends Actor with ActorLogging with Stash with StepTimeout {
 
   import context.dispatcher
@@ -36,6 +36,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
     import init.constants.exchangePaymentProofTimeout
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val channel = exchangeProtocol.createProtoMicroPaymentChannel(exchange, role, deposits)
 
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")

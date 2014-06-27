@@ -11,6 +11,7 @@ import org.scalatest.mock.MockitoSugar
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, PaymentDescription}
+import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
@@ -33,12 +34,13 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
   val channel = new MockProtoMicroPaymentChannel(exchange)
-  val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
+  val actor = system.actorOf(
+    Props(new SellerMicroPaymentChannelActor(new MockExchangeProtocol())), "seller-exchange-actor")
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    exchange, userRole, channel, protocolConstants, paymentProcessor.ref, gateway.ref,
-    Set(listener.ref)
+    exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
+    gateway.ref, Set(listener.ref)
   )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
