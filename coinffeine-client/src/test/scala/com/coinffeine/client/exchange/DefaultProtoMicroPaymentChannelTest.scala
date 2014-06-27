@@ -53,7 +53,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      deposits.copy(sellerDeposit = ImmutableTransaction(invalidFundsCommitment))
+      deposits.copy(seller = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 
@@ -67,7 +67,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      deposits.copy(buyerDeposit = ImmutableTransaction(invalidFundsCommitment))
+      deposits.copy(buyer = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 

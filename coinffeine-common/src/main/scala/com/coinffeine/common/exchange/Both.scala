@@ -13,6 +13,11 @@ case class Both[T](buyer: T, seller: T) {
     case SellerRole => seller
   }
 
+  def map[S](f: T => S): Both[S] = Both(
+    buyer = f(buyer),
+    seller = f(seller)
+  )
+
   def toSet: Set[T] = Set(buyer, seller)
 
   def toSeq: Seq[T] = Seq(buyer, seller)

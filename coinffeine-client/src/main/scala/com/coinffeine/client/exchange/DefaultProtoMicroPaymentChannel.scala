@@ -18,8 +18,8 @@ class DefaultProtoMicroPaymentChannel(
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
-  private val buyerFunds = deposits.buyerDeposit.get.getOutput(0)
-  private val sellerFunds = deposits.sellerDeposit.get.getOutput(0)
+  private val buyerFunds = deposits.buyer.get.getOutput(0)
+  private val sellerFunds = deposits.seller.get.getOutput(0)
   requireValidBuyerFunds(buyerFunds)
   requireValidSellerFunds(sellerFunds)
 
