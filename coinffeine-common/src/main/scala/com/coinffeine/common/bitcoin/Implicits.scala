@@ -93,11 +93,11 @@ object Implicits {
 
     def collectFunds(amount: BitcoinAmount): Set[MutableTransactionOutput] = {
       val inputFundCandidates = wallet.calculateAllSpendCandidates(true)
-      val necessaryInputCount = inputFundCandidates.view
-        .scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
-        accum + Currency.Bitcoin.fromSatoshi(output.getValue))
-        .takeWhile(_ < amount)
-        .length
+      val necessaryInputCount =
+        inputFundCandidates.view.scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
+          accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+            .takeWhile(_ < amount)
+            .length
       inputFundCandidates.take(necessaryInputCount).toSet
     }
 

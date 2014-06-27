@@ -33,7 +33,7 @@ class PimpMyWalletTest extends UnitTest with BitcoinjTest {
     instance.balance() should be (0.BTC)
   }
 
-  it must "consider change funds after tx is broadcasted" in new Fixture {
+  it must "consider change funds after tx is broadcast" in new Fixture {
     val tx = instance.blockFunds(someoneElseAddress, 1.BTC)
     sendToBlockChain(tx)
     instance.balance() should be (initialFunds - 1.BTC)
@@ -41,14 +41,13 @@ class PimpMyWalletTest extends UnitTest with BitcoinjTest {
 
   it must "support a period of arbitrary spent or release operations" in new Fixture {
     var expectedBalance = initialFunds
-    anArbitraryNumberOfTimes {
+    for (_ <- 1 to 30) {
       val tx = instance.blockFunds(someoneElseAddress, 0.1.BTC)
-      headsOrTails {
-        case `heads` =>
-          sendToBlockChain(tx)
-          expectedBalance += instance.value(tx)
-        case `tails` =>
-          instance.releaseFunds(tx)
+      if (Random.nextBoolean()) {
+        sendToBlockChain(tx)
+        expectedBalance += instance.value(tx)
+      } else {
+        instance.releaseFunds(tx)
       }
     }
     instance.balance() should be (expectedBalance)
@@ -60,16 +59,5 @@ class PimpMyWalletTest extends UnitTest with BitcoinjTest {
     val someoneElseAddress = someoneElsekeyPair.toAddress(network)
     val instance = createWallet(keyPair, 10.BTC)
     val initialFunds = instance.balance()
-
-    val heads = true
-    val tails = false
-
-    def anArbitraryNumberOfTimes(action: => Unit): Unit = {
-      for (_ <- 1 to 30) { action }
-    }
-
-    def headsOrTails(action: PartialFunction[Boolean, Unit]): Unit = {
-      action(Random.nextBoolean())
-    }
   }
 }
