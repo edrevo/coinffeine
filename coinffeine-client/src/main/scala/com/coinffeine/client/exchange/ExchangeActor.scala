@@ -117,7 +117,7 @@ object ExchangeActor {
     ActorRef,
     MutableTransaction, // sellerCommitmentTx
     MutableTransaction // buyerCommitmentTx
-  ) => ProtoMicroPaymentChannel[C]
+  ) => ProtoMicroPaymentChannel
 
   case class StartExchange[C <: FiatCurrency](
     exchange: Exchange[C],

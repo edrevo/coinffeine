@@ -10,7 +10,7 @@ import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.MutableTransaction
+import com.coinffeine.common.bitcoin.ImmutableTransaction
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep, Signatures, Step}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
@@ -39,7 +39,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
     import init.constants.exchangeSignatureTimeout
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
-    private var lastSignedOffer: Option[MutableTransaction] = None
+    private var lastSignedOffer: Option[ImmutableTransaction] = None
 
     def startExchange(): Unit = {
       subscribeToMessages()
@@ -78,7 +78,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
 
     private def waitForNextStepSignature(step: IntermediateStep): Receive = withStepTimeout(step) {
       waitForValidSignature(step) { signatures =>
-        lastSignedOffer = Some(channel.getSignedOffer(step, signatures))
+        lastSignedOffer = Some(channel.closingTransaction(step, signatures))
         forwarding.forwardToCounterpart(pay(step))
         context.become(nextWait(step))
       }
@@ -93,7 +93,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency]
 
       {
         case ReceiveMessage(StepSignatures(_, `stepNumber`, signatures), _) =>
-          channel.validateSellersSignature(step, signatures) match {
+          channel.validateStepTransactionSignatures(step, signatures) match {
             case Success(_) =>
               body(signatures)
             case Failure(cause) =>

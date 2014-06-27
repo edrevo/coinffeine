@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
+import scala.util.Try
+
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
@@ -37,15 +39,21 @@ private[impl] class DefaultMicroPaymentChannel(
     )
   }
 
-  override def validateCurrentTransactionSignatures(herSignatures: Signatures): Boolean = {
+  override def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit] = {
     val tx = currentUnsignedTransaction.get
     val herKey = role.her(exchange).bitcoinKey
 
-    def isValid(index: Int, signature: TransactionSignature) =
-      TransactionProcessor.isValidSignature(tx, index, signature, herKey, requiredSignatures)
+    def requireValidSignature(index: Int, signature: TransactionSignature) = {
+      require(
+        TransactionProcessor.isValidSignature(tx, index, signature, herKey, requiredSignatures),
+        s"Signature $signature cannot satisfy ${tx.getInput(index)}"
+      )
+    }
 
-    isValid(BuyerDepositInputIndex, herSignatures.buyerDepositSignature) &&
-      isValid(SellerDepositInputIndex, herSignatures.sellerDepositSignature)
+    Try {
+      requireValidSignature(BuyerDepositInputIndex, herSignatures.buyerDepositSignature)
+      requireValidSignature(SellerDepositInputIndex, herSignatures.sellerDepositSignature)
+    }
   }
 
   override def signCurrentTransaction = {

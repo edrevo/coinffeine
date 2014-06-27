@@ -41,7 +41,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       role: Role,
       paymentProc: ActorRef,
       tx1: MutableTransaction,
-      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] = channel
+      tx2: MutableTransaction): ProtoMicroPaymentChannel = channel
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 

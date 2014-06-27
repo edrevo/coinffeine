@@ -8,7 +8,7 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
     for ((buyer, seller) <- buyerChannels.zip(sellerChannels)) {
       buyer.currentStep should be (seller.currentStep)
       withClue(buyer.currentStep) {
-        buyer.validateCurrentTransactionSignatures(seller.signCurrentTransaction) should be (true)
+        buyer.validateCurrentTransactionSignatures(seller.signCurrentTransaction) should be ('success)
       }
     }
   }

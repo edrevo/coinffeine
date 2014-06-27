@@ -1,6 +1,6 @@
 package com.coinffeine.client.micropayment
 
-import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
@@ -44,7 +44,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         initialStep.value,
-        channel.signStep(initialStep)
+        channel.signStepTransaction(initialStep)
       ))
       context.become(waitForPaymentProof(initialStep))
     }
@@ -92,7 +92,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         nextStep.value,
-        channel.signStep(currentStep)
+        channel.signStepTransaction(currentStep)
       ))
       context.become(waitForPaymentProof(nextStep))
     }
@@ -102,7 +102,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         exchange.parameters.breakdown.totalSteps,
-        channel.signFinalStep
+        channel.signStepTransaction(FinalStep)
       ))
       finishWith(ExchangeSuccess)
     }

@@ -30,7 +30,7 @@ class BuyerMicroPaymentChannelActorFailureTest
     val actor = system.actorOf(Props[BuyerMicroPaymentChannelActor[Euro.type]])
     listener.watch(actor)
 
-    def startMicroPaymentChannel(channel: MockProtoMicroPaymentChannel[Euro.type] = channel): Unit = {
+    def startMicroPaymentChannel(channel: MockProtoMicroPaymentChannel = channel): Unit = {
       actor ! StartMicroPaymentChannel(exchange, BuyerRole, channel, protocolConstants,
         paymentProcessor.ref, gateway.ref, Set(listener.ref))
     }
@@ -48,14 +48,14 @@ class BuyerMicroPaymentChannelActorFailureTest
     startMicroPaymentChannel()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (Some(channel.getSignedOffer(IntermediateStep(1), signatures)))
+    failure.lastOffer should be (Some(channel.closingTransaction(IntermediateStep(1), signatures)))
     failure.cause shouldBe a [TimeoutException]
   }
 
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
     val error = new Error("Some error")
     val rejectingChannel = new MockProtoMicroPaymentChannel(exchange) {
-      override def validateSellersSignature(step: Step, signatures: Signatures) = Failure(error)
+      override def validateStepTransactionSignatures(step: Step, signatures: Signatures) = Failure(error)
     }
     startMicroPaymentChannel(rejectingChannel)
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))

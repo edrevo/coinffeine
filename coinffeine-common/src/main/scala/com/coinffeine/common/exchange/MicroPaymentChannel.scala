@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange
 
+import scala.util.Try
+
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
@@ -7,11 +9,11 @@ trait MicroPaymentChannel {
 
   def currentStep: Step
 
-  def validateCurrentTransactionSignatures(herSignatures: Signatures): Boolean
+  def nextStep: MicroPaymentChannel
+
+  def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit]
 
   def signCurrentTransaction: Signatures
-
-  def nextStep: MicroPaymentChannel
 
   /** Given valid counterpart signatures it generates the closing transaction.
     *

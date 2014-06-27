@@ -1,7 +1,5 @@
 package com.coinffeine.client.micropayment
 
-import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -17,6 +15,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSucc
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -55,7 +54,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send the first step signature as soon as the exchange starts" in {
-    val offerSignature = channel.signStep(IntermediateStep(1))
+    val offerSignature = channel.signStepTransaction(IntermediateStep(1))
     shouldForward(StepSignatures(exchange.id, 1, offerSignature)) to counterpart.connection
   }
 
@@ -66,7 +65,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(IntermediateStep(1))
-    val signatures = StepSignatures(exchange.id, 2, channel.signStep(IntermediateStep(2)))
+    val signatures = StepSignatures(exchange.id, 2, channel.signStepTransaction(IntermediateStep(2)))
     shouldForward(signatures) to counterpart.connection
   }
 
@@ -77,14 +76,15 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
       val step = IntermediateStep(i)
       actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
       expectPayment(step)
-      val signatures = StepSignatures(exchange.id, i, channel.signStep(step))
+      val signatures = StepSignatures(exchange.id, i, channel.signStepTransaction(step))
       shouldForward(signatures) to counterpart.connection
     }
   }
 
   it should "send the final signature" in {
     val signatures = StepSignatures(
-      exchange.id, exchange.parameters.breakdown.totalSteps, channel.signFinalStep)
+      exchange.id, exchange.parameters.breakdown.totalSteps, channel.signStepTransaction(FinalStep)
+    )
     shouldForward(signatures) to counterpart.connection
   }
 

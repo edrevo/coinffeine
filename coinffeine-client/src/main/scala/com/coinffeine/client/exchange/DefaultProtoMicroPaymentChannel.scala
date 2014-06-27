@@ -10,11 +10,11 @@ import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
-    exchange: Exchange[C],
+class DefaultProtoMicroPaymentChannel(
+    exchange: Exchange[_ <: FiatCurrency],
     role: Role,
     sellerCommitmentTx: ImmutableTransaction,
-    buyerCommitmentTx: ImmutableTransaction) extends ProtoMicroPaymentChannel[C] {
+    buyerCommitmentTx: ImmutableTransaction) extends ProtoMicroPaymentChannel {
 
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
@@ -49,7 +49,7 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  override def getOffer(step: Step): MutableTransaction = step match {
+  private def getOffer(step: Step): MutableTransaction = step match {
     case IntermediateStep(i) =>
       getOffer(
         buyerAmount = exchange.amounts.stepBitcoinAmount * i,
@@ -71,14 +71,16 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
       network = exchange.parameters.network
     )
 
-  override def validateSellersSignature(step: Step, signatures: Signatures): Try[Unit] =
+  override def validateStepTransactionSignatures(step: Step, signatures: Signatures): Try[Unit] =
     validateSellersSignature(
       getOffer(step),
       signatures,
       s"The provided signature is invalid for the offer in $step"
     )
 
-  override protected def sign(offer: MutableTransaction) = {
+  override def signStepTransaction(step: Step): Signatures = sign(getOffer(step))
+
+  private def sign(offer: MutableTransaction) = {
     val key = role.me(exchange).bitcoinKey
     Signatures(
       buyerDepositSignature =
@@ -110,12 +112,12 @@ class DefaultProtoMicroPaymentChannel[C <: FiatCurrency](
   }
 
   /** Returns a signed transaction ready to be broadcast */
-  override def getSignedOffer(step: IntermediateStep, herSignatures: Signatures) = {
+  override def closingTransaction(step: Step, herSignatures: Signatures) = {
     val tx = getOffer(step)
     val signatures = Seq(sign(tx), herSignatures)
     TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, signatures.map(_.buyerDepositSignature): _*)
     TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, signatures.map(_.sellerDepositSignature): _*)
-    tx
+    ImmutableTransaction(tx)
   }
 }
 
