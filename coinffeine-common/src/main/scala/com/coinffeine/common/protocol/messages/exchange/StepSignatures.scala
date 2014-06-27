@@ -1,35 +1,27 @@
 package com.coinffeine.common.protocol.messages.exchange
 
-import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.TransactionSignatureUtils
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** This message contains the seller's signatures for a step in a specific exchange
   * @param exchangeId The exchange id for which the signatures are valid
   * @param step The step number for which the signatures are valid
-  * @param idx0Signature The signature for input 0 in the step
-  * @param idx1Signature The signature for input 1 in the step
+  * @param signatures The signatures for buyer and seller inputs for the step
   */
-case class StepSignatures(
-    exchangeId: Exchange.Id,
-    step: Int,
-    idx0Signature: TransactionSignature,
-    idx1Signature: TransactionSignature)  extends PublicMessage {
+case class StepSignatures(exchangeId: Exchange.Id, step: Int, signatures: Signatures)
+  extends PublicMessage {
 
-  override def equals(that: Any) = that match {
-    case newStepStart: StepSignatures => (newStepStart.exchangeId == exchangeId) &&
-      TransactionSignatureUtils.equals(newStepStart.idx0Signature, idx0Signature) &&
-      TransactionSignatureUtils.equals(newStepStart.idx1Signature, idx1Signature)
+  override def equals(other: Any) = other match {
+    case that: StepSignatures =>
+      (that.exchangeId == exchangeId) && (that.step == step) &&
+      TransactionSignatureUtils.equals(
+        that.signatures.buyerDepositSignature, signatures.buyerDepositSignature) &&
+      TransactionSignatureUtils.equals(
+        that.signatures.sellerDepositSignature, signatures.sellerDepositSignature)
     case _ => false
   }
-}
 
-object StepSignatures {
-
-  /** Factory method accepting a tuple of signatures. */
-  def apply(exchangeId: Exchange.Id,
-            step: Int,
-            signatures: (TransactionSignature, TransactionSignature)): StepSignatures =
-    StepSignatures(exchangeId, step, signatures._1, signatures._2)
+  // TODO: missing hashCode
 }

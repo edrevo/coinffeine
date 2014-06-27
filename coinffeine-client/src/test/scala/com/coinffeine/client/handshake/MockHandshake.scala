@@ -12,7 +12,7 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
   * @param exchange       Info about the exchange being mocked
   * @param role           Role being played
   */
-class MockHandshake[C <: FiatCurrency](exchange: Exchange[C], role: Role) extends Handshake[C] {
+class MockHandshake(exchange: Exchange[_ <: FiatCurrency], role: Role) extends Handshake {
   override val myDeposit = dummyImmutableTransaction(1)
   override val myUnsignedRefund = dummyImmutableTransaction(2)
   val mySignedRefund = dummyImmutableTransaction(3)
@@ -39,6 +39,4 @@ class MockHandshake[C <: FiatCurrency](exchange: Exchange[C], role: Role) extend
     tx.setLockTime(lockTime)
     tx
   }
-
-  override def createMicroPaymentChannel(herDeposit: ImmutableTransaction) = ???
 }

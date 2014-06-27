@@ -20,7 +20,6 @@ import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
@@ -36,18 +35,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
 
   private val channel = new MockProtoMicroPaymentChannel(exchange)
-  private def channelFactory(
-      exchange: Exchange[Euro.type],
-      role: Role,
-      paymentProc: ActorRef,
-      tx1: MutableTransaction,
-      tx2: MutableTransaction): ProtoMicroPaymentChannel[Euro.type] = channel
   private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
   private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
 
-  private val dummyTxId = new Hash(List.fill(64)("F").mkString)
-  private val dummyTx = new MutableTransaction(network)
-  private val dummyRefund = ImmutableTransaction(dummyTx)
+  private val buyerDepositId = new Hash(List.fill(64)("0").mkString)
+  private val sellerDepositId = new Hash(List.fill(64)("1").mkString)
+  private val dummyTx = ImmutableTransaction(new MutableTransaction(network))
   private val dummyPaymentProcessor = system.actorOf(
     new MockPaymentProcessorFactory(List.empty)
       .newProcessor(fiatAddress = "", initialBalance = Seq.empty)
@@ -61,7 +54,6 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeProps,
       exchangeProps,
       new MockExchangeProtocol,
-      channelFactory,
       protocolConstants,
       Set(listener.ref)
     )))
@@ -80,34 +72,56 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
         exchange, userRole, wallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
       )
     }
-  }
 
-  "The exchange actor" should "report an exchange success if both handshake " +
-      "and exchange work as expected" in new Fixture {
-    startExchange()
-    withActor(HandshakeActorName) { handshakeActor =>
+    def givenHandshakeSuccess(): Unit = withActor(HandshakeActorName) { handshakeActor =>
       val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg shouldBe a [StartHandshake[_]]
-      queueItem.sender should be (actor)
-      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
+      queueItem.msg shouldBe a[StartHandshake[_]]
+      queueItem.sender should be(actor)
+      actor.tell(HandshakeSuccess(sellerDepositId, buyerDepositId, dummyTx), handshakeActor)
     }
-    blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
-    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
 
-    withActor(MicroPaymentChannelActorName) { exchangeActor =>
-      val queueItem = exchangeActorMessageQueue.pop()
-      queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, userRole, channel, protocolConstants, dummyPaymentProcessor, gateway.ref, Set(actor)))
-      queueItem.sender should be (actor)
-      actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
+    def givenTransactionsAreFound(): Unit = {
+      shouldWatchForTheTransactions()
+      givenTransactionIsFound(buyerDepositId)
+      givenTransactionIsFound(sellerDepositId)
     }
-    listener.expectMsg(ExchangeSuccess)
-    listener.expectMsgClass(classOf[Terminated])
-    system.stop(actor)
+
+    def givenTransactionIsFound(txId: Hash): Unit = {
+      blockchain.reply(TransactionFound(txId, dummyTx))
+    }
+
+    def givenTransactionIsNotFound(txId: Hash): Unit = {
+      blockchain.reply(TransactionNotFound(txId))
+    }
+
+    def shouldWatchForTheTransactions(): Unit = {
+      blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
+      blockchain.expectMsgAllOf(
+        RetrieveTransaction(buyerDepositId),
+        RetrieveTransaction(sellerDepositId)
+      )
+    }
   }
+
+  "The exchange actor" should """report an exchange success when handshake and exchange work""" in
+    new Fixture {
+      startExchange()
+      givenHandshakeSuccess()
+      givenTransactionsAreFound()
+
+      withActor(MicroPaymentChannelActorName) { exchangeActor =>
+        val queueItem = exchangeActorMessageQueue.pop()
+        queueItem.msg should be(MicroPaymentChannelActor.StartMicroPaymentChannel(
+          exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
+          dummyPaymentProcessor, gateway.ref, Set(actor)
+        ))
+        queueItem.sender should be(actor)
+        actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
+      }
+      listener.expectMsg(ExchangeSuccess)
+      listener.expectMsgClass(classOf[Terminated])
+      system.stop(actor)
+    }
 
   it should "report a failure if the handshake fails" in new Fixture {
     startExchange()
@@ -125,48 +139,32 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "report a failure if the blockchain can't find the commitment txs" in new Fixture {
     startExchange()
-    withActor(HandshakeActorName) { handshakeActor =>
-      val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg shouldBe a [StartHandshake[_]]
-      queueItem.sender should be (actor)
-      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
-    }
-    blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.reply(TransactionNotFound(dummyTxId))
-    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
+    givenHandshakeSuccess()
+    shouldWatchForTheTransactions()
+    givenTransactionIsFound(buyerDepositId)
+    givenTransactionIsNotFound(sellerDepositId)
 
-    val error = new CommitmentTxNotInBlockChain(dummyTxId)
-    listener.expectMsg(ExchangeFailure(error))
+    listener.expectMsg(ExchangeFailure(new CommitmentTxNotInBlockChain(sellerDepositId)))
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)
   }
 
   it should "report a failure if the actual exchange fails" in new Fixture {
     startExchange()
-    withActor(HandshakeActorName) { handshakeActor =>
-      val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg shouldBe a [StartHandshake[_]]
-      queueItem.sender should be (actor)
-      actor.tell(HandshakeSuccess(dummyTxId, dummyTxId, dummyRefund), handshakeActor)
-    }
-    blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.expectMsg(RetrieveTransaction(dummyTxId))
-    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
-    blockchain.reply(TransactionFound(dummyTxId, dummyTx))
+    givenHandshakeSuccess()
+    givenTransactionsAreFound()
 
     val error = new Error("exchange failure")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
       val queueItem = exchangeActorMessageQueue.pop()
       queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, userRole, channel, protocolConstants, dummyPaymentProcessor,
-        gateway.ref, Set(actor)
+        exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
+        dummyPaymentProcessor, gateway.ref, Set(actor)
       ))
       queueItem.sender should be (actor)
       actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }
+
     listener.expectMsg(ExchangeFailure(error))
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)

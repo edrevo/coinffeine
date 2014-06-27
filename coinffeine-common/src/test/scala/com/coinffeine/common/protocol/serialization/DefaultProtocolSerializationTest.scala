@@ -11,6 +11,7 @@ import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -108,7 +109,7 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
       ExchangeRejection(exchangeId, "reason"),
       RefundTxSignatureRequest(exchangeId, transaction),
       RefundTxSignatureResponse(exchangeId, transactionSignature),
-      StepSignatures(exchangeId, 1, transactionSignature, transactionSignature),
+      StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
       PaymentProof(exchangeId, "paymentId")
     )
 

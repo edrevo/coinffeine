@@ -11,10 +11,12 @@ import org.scalatest.mock.MockitoSugar
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.{MockProtoMicroPaymentChannel, PaymentDescription}
+import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -32,12 +34,13 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
   val channel = new MockProtoMicroPaymentChannel(exchange)
-  val actor = system.actorOf(Props[SellerMicroPaymentChannelActor[Euro.type]], "seller-exchange-actor")
+  val actor = system.actorOf(
+    Props(new SellerMicroPaymentChannelActor(new MockExchangeProtocol())), "seller-exchange-actor")
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    exchange, userRole, channel, protocolConstants, paymentProcessor.ref, gateway.ref,
-    Set(listener.ref)
+    exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
+    gateway.ref, Set(listener.ref)
   )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
@@ -53,8 +56,8 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send the first step signature as soon as the exchange starts" in {
-    val offerSignature = channel.signStep(1)
-    shouldForward(StepSignatures(exchange.id, 1, offerSignature.toTuple)) to counterpart.connection
+    val offerSignature = channel.signStepTransaction(IntermediateStep(1))
+    shouldForward(StepSignatures(exchange.id, 1, offerSignature)) to counterpart.connection
   }
 
   it should "not send the second step signature until payment proof has been provided" in {
@@ -63,25 +66,27 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
-    expectPayment(1)
-    val signatures = StepSignatures(exchange.id, 2, channel.signStep(2).toTuple)
+    expectPayment(IntermediateStep(1))
+    val signatures = StepSignatures(exchange.id, 2, channel.signStepTransaction(IntermediateStep(2)))
     shouldForward(signatures) to counterpart.connection
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
-    expectPayment(2)
+    expectPayment(IntermediateStep(2))
     for (i <- 3 to exchange.parameters.breakdown.intermediateSteps) {
+      val step = IntermediateStep(i)
       actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
-      expectPayment(i)
-      val signatures = StepSignatures(exchange.id, i, channel.signStep(i).toTuple)
+      expectPayment(step)
+      val signatures = StepSignatures(exchange.id, i, channel.signStepTransaction(step))
       shouldForward(signatures) to counterpart.connection
     }
   }
 
   it should "send the final signature" in {
     val signatures = StepSignatures(
-      exchange.id, exchange.parameters.breakdown.totalSteps, channel.finalSignatures.toTuple)
+      exchange.id, exchange.parameters.breakdown.totalSteps, channel.signStepTransaction(FinalStep)
+    )
     shouldForward(signatures) to counterpart.connection
   }
 
@@ -89,7 +94,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     listener.expectMsg(ExchangeSuccess)
   }
 
-  private def expectPayment(step: Int): Unit = {
+  private def expectPayment(step: IntermediateStep): Unit = {
     val FindPayment(paymentId) = paymentProcessor.expectMsgClass(classOf[FindPayment])
     paymentProcessor.reply(PaymentFound(Payment(
       id = paymentId,

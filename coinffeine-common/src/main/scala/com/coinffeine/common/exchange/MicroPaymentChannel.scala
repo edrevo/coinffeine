@@ -1,18 +1,25 @@
 package com.coinffeine.common.exchange
 
-import com.coinffeine.common.FiatCurrency
+import scala.util.Try
+
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-trait MicroPaymentChannel[C <: FiatCurrency] {
+trait MicroPaymentChannel {
 
   def currentStep: Step
 
-  def validateCurrentTransactionSignatures(herSignatures: StepSignatures): Boolean
+  def nextStep: MicroPaymentChannel
 
-  def signCurrentTransaction: StepSignatures
+  /** Check signature validity for the current step.
+    *
+    * @param herSignatures  Counterpart signatures for buyer and seller deposits
+    * @return               A success is everything is correct or a failure with an
+    *                       [[InvalidSignaturesException]] otherwise
+    */
+  def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit]
 
-  def nextStep: MicroPaymentChannel[C]
+  def signCurrentTransaction: Signatures
 
   /** Given valid counterpart signatures it generates the closing transaction.
     *
@@ -22,22 +29,29 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
     *    amount for the buyer and the deposits for each participant.
     *  * For an intermediate step, just the confirmed steps amounts for the buyer and the
     *    rest of the amount to exchange for the seller. Note that deposits are lost as fees.
+    *
+    * @param herSignatures  Valid counterpart signatures
+    * @return               Ready to broadcast transaction
     */
-  def closingTransaction(herSignatures: StepSignatures): ImmutableTransaction
+  @throws[InvalidSignaturesException]("if herSignatures are not valid")
+  def closingTransaction(herSignatures: Signatures): ImmutableTransaction
 }
 
 object MicroPaymentChannel {
 
   sealed trait Step
-  case class IntermediateStep(i: Int) extends Step {
-    require(i > 0, s"Step number must be positive ($i given)")
+  case class IntermediateStep(value: Int) extends Step {
+    require(value > 0, s"Step number must be positive ($value given)")
   }
   case object FinalStep extends Step
 
   /** Signatures for a step transaction of both deposits. */
-  case class StepSignatures(buyerDepositSignature: TransactionSignature,
-                            sellerDepositSignature: TransactionSignature) {
+  case class Signatures(buyerDepositSignature: TransactionSignature,
+                        sellerDepositSignature: TransactionSignature) {
     def toTuple: (TransactionSignature, TransactionSignature) =
       (buyerDepositSignature, sellerDepositSignature)
   }
+
+  case class InvalidSignaturesException(signatures: Signatures, cause: Throwable = null)
+    extends IllegalArgumentException(s"Invalid signatures $signatures", cause)
 }

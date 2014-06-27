@@ -1,34 +1,44 @@
 package com.coinffeine.client.exchange
 
-import scala.util.{Success, Try}
+import java.math.BigInteger
+import scala.util.{Failure, Success, Try}
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{MutableTransaction, TransactionSignature}
-import com.coinffeine.common.exchange.Exchange
-import com.coinffeine.common.exchange.MicroPaymentChannel.StepSignatures
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.{ProtoMicroPaymentChannel, Exchange}
+import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-class MockProtoMicroPaymentChannel[C <: FiatCurrency](exchange: Exchange[C])
-  extends ProtoMicroPaymentChannel[C] {
+class MockProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency])
+  extends ProtoMicroPaymentChannel {
 
-  private val offers = (1 to exchange.parameters.breakdown.intermediateSteps).map(idx => {
+  import MockProtoMicroPaymentChannel._
+
+  private val offers = (1 to exchange.parameters.breakdown.totalSteps).map(idx => {
     val tx = new MutableTransaction(exchange.parameters.network)
     tx.setLockTime(idx.toLong) // Ensures that generated transactions do not have the same hash
-    tx
+    ImmutableTransaction(tx)
   })
-  override def validateSellersSignature(
-      step: Int,
-      signature0: TransactionSignature,
-      signature1: TransactionSignature): Try[Unit] = Success {}
-  override def getOffer(step: Int): MutableTransaction = offers(step - 1)
-  override protected def sign(offer: MutableTransaction) =
-    StepSignatures(TransactionSignature.dummy, TransactionSignature.dummy)
-  override def validateSellersFinalSignature(
-      signature0: TransactionSignature, signature1: TransactionSignature): Try[Unit] = Success {}
-  override val finalOffer: MutableTransaction = {
-    val tx = new MutableTransaction(exchange.parameters.network)
-    tx.setLockTime(1500L)
-    tx
+
+  override def validateStepTransactionSignatures(step: Step, signatures: Signatures) =
+    signatures match {
+      case Signatures(InvalidSignature, _) | Signatures(_, InvalidSignature) =>
+        Failure(new Error("Invalid signature"))
+      case _ => Success {}
+    }
+
+  override def closingTransaction(step: Step, counterpartSignatures: Signatures) = {
+    val offerNumber = step match {
+      case IntermediateStep(intermediateStep) => intermediateStep
+      case FinalStep => exchange.parameters.breakdown.totalSteps
+    }
+    offers(offerNumber - 1)
   }
 
-  override def getSignedOffer(step: Int, counterpartSignatures: StepSignatures) = getOffer(step)
+  override def signStepTransaction(step: Step) =
+    Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+}
+
+object MockProtoMicroPaymentChannel {
+  /** Magic signature that is always rejected */
+  val InvalidSignature = new TransactionSignature(BigInteger.valueOf(42), BigInteger.valueOf(42))
 }

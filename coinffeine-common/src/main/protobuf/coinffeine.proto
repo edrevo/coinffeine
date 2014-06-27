@@ -86,8 +86,8 @@ message ExchangeCommitment {
 message StepSignature {
     required string exchangeId = 1;
     required int32 step = 2;
-    required bytes idx0Signature = 3;
-    required bytes idx1Signature = 4;
+    required bytes buyerDepositSignature = 3;
+    required bytes sellerDepositSignature = 4;
 }
 
 message PaymentProof {

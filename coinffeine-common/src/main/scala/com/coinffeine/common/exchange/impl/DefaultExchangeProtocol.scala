@@ -6,11 +6,11 @@ import com.coinffeine.common.exchange._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
-  override def createHandshake[C <: FiatCurrency](
-      exchange: Exchange[C],
+  override def createHandshake(
+      exchange: Exchange[_ <: FiatCurrency],
       role: Role,
       unspentOutputs: Seq[UnspentOutput],
-      changeAddress: Address): Handshake[C] = {
+      changeAddress: Address): Handshake = {
     val availableFunds = TransactionProcessor.valueOf(unspentOutputs.map(_.output))
     val depositAmount = role.myDepositAmount(exchange.amounts)
     require(availableFunds >= depositAmount,
@@ -20,8 +20,15 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
         Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey), exchange.parameters.network)
     }
-    new DefaultHandshake(role, exchange, myDeposit)
+    new DefaultHandshake(exchange, role, myDeposit)
   }
+
+  override def createMicroPaymentChannel(
+      exchange: Exchange[_  <: FiatCurrency], role: Role, deposits: Deposits) =
+    new DefaultMicroPaymentChannel(role, exchange, deposits)
+
+  override def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency], role: Role,
+                                              deposits: Deposits): ProtoMicroPaymentChannel = ???
 }
 
 object DefaultExchangeProtocol {

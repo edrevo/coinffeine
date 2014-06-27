@@ -11,6 +11,8 @@ import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.ExchangeProtocol
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.PaymentFound
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -20,13 +22,13 @@ import com.coinffeine.common.protocol.messages.exchange._
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerMicroPaymentChannelActor[C <: FiatCurrency]
+class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
   extends Actor with ActorLogging with Stash with StepTimeout {
 
   import context.dispatcher
 
   override def receive: Receive = {
-    case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init)
+    case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init).start()
   }
 
   private class InitializedSellerExchange(init: StartMicroPaymentChannel[C]) {
@@ -34,20 +36,29 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
     import init.constants.exchangePaymentProofTimeout
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val channel = exchangeProtocol.createProtoMicroPaymentChannel(exchange, role, deposits)
 
-    private val counterpart = role.her(exchange).connection
-    messageGateway ! Subscribe {
-      case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
-      case _ => false
+    def start(): Unit = {
+      log.info(s"Exchange ${exchange.id}: Exchange started")
+      subscribeToMessages()
+      val initialStep = IntermediateStep(1)
+      forwarding.forwardToCounterpart(StepSignatures(
+        exchange.id,
+        initialStep.value,
+        channel.signStepTransaction(initialStep)
+      ))
+      context.become(waitForPaymentProof(initialStep))
     }
-    log.info(s"Exchange ${exchange.id}: Exchange started")
-    forwarding.forwardToCounterpart(StepSignatures(
-      exchange.id,
-      1,
-      channel.signStep(1).toTuple))
-    context.become(waitForPaymentProof(1))
 
-    private def waitForPaymentProof(step: Int): Receive = {
+    private def subscribeToMessages(): Unit = {
+      val counterpart = role.her(exchange).connection
+      messageGateway ! Subscribe {
+        case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
+        case _ => false
+      }
+    }
+
+    private def waitForPaymentProof(step: IntermediateStep): Receive = {
       scheduleStepTimeouts(exchangePaymentProofTimeout)
 
       {
@@ -59,30 +70,30 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
           context.become(waitForPaymentValidation(paymentId, step))
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid payment proof " +
-            s"step $step (out of ${exchange.parameters.breakdown.intermediateSteps}})"
+            s"$step (out of ${exchange.parameters.breakdown.intermediateSteps}})"
           log.warning(errorMsg)
           finishWith(ExchangeFailure(TimeoutException(errorMsg), lastOffer = None))
       }
     }
 
-    private def waitForPaymentValidation(paymentId: String, step: Int): Receive = {
+    private def waitForPaymentValidation(paymentId: String, step: IntermediateStep): Receive = {
       case PaymentValidationResult(Failure(cause)) =>
         unstashAll()
         log.warning(s"Invalid payment proof received in step $step: $paymentId. Reason: $cause")
         context.become(waitForPaymentProof(step))
       case PaymentValidationResult(_) =>
-        if (step == exchange.parameters.breakdown.intermediateSteps) finishExchange()
+        if (step.value == exchange.parameters.breakdown.intermediateSteps) finishExchange()
         else transitionToNextStep(step)
       case _ => stash()
     }
 
-    private def transitionToNextStep(currentStep: Int): Unit = {
+    private def transitionToNextStep(currentStep: IntermediateStep): Unit = {
       unstashAll()
-      val nextStep = currentStep + 1
+      val nextStep = IntermediateStep(currentStep.value + 1)
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
-        nextStep,
-        channel.signStep(currentStep).toTuple
+        nextStep.value,
+        channel.signStepTransaction(currentStep)
       ))
       context.become(waitForPaymentProof(nextStep))
     }
@@ -92,7 +103,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         exchange.parameters.breakdown.totalSteps,
-        channel.finalSignatures.toTuple
+        channel.signStepTransaction(FinalStep)
       ))
       finishWith(ExchangeSuccess)
     }
@@ -102,7 +113,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency]
       context.stop(self)
     }
 
-    private def validatePayment(step: Int, paymentId: String): Future[Unit] = {
+    private def validatePayment(step: IntermediateStep, paymentId: String): Future[Unit] = {
       implicit val timeout = PaymentProcessor.RequestTimeout
       for {
         PaymentFound(payment) <- paymentProcessor

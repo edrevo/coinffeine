@@ -4,7 +4,7 @@ import akka.actor.Props
 
 import com.coinffeine.common.{AkkaSpec, BitcoinjTest}
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.KeyPair
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
 
 class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest") with BitcoinjTest {
 
@@ -70,7 +70,7 @@ class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest") 
     instance ! BlockchainActor.WatchPublicKey(keyPair)
     sendToBlockChain(tx)
     instance ! BlockchainActor.RetrieveTransaction(tx.getHash)
-    expectMsg(BlockchainActor.TransactionFound(tx.getHash, tx))
+    expectMsg(BlockchainActor.TransactionFound(tx.getHash, ImmutableTransaction(tx)))
   }
 
   it must "fail to retrieve unexisting transaction in blockchain" in new Fixture {

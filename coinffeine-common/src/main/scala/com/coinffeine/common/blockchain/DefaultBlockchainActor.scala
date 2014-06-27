@@ -1,7 +1,7 @@
 package com.coinffeine.common.blockchain
 
 import java.util
-import com.coinffeine.common.bitcoin.MutableTransaction
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
 
 import scala.collection.JavaConversions._
 
@@ -96,7 +96,7 @@ class DefaultBlockchainActor(network: NetworkParameters,
       observations += txHash -> Observation(txHash, sender(), confirmations)
     case BlockchainActor.RetrieveTransaction(txHash) =>
       transactionFor(txHash) match {
-        case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, tx)
+        case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
   }

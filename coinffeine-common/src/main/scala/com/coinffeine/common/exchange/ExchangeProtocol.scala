@@ -14,10 +14,26 @@ trait ExchangeProtocol {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake[C <: FiatCurrency](exchange: Exchange[C],
-                                         role: Role,
-                                         unspentOutputs: Seq[UnspentOutput],
-                                         changeAddress: Address): Handshake[C]
+  def createHandshake(exchange: Exchange[_ <: FiatCurrency],
+                      role: Role,
+                      unspentOutputs: Seq[UnspentOutput],
+                      changeAddress: Address): Handshake
+
+  /** Create a micro payment channel for an exchange given the deposit transactions and the
+    * role to take.
+    *
+    * @param role       Role played in the protocol
+    * @param exchange   Exchange description
+    * @param deposits   Already compromised deposits for buyer and seller
+    */
+  def createMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
+                                role: Role,
+                                deposits: Deposits): MicroPaymentChannel
+
+  /** Temporary method needed until ProtoMicroPaymentChannel will converge with MicroPaymentChannel */
+  def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
+                                     role: Role,
+                                     deposits: Deposits): ProtoMicroPaymentChannel
 }
 
 object ExchangeProtocol {
