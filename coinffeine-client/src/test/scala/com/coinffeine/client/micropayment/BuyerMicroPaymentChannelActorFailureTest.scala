@@ -1,19 +1,18 @@
 package com.coinffeine.client.micropayment
 
 import scala.concurrent.duration._
-import scala.util.Failure
 
 import akka.actor.Props
 import akka.testkit.TestProbe
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
+import com.coinffeine.client.exchange.MockMicroPaymentChannel
 import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.BuyerRole
-import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Signatures, Step}
+import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Signatures}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
@@ -55,7 +54,7 @@ class BuyerMicroPaymentChannelActorFailureTest
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
     startMicroPaymentChannel()
     val invalidDeposits = signatures.copy(
-      buyer = MockProtoMicroPaymentChannel.InvalidSignature
+      buyer = MockMicroPaymentChannel.InvalidSignature
     )
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
