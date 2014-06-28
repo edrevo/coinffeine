@@ -8,6 +8,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, MutableTransaction, Wallet}
+import com.coinffeine.common.bitcoin.peers.PeerActor.{BlockchainActorReference, RetrieveBlockchainActor}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -25,13 +26,29 @@ class ExchangeActor[C <: FiatCurrency](
 
   private class InitializedExchange(init: StartExchange[C]) {
     import init._
+    var blockchain: ActorRef = _
 
     def start(): Unit = {
       require(userWallet.getKeys.contains(role.me(exchange).bitcoinKey))
       log.info(s"Starting exchange ${exchange.id}")
-      watchForCounterpartDeposit()
-      startHandshake()
-      context.become(inHandshake)
+      bitcoinPeers ! RetrieveBlockchainActor
+      context.become(retrievingBlockchain)
+    }
+
+    private val inHandshake: Receive = {
+      case HandshakeSuccess(commitmentTxIds, refundTx) =>
+        context.child(HandshakeActorName).map(context.stop)
+        commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
+        context.become(receiveTransaction(commitmentTxIds))
+      case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
+    }
+
+    private val retrievingBlockchain: Receive = {
+      case BlockchainActorReference(blockchainRef) =>
+        blockchain = blockchainRef
+        watchForCounterpartDeposit()
+        startHandshake()
+        context.become(inHandshake)
     }
 
     private def startHandshake(): Unit = {
@@ -52,15 +69,6 @@ class ExchangeActor[C <: FiatCurrency](
         // TODO: handle failure with AbortActor
         log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         finishWith(ExchangeFailure(e))
-    }
-
-    private val inHandshake: Receive = {
-      case HandshakeSuccess(commitmentTxIds, refundTx) =>
-        // TODO: next step for refundTx
-        context.child(HandshakeActorName).map(context.stop)
-        commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
-        context.become(receiveTransaction(commitmentTxIds))
-      case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
     private def receiveTransaction(commitmentTxIds: Both[Hash]): Receive = {
@@ -86,12 +94,11 @@ class ExchangeActor[C <: FiatCurrency](
 
     private def finishWith(result: Any): Unit = {
       resultListeners.foreach { _ ! result }
-      if (context == null) println("null context")
-      if (self == null) println("null self")
       context.stop(self)
     }
 
     private def watchForCounterpartDeposit(): Unit = {
+      // TODO for the PR: why are we doing this?
       blockchain ! WatchPublicKey(role.her(exchange).bitcoinKey)
     }
   }
@@ -108,7 +115,7 @@ object ExchangeActor {
     userWallet: Wallet,
     paymentProcessor: ActorRef,
     messageGateway: ActorRef,
-    blockchain: ActorRef
+    bitcoinPeers: ActorRef
   )
 
   case object ExchangeSuccess

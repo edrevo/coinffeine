@@ -17,6 +17,7 @@ import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.bitcoin.peers.PeerActor.{BlockchainActorReference, RetrieveBlockchainActor}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.Both
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -47,6 +48,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   trait Fixture {
     val listener = TestProbe()
     val blockchain = TestProbe()
+    val peers = TestProbe()
     val wallet = createWallet(user.bitcoinKey, exchange.amounts.sellerDeposit)
     val handshakeProps = TestActor.props(handshakeActorMessageQueue.queue)
     val exchangeProps = TestActor.props(exchangeActorMessageQueue.queue)
@@ -69,8 +71,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def startExchange(): Unit = {
       actor ! StartExchange(
-        exchange, userRole, wallet, dummyPaymentProcessor, gateway.ref, blockchain.ref
+        exchange, userRole, wallet, dummyPaymentProcessor, gateway.ref, peers.ref
       )
+      peers.expectMsg(RetrieveBlockchainActor)
+      peers.reply(BlockchainActorReference(blockchain.ref))
     }
 
     def givenHandshakeSuccess(): Unit = withActor(HandshakeActorName) { handshakeActor =>
@@ -101,7 +105,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     }
   }
 
-  "The exchange actor" should """report an exchange success when handshake and exchange work""" in
+  "The exchange actor" should "report an exchange success when handshake and exchange work" in
     new Fixture {
       startExchange()
       givenHandshakeSuccess()
