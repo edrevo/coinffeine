@@ -1,7 +1,8 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, MutableTransaction, PublicKey}
+
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, PublicKey}
 
 /** A BlockchainActor keeps a blockchain and can:
   *
