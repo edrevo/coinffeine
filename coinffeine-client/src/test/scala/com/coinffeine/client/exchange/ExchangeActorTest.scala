@@ -1,11 +1,9 @@
 package com.coinffeine.client.exchange
 
-import java.util.concurrent.LinkedBlockingDeque
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props, Terminated}
 import akka.testkit.{TestActor, TestProbe}
-import akka.testkit.TestActor.Message
 import akka.util.Timeout
 import org.scalatest.concurrent.Eventually
 
@@ -31,12 +29,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
 
-  private val handshakeActorMessageQueue = new LinkedBlockingDeque[Message]()
-  private val handshakeProps = TestActor.props(handshakeActorMessageQueue)
+  private val handshakeActorMessageQueue = new TestMessageQueue()
 
   private val channel = new MockProtoMicroPaymentChannel(exchange)
-  private val exchangeActorMessageQueue = new LinkedBlockingDeque[Message]()
-  private val exchangeProps = TestActor.props(exchangeActorMessageQueue)
+  private val exchangeActorMessageQueue = new TestMessageQueue()
 
   private val buyerDepositId = new Hash(List.fill(64)("0").mkString)
   private val sellerDepositId = new Hash(List.fill(64)("1").mkString)
@@ -50,6 +46,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val listener = TestProbe()
     val blockchain = TestProbe()
     val wallet = createWallet(user.bitcoinKey, exchange.amounts.sellerDeposit)
+    val handshakeProps = TestActor.props(handshakeActorMessageQueue.queue)
+    val exchangeProps = TestActor.props(exchangeActorMessageQueue.queue)
     val actor = system.actorOf(Props(new ExchangeActor[Euro.type](
       handshakeProps,
       exchangeProps,
@@ -74,9 +72,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     }
 
     def givenHandshakeSuccess(): Unit = withActor(HandshakeActorName) { handshakeActor =>
-      val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg shouldBe a[StartHandshake[_]]
-      queueItem.sender should be(actor)
+      handshakeActorMessageQueue.expectMsgClass[StartHandshake[_]]()
       actor.tell(HandshakeSuccess(sellerDepositId, buyerDepositId, dummyTx), handshakeActor)
     }
 
@@ -110,12 +106,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       givenTransactionsAreFound()
 
       withActor(MicroPaymentChannelActorName) { exchangeActor =>
-        val queueItem = exchangeActorMessageQueue.pop()
-        queueItem.msg should be(MicroPaymentChannelActor.StartMicroPaymentChannel(
+        exchangeActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
           exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
           dummyPaymentProcessor, gateway.ref, Set(actor)
         ))
-        queueItem.sender should be(actor)
         actor.tell(MicroPaymentChannelActor.ExchangeSuccess, exchangeActor)
       }
       listener.expectMsg(ExchangeSuccess)
@@ -127,9 +121,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     startExchange()
     val error = new Error("Handshake error")
     withActor(HandshakeActorName) { handshakeActor =>
-      val queueItem = handshakeActorMessageQueue.pop()
-      queueItem.msg shouldBe a [StartHandshake[_]]
-      queueItem.sender should be (actor)
+      handshakeActorMessageQueue.expectMsgClass[StartHandshake[_]]()
       actor.tell(HandshakeFailure(error), handshakeActor)
     }
     listener.expectMsg(ExchangeFailure(error))
@@ -156,12 +148,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     val error = new Error("exchange failure")
     withActor(MicroPaymentChannelActorName) { exchangeActor =>
-      val queueItem = exchangeActorMessageQueue.pop()
-      queueItem.msg should be (MicroPaymentChannelActor.StartMicroPaymentChannel(
+      exchangeActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
         exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
         dummyPaymentProcessor, gateway.ref, Set(actor)
       ))
-      queueItem.sender should be (actor)
       actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
     }
 
