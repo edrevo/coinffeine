@@ -115,7 +115,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
 
       private def finishExchange(): Unit = {
         log.info(s"Exchange ${exchange.id}: exchange finished with success")
-        finishWith(ExchangeSuccess)
+        finishWith(ExchangeSuccess(None))
       }
     }
 

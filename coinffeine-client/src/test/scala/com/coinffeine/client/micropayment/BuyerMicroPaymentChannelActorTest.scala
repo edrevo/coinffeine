@@ -34,6 +34,13 @@ class BuyerMicroPaymentChannelActorTest
     "buyer-exchange-actor"
   )
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+  val expectedLastOffer = {
+    val initialChannel = exchangeProtocol
+      .createMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits)
+    val lastChannel = Seq.iterate(
+      initialChannel, exchange.parameters.breakdown.totalSteps)(_.nextStep).last
+    lastChannel.closingTransaction(signatures)
+  }
   listener.watch(actor)
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
@@ -68,16 +75,11 @@ class BuyerMicroPaymentChannelActorTest
   it should "send a notification to the listeners once the exchange has finished" in {
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.parameters.breakdown.totalSteps, signatures))
-    listener.expectMsg(ExchangeSuccess)
+    listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
   }
 
   it should "reply with the final transaction when asked about the last signed offer" in {
     actor ! GetLastOffer
-    val initialChannel = exchangeProtocol
-      .createMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits)
-    val lastChannel = Seq.iterate(
-      initialChannel, exchange.parameters.breakdown.totalSteps)(_.nextStep).last
-    val expectedLastOffer = lastChannel.closingTransaction(signatures)
     expectMsg(LastOffer(Some(expectedLastOffer)))
   }
 }

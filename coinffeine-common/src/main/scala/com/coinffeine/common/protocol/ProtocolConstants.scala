@@ -16,6 +16,8 @@ import scala.concurrent.duration._
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
   * @param orderResubmitInterval   Open orders should be resubmitted after this interval to avoid
   *                                being discarded
+  * @param refundSafetyBlockCount The number of blocks before the refund can be broadcast where we
+  *                               want to finish the exchange forcefully.
   * @param version                 Protocol version
   */
 case class ProtocolConstants(
@@ -27,6 +29,7 @@ case class ProtocolConstants(
   exchangePaymentProofTimeout: FiniteDuration = 5 minutes,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,
+  refundSafetyBlockCount: Int = 2,
   version: Version = Version(major = 0, minor = 1)
 )
 

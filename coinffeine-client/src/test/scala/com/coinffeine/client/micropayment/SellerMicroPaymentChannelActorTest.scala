@@ -92,7 +92,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
-    listener.expectMsg(ExchangeSuccess)
+    listener.expectMsg(ExchangeSuccess(None))
   }
 
   private def expectPayment(step: IntermediateStep): Unit = {

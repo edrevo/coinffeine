@@ -83,7 +83,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
               context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
             case _: FinalStep =>
               log.info(s"Exchange ${exchange.id}: exchange finished with success")
-              finishWith(ExchangeSuccess)
+              finishWith(ExchangeSuccess(lastSignedOffer))
           }
         }
       }

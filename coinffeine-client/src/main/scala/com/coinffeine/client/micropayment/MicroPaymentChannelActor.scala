@@ -25,7 +25,7 @@ object MicroPaymentChannelActor {
   )
 
   /** Sent to the exchange listeners to notify success of the exchange */
-  case object ExchangeSuccess
+  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction])
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
   case class ExchangeFailure(cause: Throwable)
