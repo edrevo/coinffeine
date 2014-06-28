@@ -33,7 +33,8 @@ class SellerMicroPaymentChannelActorFailureTest
       gateway.ref, Set(listener.ref)
     )
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (None)
     failure.cause shouldBe a [TimeoutException]
+    actor ! GetLastOffer
+    expectMsg(LastOffer(None))
   }
 }

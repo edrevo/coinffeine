@@ -9,13 +9,13 @@ import org.joda.time.DateTime
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.handshake.MockExchangeProtocol
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer, ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.{BuyerRole, Exchange}
-import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
+import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, Signatures}
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -28,8 +28,9 @@ class BuyerMicroPaymentChannelActorTest
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
   val protocolConstants = ProtocolConstants()
+  val exchangeProtocol = new MockExchangeProtocol
   val actor = system.actorOf(
-    Props(new BuyerMicroPaymentChannelActor(new MockExchangeProtocol)),
+    Props(new BuyerMicroPaymentChannelActor(exchangeProtocol)),
     "buyer-exchange-actor"
   )
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
@@ -68,5 +69,15 @@ class BuyerMicroPaymentChannelActorTest
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.parameters.breakdown.totalSteps, signatures))
     listener.expectMsg(ExchangeSuccess)
+  }
+
+  it should "reply with the final transaction when asked about the last signed offer" in {
+    actor ! GetLastOffer
+    val initialChannel = exchangeProtocol
+      .createMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits)
+    val lastChannel = Seq.iterate(
+      initialChannel, exchange.parameters.breakdown.totalSteps)(_.nextStep).last
+    val expectedLastOffer = lastChannel.closingTransaction(signatures)
+    expectMsg(LastOffer(Some(expectedLastOffer)))
   }
 }

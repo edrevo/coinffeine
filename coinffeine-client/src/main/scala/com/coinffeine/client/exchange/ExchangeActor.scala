@@ -65,7 +65,7 @@ class ExchangeActor[C <: FiatCurrency](
       case MicroPaymentChannelActor.ExchangeSuccess =>
         log.info(s"Finishing exchange '${exchange.id}' successfully")
         finishWith(ExchangeSuccess)
-      case MicroPaymentChannelActor.ExchangeFailure(e, lastOffer) =>
+      case MicroPaymentChannelActor.ExchangeFailure(e) =>
         // TODO: handle failure with AbortActor
         log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         finishWith(ExchangeFailure(e))

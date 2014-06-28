@@ -158,7 +158,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
         exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
         dummyPaymentProcessor, gateway.ref, Set(actor)
       ))
-      actor.!(MicroPaymentChannelActor.ExchangeFailure(error, None))(exchangeActor)
+      actor.!(MicroPaymentChannelActor.ExchangeFailure(error))(exchangeActor)
     }
 
     listener.expectMsg(ExchangeFailure(error))

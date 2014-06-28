@@ -44,7 +44,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
     def startExchange(): Unit = {
       subscribeToMessages()
       val channel = exchangeProtocol.createMicroPaymentChannel(exchange, role, deposits)
-      context.become(waitForNextStepSignature(channel))
+      context.become(waitForNextStepSignature(channel) orElse handleLastOfferQueries)
       log.info(s"Exchange ${exchange.id}: Exchange started")
     }
 
@@ -54,6 +54,10 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
         case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) => true
         case _ => false
       }
+    }
+
+    private val handleLastOfferQueries: Receive = {
+      case GetLastOffer => sender ! LastOffer(lastSignedOffer)
     }
 
     private def withStepTimeout(channel: MicroPaymentChannel)(receive: Receive): Receive = {
@@ -66,7 +70,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
         val errorMsg = s"Timed out waiting for the seller to provide the signature for $step" +
           s" (out of ${exchange.parameters.breakdown.intermediateSteps}})"
         log.warning(errorMsg)
-        finishWith(ExchangeFailure(TimeoutException(errorMsg), lastSignedOffer))
+        finishWith(ExchangeFailure(TimeoutException(errorMsg)))
     }
 
     private def waitForNextStepSignature(channel: MicroPaymentChannel): Receive =
@@ -76,10 +80,9 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
           channel.currentStep match {
             case step: IntermediateStep =>
               forwarding.forwardToCounterpart(pay(step))
-              context.become(waitForNextStepSignature(channel.nextStep))
+              context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
             case _: FinalStep =>
               log.info(s"Exchange ${exchange.id}: exchange finished with success")
-              // TODO: Publish transaction to blockchain
               finishWith(ExchangeSuccess)
           }
         }
@@ -95,13 +98,13 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
             log.warning(s"Received invalid signature for ${channel.currentStep}: " +
               s"($signatures). Reason: $cause")
             finishWith(ExchangeFailure(
-              InvalidStepSignatures(channel.currentStep.value, signatures, cause), lastSignedOffer))
+              InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
         }
     }
 
     private def finishWith(result: Any): Unit = {
       resultListeners.foreach { _ ! result }
-      context.stop(self)
+      context.become(handleLastOfferQueries)
     }
 
     private def pay(step: IntermediateStep): Future[PaymentProof] = {
