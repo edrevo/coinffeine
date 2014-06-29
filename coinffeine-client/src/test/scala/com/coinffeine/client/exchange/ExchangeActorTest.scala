@@ -10,7 +10,7 @@ import org.scalatest.concurrent.Eventually
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor._
+import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast =>_, _}
 import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
@@ -85,7 +85,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
         handshakeActorMessageQueue.expectMsgClass[StartHandshake[_]]()
         actor.tell(HandshakeSuccess(deposits, dummyTx), handshakeActor)
       }
-      transactionBroadcastActorMessageQueue.expectMsg(SetRefund(dummyTx))
+      transactionBroadcastActorMessageQueue.expectMsg(
+        StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
     }
 
     def givenTransactionsAreFound(): Unit = {

@@ -3,7 +3,7 @@ package com.coinffeine.client.exchange
 import akka.actor._
 
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor._
+import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast =>_, _}
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
@@ -42,7 +42,7 @@ class ExchangeActor[C <: FiatCurrency](
         context.child(HandshakeActorName).map(context.stop)
         val txBroadcaster = context.actorOf(
           transactionBroadcastActorProps, TransactionBroadcastActorName)
-        txBroadcaster ! SetRefund(refundTx)
+        txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeers, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
         context.become(receiveTransaction(commitmentTxIds))
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
