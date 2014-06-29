@@ -20,7 +20,12 @@ class DefaultBlockchainActor(network: NetworkParameters,
     requiredConfirmations: Int,
     foundInBlock: Option[BlockIdentity] = None)
 
+  private case class HeightNotification(
+    height: Long,
+    requester: ActorRef)
+
   private var observations: Map[Sha256Hash, Observation] = Map.empty
+  private var heightNotifications: Set[HeightNotification] = Set.empty
   private val wallet: Wallet = new Wallet(network)
 
   private object listener extends AbstractBlockChainListener {
@@ -42,6 +47,13 @@ class DefaultBlockchainActor(network: NetworkParameters,
               "still waiting for more blocks",
             blockHeight, txHash, confirmations, reqConf)
         }
+      }
+      heightNotifications.foreach { case notification@HeightNotification(height, req) =>
+          val blockchainHeight = block.getHeight
+          if (blockchainHeight >= height) {
+            req ! BlockchainActor.BlockchainHeightReached(blockchainHeight)
+            heightNotifications  -= notification
+          }
       }
     }
 
@@ -99,6 +111,8 @@ class DefaultBlockchainActor(network: NetworkParameters,
         case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
+    case BlockchainActor.WatchBlockchainHeight(height) =>
+      heightNotifications += HeightNotification(height, sender())
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =

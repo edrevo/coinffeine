@@ -79,6 +79,16 @@ class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest") 
     expectMsg(BlockchainActor.TransactionNotFound(tx.getHash))
   }
 
+  it must "report blockchain height after the blockchain reaches the notification threshold" in new Fixture {
+    instance ! BlockchainActor.WatchBlockchainHeight(50)
+    for (currentHeight <- chain.getBestChainHeight to 48) {
+      mineBlock()
+    }
+    expectNoMsg()
+    mineBlock()
+    expectMsg(BlockchainActor.BlockchainHeightReached(50))
+  }
+
   trait Fixture {
     val keyPair = new KeyPair()
     val otherKeyPair = new KeyPair()
