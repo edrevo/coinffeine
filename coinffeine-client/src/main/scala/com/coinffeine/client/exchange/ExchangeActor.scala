@@ -138,12 +138,14 @@ class ExchangeActor[C <: FiatCurrency](
   }
 }
 
+/** This actor handles all the necessary steps for an exchange to happen */
 object ExchangeActor {
 
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
   val TransactionBroadcastActorName = "transactionBroadcast"
 
+  /** This is a request for the actor to start the exchange */
   case class StartExchange[C <: FiatCurrency](
     exchange: Exchange[C],
     role: Role,
@@ -153,8 +155,10 @@ object ExchangeActor {
     bitcoinPeers: ActorRef
   )
 
+  /** This is a message sent to the listeners to indicate that an exchange succeeded */
   case object ExchangeSuccess
 
+  /** This is a message sent to the listeners to indicate that an exchange failed */
   case class ExchangeFailure(e: Throwable)
 
   case class CommitmentTxNotInBlockChain(txId: Hash) extends RuntimeException(
