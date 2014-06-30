@@ -1,10 +1,9 @@
 package com.coinffeine.common.exchange
 
-import com.coinffeine.common.exchange.Exchange.StepBreakdown
-
 import scala.util.Try
 
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
+import com.coinffeine.common.exchange.Exchange.StepBreakdown
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 trait MicroPaymentChannel {
