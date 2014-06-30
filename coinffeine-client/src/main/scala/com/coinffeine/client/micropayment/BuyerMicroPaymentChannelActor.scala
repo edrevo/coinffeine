@@ -77,7 +77,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
             case step: IntermediateStep =>
               forwarding.forwardToCounterpart(pay(step))
               context.become(waitForNextStepSignature(channel.nextStep))
-            case FinalStep =>
+            case _: FinalStep =>
               log.info(s"Exchange ${exchange.id}: exchange finished with success")
               // TODO: Publish transaction to blockchain
               finishWith(ExchangeSuccess)
@@ -87,23 +87,16 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
 
     private def waitForValidSignature(channel: MicroPaymentChannel)
                                      (body: Signatures => Unit): Receive = {
-      val stepNumber = channel.currentStep match {
-        case IntermediateStep(i) => i
-        case FinalStep => exchange.parameters.breakdown.totalSteps
-      }
-
-      {
-        case ReceiveMessage(StepSignatures(_, `stepNumber`, signatures), _) =>
-          channel.validateCurrentTransactionSignatures(signatures) match {
-            case Success(_) =>
-              body(signatures)
-            case Failure(cause) =>
-              log.warning(s"Received invalid signature for ${channel.currentStep}: " +
-                s"($signatures). Reason: $cause")
-              finishWith(ExchangeFailure(
-                InvalidStepSignatures(channel.currentStep, signatures, cause), lastSignedOffer))
-          }
-      }
+      case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
+        channel.validateCurrentTransactionSignatures(signatures) match {
+          case Success(_) =>
+            body(signatures)
+          case Failure(cause) =>
+            log.warning(s"Received invalid signature for ${channel.currentStep}: " +
+              s"($signatures). Reason: $cause")
+            finishWith(ExchangeFailure(
+              InvalidStepSignatures(channel.currentStep.value, signatures, cause), lastSignedOffer))
+        }
     }
 
     private def finishWith(result: Any): Unit = {

@@ -9,7 +9,6 @@ import com.google.bitcoin.crypto.TransactionSignature
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
-import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
 import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -18,7 +17,6 @@ class SellerMicroPaymentChannelActorFailureTest
   extends CoinffeineClientTest("buyerExchange") with SellerPerspective {
 
   val protocolConstants = ProtocolConstants(exchangePaymentProofTimeout = 0.5 seconds)
-  val channel = new MockProtoMicroPaymentChannel(exchange)
   val dummySig = TransactionSignature.dummy
 
   trait Fixture {
@@ -36,6 +34,6 @@ class SellerMicroPaymentChannelActorFailureTest
     )
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be (None)
-    failure.cause.isInstanceOf[TimeoutException] should be (true)
+    failure.cause shouldBe a [TimeoutException]
   }
 }

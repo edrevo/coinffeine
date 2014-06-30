@@ -12,7 +12,7 @@ import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.BuyerRole
-import com.coinffeine.common.exchange.MicroPaymentChannel.{IntermediateStep, Signatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
@@ -59,7 +59,7 @@ class BuyerMicroPaymentChannelActorFailureTest
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.lastOffer should be ('empty)
-    failure.cause.isInstanceOf[InvalidStepSignatures] should be (true)
-    failure.cause.asInstanceOf[InvalidStepSignatures].step should be (IntermediateStep(1))
+    failure.cause shouldBe an [InvalidStepSignatures]
+    failure.cause.asInstanceOf[InvalidStepSignatures].step should be (1)
   }
 }

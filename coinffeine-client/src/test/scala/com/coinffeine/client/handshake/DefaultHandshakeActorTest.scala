@@ -9,7 +9,7 @@ import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
+import com.coinffeine.common.bitcoin.ImmutableTransaction
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRequest, RefundTxSignatureResponse}

@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange
 
+import scala.util.Try
+
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin._
 
@@ -28,12 +30,11 @@ trait ExchangeProtocol {
     */
   def createMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
                                 role: Role,
-                                deposits: Deposits): MicroPaymentChannel
+                                deposits: Exchange.Deposits): MicroPaymentChannel
 
-  /** Temporary method needed until ProtoMicroPaymentChannel will converge with MicroPaymentChannel */
-  def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
-                                     role: Role,
-                                     deposits: Deposits): ProtoMicroPaymentChannel
+  /** Validate buyer and seller deposit transactions. */
+  def validateDeposits(transactions: Both[ImmutableTransaction],
+                       exchange: Exchange[_ <: FiatCurrency]): Try[Exchange.Deposits]
 }
 
 object ExchangeProtocol {

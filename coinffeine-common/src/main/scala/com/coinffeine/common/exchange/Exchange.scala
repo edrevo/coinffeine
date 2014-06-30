@@ -90,4 +90,8 @@ object Exchange {
     /** Amount refundable by the seller after a lock time */
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
   }
+
+  trait Deposits {
+    val transactions: Both[ImmutableTransaction]
+  }
 }

@@ -1,10 +1,8 @@
-package com.coinffeine.client
-
-import scala.collection.JavaConversions._
+package com.coinffeine.common.bitcoin
 
 import com.google.bitcoin.script.Script
 
-import com.coinffeine.common.bitcoin._
+import scala.collection.JavaConversions._
 
 case class MultiSigInfo(possibleKeys: Set[PublicKey], requiredKeyCount: Int)
 

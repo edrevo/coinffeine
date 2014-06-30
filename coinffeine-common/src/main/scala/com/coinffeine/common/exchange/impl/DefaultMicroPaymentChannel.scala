@@ -1,41 +1,41 @@
 package com.coinffeine.common.exchange.impl
 
 import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.exchange.MicroPaymentChannel.{InvalidSignaturesException, FinalStep, IntermediateStep, Signatures}
+import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
-import scala.util.control.NonFatal
-
-private[impl] class DefaultMicroPaymentChannel(
+private[impl] class DefaultMicroPaymentChannel private (
     role: Role,
     exchange: Exchange[_ <: FiatCurrency],
-    deposits: Deposits,
-    override val currentStep: MicroPaymentChannel.Step = IntermediateStep(1))
-  extends MicroPaymentChannel {
+    deposits: Exchange.Deposits,
+    override val currentStep: Step) extends MicroPaymentChannel {
+
+  def this(role: Role, exchange: Exchange[_ <: FiatCurrency], deposits: Exchange.Deposits) =
+    this(role, exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
 
   private val currentUnsignedTransaction = ImmutableTransaction {
     import exchange.amounts._
 
-    val buyerOutput = currentStep match {
-      case FinalStep => bitcoinAmount + buyerDeposit
-      case IntermediateStep(i) => stepBitcoinAmount * (i - 1)
-    }
-    val sellerOutput = currentStep match {
-      case FinalStep => sellerDeposit - bitcoinAmount
-      case IntermediateStep(i) => bitcoinAmount - stepBitcoinAmount * (i - 1)
-    }
+    val split = if (currentStep.isFinal) Both(
+      buyer = buyerDeposit + bitcoinAmount,
+      seller = sellerDeposit - bitcoinAmount
+    ) else Both(
+      buyer = stepBitcoinAmount * (currentStep.value - 1),
+      seller = bitcoinAmount - stepBitcoinAmount * (currentStep.value - 1)
+    )
 
     TransactionProcessor.createUnsignedTransaction(
-      inputs = deposits.toSeq.map(_.get.getOutput(0)),
+      inputs = deposits.transactions.toSeq.map(_.get.getOutput(0)),
       outputs = Seq(
-        exchange.buyer.bitcoinKey -> buyerOutput,
-        exchange.seller.bitcoinKey -> sellerOutput
+        exchange.buyer.bitcoinKey -> split.buyer,
+        exchange.seller.bitcoinKey -> split.seller
       ),
       network = exchange.parameters.network
     )
@@ -71,14 +71,7 @@ private[impl] class DefaultMicroPaymentChannel(
     )
   }
 
-  override def nextStep: DefaultMicroPaymentChannel = {
-    val nextStep = currentStep match {
-      case FinalStep => throw new IllegalArgumentException("Already at the last step")
-      case IntermediateStep(exchange.parameters.breakdown.intermediateSteps) => FinalStep
-      case IntermediateStep(i) => IntermediateStep(i + 1)
-    }
-    new DefaultMicroPaymentChannel(role, exchange, deposits, nextStep)
-  }
+  override def nextStep = new DefaultMicroPaymentChannel(role, exchange, deposits, currentStep.next)
 
   override def closingTransaction(herSignatures: Signatures) = {
     validateCurrentTransactionSignatures(herSignatures).get
