@@ -4,7 +4,7 @@ import com.coinffeine.common.{BitcoinAmount, BitcoinjTest}
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, Wallet}
-import com.coinffeine.common.exchange.{BuyerRole, Deposits, SellerRole, UnspentOutput}
+import com.coinffeine.common.exchange._
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
@@ -38,8 +38,12 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with buyer and seller channels created after a successful handshake */
   trait Channels extends BuyerHandshake with SellerHandshake {
-    val deposits = Deposits(buyerHandshake.myDeposit, sellerHandshake.myDeposit)
-    sendToBlockChain(deposits.toSeq.map(_.get): _*)
+    private val commitments = Both(
+      buyer = buyerHandshake.myDeposit,
+      seller = sellerHandshake.myDeposit
+    )
+    sendToBlockChain(commitments.toSeq.map(_.get): _*)
+    val deposits = protocol.validateDeposits(commitments, exchange).get
     val buyerChannel = protocol.createMicroPaymentChannel(exchange, BuyerRole, deposits)
     val sellerChannel = protocol.createMicroPaymentChannel(exchange, SellerRole, deposits)
     val totalSteps = exchange.parameters.breakdown.totalSteps

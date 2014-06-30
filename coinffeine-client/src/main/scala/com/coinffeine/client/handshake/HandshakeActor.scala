@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
-import com.coinffeine.common.exchange.{Both, Exchange, Handshake, Role}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature

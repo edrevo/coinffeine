@@ -1,12 +1,9 @@
-package com.coinffeine.client
-
-import scala.collection.JavaConversions._
-
-import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.script.ScriptBuilder
+package com.coinffeine.common.bitcoin
 
 import com.coinffeine.common.UnitTest
-import com.coinffeine.common.bitcoin.PublicKey
+import com.google.bitcoin.script.ScriptBuilder
+
+import scala.collection.JavaConversions._
 
 class MultiSigInfoTest extends UnitTest {
 

@@ -4,8 +4,8 @@ import akka.actor.ActorRef
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{Deposits, Exchange, Role}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{Signatures, Step}
+import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
@@ -17,7 +17,7 @@ object MicroPaymentChannelActor {
   case class StartMicroPaymentChannel[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
-      deposits: Deposits,
+      deposits: Exchange.Deposits,
       constants: ProtocolConstants,
       paymentProcessor: ActorRef,
       messageGateway: ActorRef,

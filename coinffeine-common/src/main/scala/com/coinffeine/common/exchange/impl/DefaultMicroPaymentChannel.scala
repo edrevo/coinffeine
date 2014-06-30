@@ -12,10 +12,10 @@ import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 private[impl] class DefaultMicroPaymentChannel private (
     role: Role,
     exchange: Exchange[_ <: FiatCurrency],
-    deposits: Deposits,
+    deposits: Exchange.Deposits,
     override val currentStep: Step) extends MicroPaymentChannel {
 
-  def this(role: Role, exchange: Exchange[_ <: FiatCurrency], deposits: Deposits) =
+  def this(role: Role, exchange: Exchange[_ <: FiatCurrency], deposits: Exchange.Deposits) =
     this(role, exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
@@ -32,7 +32,7 @@ private[impl] class DefaultMicroPaymentChannel private (
     )
 
     TransactionProcessor.createUnsignedTransaction(
-      inputs = deposits.toSeq.map(_.get.getOutput(0)),
+      inputs = deposits.transactions.toSeq.map(_.get.getOutput(0)),
       outputs = Seq(
         exchange.buyer.bitcoinKey -> split.buyer,
         exchange.seller.bitcoinKey -> split.seller

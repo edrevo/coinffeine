@@ -68,7 +68,8 @@ class ExchangeActor[C <: FiatCurrency](
         case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.toSeq.forall(newTxs.keySet.contains)) {
-            val deposits = commitmentTxIds.map(newTxs)
+            // TODO: what if counterpart deposit is not valid?
+            val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), exchange).get
             val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
             ref ! StartMicroPaymentChannel[C](
               exchange, role, deposits, constants, paymentProcessor, messageGateway, resultListeners = Set(self)

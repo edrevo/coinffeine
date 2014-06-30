@@ -1,17 +1,14 @@
 package com.coinffeine.client.exchange
 
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.util.{Timeout => AkkaTimeout}
-import com.google.bitcoin.core.Transaction.SigHash
 
 import com.coinffeine.client.SampleExchangeInfo
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
-import com.coinffeine.common.exchange.{BuyerRole, Deposits, SellerRole, UnspentOutput}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultExchangeProtocol
 
@@ -35,7 +32,9 @@ class DefaultProtoMicroPaymentChannelTest
       exchange, BuyerRole, UnspentOutput.collect(2.BTC, buyerWallet),
       buyerWallet.getChangeAddress
     )
-    val deposits = Deposits(buyerHandshake.myDeposit, sellerHandshake.myDeposit)
+    val deposits = exchangeProtocol.validateDeposits(
+      Both(buyerHandshake.myDeposit, sellerHandshake.myDeposit), exchange
+    ).get
   }
 
   private trait WithChannels extends WithBasicSetup {
@@ -45,35 +44,7 @@ class DefaultProtoMicroPaymentChannelTest
     val buyerChannel = new DefaultProtoMicroPaymentChannel(exchange, BuyerRole, deposits)
   }
 
-  "The default exchange" should "fail if the seller commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(exchange.parameters.network)
-    invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput((5 BTC).asSatoshi, sellerWallet.getKeys.head)
-    invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
-    sendToBlockChain(buyerHandshake.myDeposit.get)
-    sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
-      exchange,
-      SellerRole,
-      deposits.copy(seller = ImmutableTransaction(invalidFundsCommitment))
-    )
-  }
-
-  it should "fail if the buyer commitment tx is not valid" in new WithBasicSetup {
-    val invalidFundsCommitment = new MutableTransaction(exchange.parameters.network)
-    invalidFundsCommitment.addInput(buyerWallet.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput((5 BTC).asSatoshi, buyerWallet.getKeys.head)
-    invalidFundsCommitment.signInputs(SigHash.ALL, buyerWallet)
-    sendToBlockChain(sellerHandshake.myDeposit.get)
-    sendToBlockChain(invalidFundsCommitment)
-    an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
-      exchange,
-      SellerRole,
-      deposits.copy(buyer = ImmutableTransaction(invalidFundsCommitment))
-    )
-  }
-
-  it should "have a final offer that splits the amount as expected" in new WithChannels {
+  "The default exchange" should "have a final offer that splits the amount as expected" in new WithChannels {
     val sellerSignatures = sellerChannel.signStepTransaction(finalStep)
     val finalOffer = buyerChannel.closingTransaction(finalStep, sellerSignatures).get
     sendToBlockChain(finalOffer)

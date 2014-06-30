@@ -3,49 +3,22 @@ package com.coinffeine.client.exchange
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import com.coinffeine.client.MultiSigInfo
-import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
+import com.coinffeine.common.{BitcoinAmount, FiatCurrency}
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Deposits, Exchange, ProtoMicroPaymentChannel, Role}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 
 class DefaultProtoMicroPaymentChannel(
     exchange: Exchange[_ <: FiatCurrency],
     role: Role,
-    deposits: Deposits) extends ProtoMicroPaymentChannel {
+    deposits: Exchange.Deposits) extends ProtoMicroPaymentChannel {
 
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
-  private val buyerFunds = deposits.buyer.get.getOutput(0)
-  private val sellerFunds = deposits.seller.get.getOutput(0)
-  requireValidBuyerFunds(buyerFunds)
-  requireValidSellerFunds(sellerFunds)
-
-  private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
-    require(funds.getScriptPubKey.isSentToMultiSig,
-      "Transaction with funds is invalid because is not sending the funds to a multisig")
-    val multisigInfo = MultiSigInfo(funds.getScriptPubKey)
-    require(multisigInfo.requiredKeyCount == 2,
-      "Funds are sent to a multisig that do not require 2 keys")
-    require(multisigInfo.possibleKeys == requiredSignatures.toSet,
-      "Possible keys in multisig script does not match the expected keys")
-  }
-
-  private def requireValidBuyerFunds(buyerFunds: MutableTransactionOutput): Unit = {
-    requireValidFunds(buyerFunds)
-    require(Currency.Bitcoin.fromSatoshi(buyerFunds.getValue) == exchange.amounts.stepBitcoinAmount * 2,
-      "The amount of committed funds by the buyer does not match the expected amount")
-  }
-
-  private def requireValidSellerFunds(sellerFunds: MutableTransactionOutput): Unit = {
-    requireValidFunds(sellerFunds)
-    require(
-      Currency.Bitcoin.fromSatoshi(sellerFunds.getValue) ==
-        exchange.parameters.bitcoinAmount + exchange.amounts.stepBitcoinAmount,
-      "The amount of committed funds by the seller does not match the expected amount")
-  }
+  private val buyerFunds = deposits.transactions.buyer.get.getOutput(0)
+  private val sellerFunds = deposits.transactions.seller.get.getOutput(0)
 
   private def getOffer(step: Step): MutableTransaction =
     if (step.isFinal) getOffer(
