@@ -1,17 +1,17 @@
 package com.coinffeine.client.exchange
 
-import java.math.BigInteger
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
-import com.coinffeine.common.exchange.{ProtoMicroPaymentChannel, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
+import com.coinffeine.common.exchange.{Exchange, ProtoMicroPaymentChannel}
 
+@deprecated
 class MockProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency])
   extends ProtoMicroPaymentChannel {
 
-  import MockProtoMicroPaymentChannel._
+  import com.coinffeine.client.exchange.MockMicroPaymentChannel._
 
   private val offers = (1 to exchange.parameters.breakdown.totalSteps).map(idx => {
     val tx = new MutableTransaction(exchange.parameters.network)
@@ -36,9 +36,4 @@ class MockProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency])
 
   override def signStepTransaction(step: Step) =
     Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
-}
-
-object MockProtoMicroPaymentChannel {
-  /** Magic signature that is always rejected */
-  val InvalidSignature = new TransactionSignature(BigInteger.valueOf(42), BigInteger.valueOf(42))
 }

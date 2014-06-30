@@ -28,15 +28,17 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component wit
     after { stopBitcoinj() }
   }
 
-  override def beforeAll(): Unit = {
+  override abstract protected def beforeAll(): Unit = {
+    super.beforeAll()
     if (!resetBlockchainBetweenTests) {
       startBitcoinj()
     }
   }
-  override def afterAll(): Unit = {
+  override protected def afterAll(): Unit = {
     if (!resetBlockchainBetweenTests) {
       stopBitcoinj()
     }
+    super.afterAll()
   }
 
   def chainHead(): StoredBlock = chain.getChainHead

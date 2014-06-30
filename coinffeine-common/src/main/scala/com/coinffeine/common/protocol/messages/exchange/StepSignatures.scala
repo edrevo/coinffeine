@@ -17,9 +17,9 @@ case class StepSignatures(exchangeId: Exchange.Id, step: Int, signatures: Signat
     case that: StepSignatures =>
       (that.exchangeId == exchangeId) && (that.step == step) &&
       TransactionSignatureUtils.equals(
-        that.signatures.buyerDepositSignature, signatures.buyerDepositSignature) &&
+        that.signatures.buyer, signatures.buyer) &&
       TransactionSignatureUtils.equals(
-        that.signatures.sellerDepositSignature, signatures.sellerDepositSignature)
+        that.signatures.seller, signatures.seller)
     case _ => false
   }
 

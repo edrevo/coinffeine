@@ -53,7 +53,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      deposits.copy(sellerDeposit = ImmutableTransaction(invalidFundsCommitment))
+      deposits.copy(seller = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 
@@ -67,7 +67,7 @@ class DefaultProtoMicroPaymentChannelTest
     an [IllegalArgumentException] should be thrownBy new DefaultProtoMicroPaymentChannel(
       exchange,
       SellerRole,
-      deposits.copy(buyerDeposit = ImmutableTransaction(invalidFundsCommitment))
+      deposits.copy(buyer = ImmutableTransaction(invalidFundsCommitment))
     )
   }
 
@@ -86,11 +86,7 @@ class DefaultProtoMicroPaymentChannelTest
     val signatures = sellerChannel.signStepTransaction(FinalStep)
     buyerChannel.validateStepTransactionSignatures(FinalStep, signatures) should be ('success)
     sellerChannel.validateStepTransactionSignatures(FinalStep, signatures) should be ('success)
-    val swappedSignatures = Signatures(
-      buyerDepositSignature = signatures.sellerDepositSignature,
-      sellerDepositSignature = signatures.buyerDepositSignature
-    )
-    buyerChannel.validateStepTransactionSignatures(FinalStep, swappedSignatures) should be ('failure)
+    buyerChannel.validateStepTransactionSignatures(FinalStep, signatures.swap) should be ('failure)
 
     val buyerSignatures = buyerChannel.signStepTransaction(FinalStep)
     buyerChannel.validateStepTransactionSignatures(FinalStep, buyerSignatures) should be ('failure)
@@ -115,11 +111,7 @@ class DefaultProtoMicroPaymentChannelTest
       val signatures = sellerChannel.signStepTransaction(step)
       buyerChannel.validateStepTransactionSignatures(step, signatures) should be ('success)
       sellerChannel.validateStepTransactionSignatures(step, signatures) should be ('success)
-      val swappedSignatures = Signatures(
-        buyerDepositSignature = signatures.sellerDepositSignature,
-        sellerDepositSignature = signatures.buyerDepositSignature
-      )
-      buyerChannel.validateStepTransactionSignatures(step, swappedSignatures) should be ('failure)
+      buyerChannel.validateStepTransactionSignatures(step, signatures.swap) should be ('failure)
 
       val buyerSignatures = buyerChannel.signStepTransaction(step)
       buyerChannel.validateStepTransactionSignatures(step, buyerSignatures) should be ('failure)

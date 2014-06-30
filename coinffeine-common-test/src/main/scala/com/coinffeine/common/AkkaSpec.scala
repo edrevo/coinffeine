@@ -16,7 +16,7 @@ abstract class AkkaSpec(actorSystem: ActorSystem = ActorSystem("TestSystem"))
 
   def this(systemName: String) = this(ActorSystem(systemName))
 
-  override def afterAll(): Unit = {
+  override protected def afterAll(): Unit = {
     system.shutdown()
   }
 }

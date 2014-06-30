@@ -6,7 +6,7 @@ import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -34,7 +34,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
     filter(fromCounterpart(
       RefundTxSignatureResponse(exchange.id, handshake.refundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification(exchange.id, mock[Hash], mock[Hash]))) should be (true)
+    filter(fromBroker(CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))) should be (true)
     filter(fromBroker(ExchangeAborted(exchange.id, "failed"))) should be (true)
     filter(fromCounterpart(ExchangeAborted(exchange.id, "failed"))) should be (false)
     filter(fromBroker(ExchangeAborted(otherId, "failed"))) should be (false)
@@ -75,8 +75,10 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     listener.expectNoMsg(100 millis)
     gateway.send(actor, fromBroker(CommitmentNotification(
       exchange.id,
-      handshake.myDeposit.get.getHash,
-      handshake.counterpartCommitmentTransaction.getHash
+      Both(
+        handshake.myDeposit.get.getHash,
+        handshake.counterpartCommitmentTransaction.getHash
+      )
     )))
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
@@ -95,8 +97,8 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     }
     val result = listener.expectMsgClass(classOf[HandshakeSuccess])
     result.refundTransaction should be (handshake.mySignedRefund)
-    result.buyerCommitmentTxId should be (handshake.myDeposit.get.getHash)
-    result.sellerCommitmentTxId should be (handshake.counterpartCommitmentTransaction.getHash)
+    result.bothCommitments.buyer should be (handshake.myDeposit.get.getHash)
+    result.bothCommitments.seller should be (handshake.counterpartCommitmentTransaction.getHash)
   }
 
   it should "finally terminate himself" in {

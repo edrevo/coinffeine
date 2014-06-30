@@ -27,6 +27,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
 
   import context.dispatcher
 
+  override def postStop(): Unit = {
+    cancelTimeout()
+  }
+
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init).start()
   }

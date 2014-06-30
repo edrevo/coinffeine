@@ -10,7 +10,7 @@ import com.coinffeine.common.{BitcoinjTest, Currency, PeerConnection}
 import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -96,7 +96,7 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
     val sampleMessages = Seq(
       ExchangeAborted(exchangeId, "reason"),
       ExchangeCommitment(exchangeId, transaction),
-      CommitmentNotification(exchangeId, sampleTxId, sampleTxId),
+      CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
       OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
       OrderSet(
         market = Market(Currency.UsDollar),

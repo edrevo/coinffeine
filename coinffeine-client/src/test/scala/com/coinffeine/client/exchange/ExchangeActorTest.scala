@@ -18,6 +18,7 @@ import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.Both
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
@@ -31,11 +32,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   private val handshakeActorMessageQueue = new TestMessageQueue()
 
-  private val channel = new MockProtoMicroPaymentChannel(exchange)
   private val exchangeActorMessageQueue = new TestMessageQueue()
 
-  private val buyerDepositId = new Hash(List.fill(64)("0").mkString)
-  private val sellerDepositId = new Hash(List.fill(64)("1").mkString)
+  private val deposits = Both(
+    buyer = new Hash(List.fill(64)("0").mkString),
+    seller = new Hash(List.fill(64)("1").mkString)
+  )
   private val dummyTx = ImmutableTransaction(new MutableTransaction(network))
   private val dummyPaymentProcessor = system.actorOf(
     new MockPaymentProcessorFactory(List.empty)
@@ -73,13 +75,13 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def givenHandshakeSuccess(): Unit = withActor(HandshakeActorName) { handshakeActor =>
       handshakeActorMessageQueue.expectMsgClass[StartHandshake[_]]()
-      actor.tell(HandshakeSuccess(sellerDepositId, buyerDepositId, dummyTx), handshakeActor)
+      actor.tell(HandshakeSuccess(deposits, dummyTx), handshakeActor)
     }
 
     def givenTransactionsAreFound(): Unit = {
       shouldWatchForTheTransactions()
-      givenTransactionIsFound(buyerDepositId)
-      givenTransactionIsFound(sellerDepositId)
+      givenTransactionIsFound(deposits.buyer)
+      givenTransactionIsFound(deposits.seller)
     }
 
     def givenTransactionIsFound(txId: Hash): Unit = {
@@ -93,8 +95,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def shouldWatchForTheTransactions(): Unit = {
       blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
       blockchain.expectMsgAllOf(
-        RetrieveTransaction(buyerDepositId),
-        RetrieveTransaction(sellerDepositId)
+        RetrieveTransaction(deposits.buyer),
+        RetrieveTransaction(deposits.seller)
       )
     }
   }
@@ -133,10 +135,10 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     startExchange()
     givenHandshakeSuccess()
     shouldWatchForTheTransactions()
-    givenTransactionIsFound(buyerDepositId)
-    givenTransactionIsNotFound(sellerDepositId)
+    givenTransactionIsFound(deposits.buyer)
+    givenTransactionIsNotFound(deposits.seller)
 
-    listener.expectMsg(ExchangeFailure(new CommitmentTxNotInBlockChain(sellerDepositId)))
+    listener.expectMsg(ExchangeFailure(new CommitmentTxNotInBlockChain(deposits.seller)))
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)
   }

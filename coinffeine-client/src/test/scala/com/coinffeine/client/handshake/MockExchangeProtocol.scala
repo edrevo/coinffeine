@@ -1,6 +1,6 @@
 package com.coinffeine.client.handshake
 
-import com.coinffeine.client.exchange.MockProtoMicroPaymentChannel
+import com.coinffeine.client.exchange.{MockMicroPaymentChannel, MockProtoMicroPaymentChannel}
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange._
@@ -15,7 +15,8 @@ class MockExchangeProtocol extends ExchangeProtocol {
       changeAddress: Address) = new MockHandshake(exchange, role)
 
   override def createMicroPaymentChannel(
-      exchange: Exchange[_ <: FiatCurrency], role: Role, deposits: Deposits) = ???
+      exchange: Exchange[_ <: FiatCurrency], role: Role, deposits: Deposits) =
+    new MockMicroPaymentChannel(exchange)
 
   override def createProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency], role: Role,
                                               deposits: Deposits): ProtoMicroPaymentChannel =

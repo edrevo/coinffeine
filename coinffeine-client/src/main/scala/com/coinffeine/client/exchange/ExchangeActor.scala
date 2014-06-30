@@ -55,26 +55,20 @@ class ExchangeActor[C <: FiatCurrency](
     }
 
     private val inHandshake: Receive = {
-      case HandshakeSuccess(sellerCommitmentTxId, buyerCommitmentTxId, refundTx) =>
+      case HandshakeSuccess(commitmentTxIds, refundTx) =>
         // TODO: next step for refundTx
         context.child(HandshakeActorName).map(context.stop)
-        blockchain ! RetrieveTransaction(sellerCommitmentTxId)
-        blockchain ! RetrieveTransaction(buyerCommitmentTxId)
-        context.become(receiveTransaction(sellerCommitmentTxId, buyerCommitmentTxId))
+        commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
+        context.become(receiveTransaction(commitmentTxIds))
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
-    private def receiveTransaction(
-        sellerCommitmentTxId: Hash, buyerCommitmentTxId: Hash): Receive = {
-      val commitmentTxIds = Seq(sellerCommitmentTxId, buyerCommitmentTxId)
+    private def receiveTransaction(commitmentTxIds: Both[Hash]): Receive = {
       def withReceivedTxs(receivedTxs: Map[Hash, ImmutableTransaction]): Receive = {
         case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
-          if (commitmentTxIds.forall(newTxs.keySet.contains)) {
-            val deposits = Deposits(
-              buyerDeposit = newTxs(buyerCommitmentTxId),
-              sellerDeposit = newTxs(sellerCommitmentTxId)
-            )
+          if (commitmentTxIds.toSeq.forall(newTxs.keySet.contains)) {
+            val deposits = commitmentTxIds.map(newTxs)
             val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
             ref ! StartMicroPaymentChannel[C](
               exchange, role, deposits, constants, paymentProcessor, messageGateway, resultListeners = Set(self)

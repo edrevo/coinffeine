@@ -18,8 +18,8 @@ class DefaultProtoMicroPaymentChannel(
   import com.coinffeine.client.exchange.DefaultProtoMicroPaymentChannel._
 
   private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
-  private val buyerFunds = deposits.buyerDeposit.get.getOutput(0)
-  private val sellerFunds = deposits.sellerDeposit.get.getOutput(0)
+  private val buyerFunds = deposits.buyer.get.getOutput(0)
+  private val sellerFunds = deposits.seller.get.getOutput(0)
   requireValidBuyerFunds(buyerFunds)
   requireValidSellerFunds(sellerFunds)
 
@@ -81,10 +81,8 @@ class DefaultProtoMicroPaymentChannel(
   private def sign(offer: MutableTransaction) = {
     val key = role.me(exchange).bitcoinKey
     Signatures(
-      buyerDepositSignature =
-        TransactionProcessor.signMultiSignedOutput(offer, 0, key, requiredSignatures),
-      sellerDepositSignature =
-        TransactionProcessor.signMultiSignedOutput(offer, 1, key, requiredSignatures)
+      buyer = TransactionProcessor.signMultiSignedOutput(offer, 0, key, requiredSignatures),
+      seller = TransactionProcessor.signMultiSignedOutput(offer, 1, key, requiredSignatures)
     )
   }
 
@@ -93,9 +91,9 @@ class DefaultProtoMicroPaymentChannel(
       herSignatures: Signatures,
       validationErrorMessage: String): Try[Unit] = Try {
     validateSellersSignature(
-      tx, BuyerDepositInputIndex, herSignatures.buyerDepositSignature, validationErrorMessage)
+      tx, BuyerDepositInputIndex, herSignatures.buyer, validationErrorMessage)
     validateSellersSignature(
-      tx, SellerDepositInputIndex, herSignatures.sellerDepositSignature, validationErrorMessage)
+      tx, SellerDepositInputIndex, herSignatures.seller, validationErrorMessage)
   } recover {
     case NonFatal(cause) => throw InvalidSignaturesException(herSignatures, cause)
   }
@@ -115,8 +113,8 @@ class DefaultProtoMicroPaymentChannel(
   override def closingTransaction(step: Step, herSignatures: Signatures) = {
     val tx = getOffer(step)
     val signatures = Seq(sign(tx), herSignatures)
-    TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, signatures.map(_.buyerDepositSignature): _*)
-    TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, signatures.map(_.sellerDepositSignature): _*)
+    TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, signatures.map(_.buyer): _*)
+    TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, signatures.map(_.seller): _*)
     ImmutableTransaction(tx)
   }
 }

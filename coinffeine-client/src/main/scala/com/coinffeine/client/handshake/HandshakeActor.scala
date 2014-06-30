@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
-import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
+import com.coinffeine.common.exchange.{Both, Exchange, Handshake, Role}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
@@ -35,11 +35,7 @@ object HandshakeActor {
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
-  case class HandshakeSuccess(
-    sellerCommitmentTxId: Hash,
-    buyerCommitmentTxId: Hash,
-    refundTransaction: ImmutableTransaction
-  )
+  case class HandshakeSuccess(bothCommitments: Both[Hash], refundTransaction: ImmutableTransaction)
 
   case class HandshakeFailure(e: Throwable)
 

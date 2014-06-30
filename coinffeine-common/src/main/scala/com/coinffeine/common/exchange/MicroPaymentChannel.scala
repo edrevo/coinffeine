@@ -46,11 +46,8 @@ object MicroPaymentChannel {
   case object FinalStep extends Step
 
   /** Signatures for a step transaction of both deposits. */
-  case class Signatures(buyerDepositSignature: TransactionSignature,
-                        sellerDepositSignature: TransactionSignature) {
-    def toTuple: (TransactionSignature, TransactionSignature) =
-      (buyerDepositSignature, sellerDepositSignature)
-  }
+  type Signatures = Both[TransactionSignature]
+  val Signatures = Both
 
   case class InvalidSignaturesException(signatures: Signatures, cause: Throwable = null)
     extends IllegalArgumentException(s"Invalid signatures $signatures", cause)
