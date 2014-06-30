@@ -25,10 +25,16 @@ object MicroPaymentChannelActor {
   )
 
   /** Sent to the exchange listeners to notify success of the exchange */
-  case object ExchangeSuccess
+  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction])
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ExchangeFailure(cause: Throwable, lastOffer: Option[ImmutableTransaction])
+  case class ExchangeFailure(cause: Throwable)
+
+  /** Sent to the actor to query what the last broadcastable offer is */
+  case object GetLastOffer
+
+  /** Sent by the actor as a reply to a GetLastOffer message */
+  case class LastOffer(lastOffer: Option[ImmutableTransaction])
 
   private[micropayment] case object StepSignatureTimeout
 

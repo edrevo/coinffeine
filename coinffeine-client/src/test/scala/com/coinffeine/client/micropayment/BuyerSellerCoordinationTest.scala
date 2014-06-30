@@ -52,7 +52,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     seller ! StartMicroPaymentChannel(
       exchange, SellerRole, MockExchangeProtocol.DummyDeposits, protocolConstants, sellerPaymentProc,
       MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
-    buyerListener.expectMsg(ExchangeSuccess)
-    sellerListener.expectMsg(ExchangeSuccess)
+    buyerListener.expectMsgClass(classOf[ExchangeSuccess])
+    sellerListener.expectMsg(ExchangeSuccess(None))
   }
 }

@@ -1,7 +1,8 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, MutableTransaction, PublicKey}
+
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, Hash, PublicKey}
 
 /** A BlockchainActor keeps a blockchain and can:
   *
@@ -30,10 +31,20 @@ object BlockchainActor {
   /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
   case class TransactionRejected(transactionHash: Hash)
 
+  /** A message sent to the blockchain actor requesting to be notified when the best block in the
+    * blockchain reaches a specified height.
+    */
+  case class WatchBlockchainHeight(height: Long)
+
+  /** A message sent by the blockchain actor to notify that the blockchain has reached a certain
+    * height.
+    */
+  case class BlockchainHeightReached(height: Long)
+
   /** A message sent to the blockchain actor to retrieve a transaction from its hash.
     *
     * The blockchain actor will send either a `TransactionFound` or `TransactionNotFound`
-    * as response
+    * as response.
     */
   case class RetrieveTransaction(hash: Hash)
 

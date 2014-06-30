@@ -39,16 +39,19 @@ class BuyerMicroPaymentChannelActorFailureTest
     " step signature within the specified timeout" in new Fixture {
     startMicroPaymentChannel()
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be (None)
     failure.cause shouldBe a [TimeoutException]
+    actor ! GetLastOffer
+    expectMsg(LastOffer(None))
   }
 
   it should "return the last signed offer when a timeout happens" in new Fixture{
     startMicroPaymentChannel()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be ('defined)
     failure.cause shouldBe a [TimeoutException]
+    actor ! GetLastOffer
+    val lastOfferReply = expectMsgClass(classOf[LastOffer])
+    lastOfferReply.lastOffer should be ('defined)
   }
 
   it should "return a failure message if the seller provides an invalid signature" in new Fixture {
@@ -58,8 +61,9 @@ class BuyerMicroPaymentChannelActorFailureTest
     )
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.lastOffer should be ('empty)
     failure.cause shouldBe an [InvalidStepSignatures]
     failure.cause.asInstanceOf[InvalidStepSignatures].step should be (1)
+    actor ! GetLastOffer
+    expectMsg(LastOffer(None))
   }
 }

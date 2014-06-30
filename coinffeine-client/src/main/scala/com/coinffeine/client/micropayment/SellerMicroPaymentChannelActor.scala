@@ -55,17 +55,22 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
       }
     }
 
+    private val handleLastOfferQueries: Receive = {
+      case GetLastOffer =>
+        sender ! LastOffer(None)
+    }
+
+
     private class StepBehavior(channel: MicroPaymentChannel) {
 
       def start(): Unit = {
         forwardSignatures()
         channel.currentStep match {
           case _: FinalStep =>
-            log.info(s"Exchange ${exchange.id}: exchange finished with success")
-            finishWith(ExchangeSuccess)
+            finishExchange()
           case intermediateStep: IntermediateStep =>
             scheduleStepTimeouts(exchangePaymentProofTimeout)
-            context.become(waitForPaymentProof(intermediateStep))
+            context.become(waitForPaymentProof(intermediateStep) orElse handleLastOfferQueries)
         }
       }
 
@@ -83,12 +88,12 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
           validatePayment(step, paymentId).onComplete { tryResult =>
             self ! PaymentValidationResult(tryResult)
           }
-          context.become(waitForPaymentValidation(paymentId, step))
+          context.become(waitForPaymentValidation(paymentId, step) orElse handleLastOfferQueries)
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid " +
             s"payment proof ${channel.currentStep}"
           log.warning(errorMsg)
-          finishWith(ExchangeFailure(TimeoutException(errorMsg), lastOffer = None))
+          finishWith(ExchangeFailure(TimeoutException(errorMsg)))
       }
 
       private def waitForPaymentValidation(paymentId: String, step: IntermediateStep): Receive = {
@@ -96,7 +101,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
           unstashAll()
           log.warning(s"Invalid payment proof received in ${channel.currentStep}: " +
             s"$paymentId. Reason: $cause")
-          context.become(waitForPaymentProof(step))
+          context.become(waitForPaymentProof(step) orElse handleLastOfferQueries)
         case PaymentValidationResult(_) =>
           unstashAll()
           new StepBehavior(channel.nextStep).start()
@@ -105,7 +110,12 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
 
       private def finishWith(result: Any): Unit = {
         resultListeners.foreach { _ ! result }
-        context.stop(self)
+        context.become(handleLastOfferQueries)
+      }
+
+      private def finishExchange(): Unit = {
+        log.info(s"Exchange ${exchange.id}: exchange finished with success")
+        finishWith(ExchangeSuccess(None))
       }
     }
 
