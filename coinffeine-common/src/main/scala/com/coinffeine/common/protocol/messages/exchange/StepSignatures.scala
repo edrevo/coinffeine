@@ -23,5 +23,9 @@ case class StepSignatures(exchangeId: Exchange.Id, step: Int, signatures: Signat
     case _ => false
   }
 
-  // TODO: missing hashCode
+  override def hashCode(): Int = {
+    val state = Seq(exchangeId.hashCode(), step.hashCode()) ++
+      signatures.toSeq.map(TransactionSignatureUtils.hashCode)
+    state.foldLeft(0)((a, b) => 31 * a + b)
+  }
 }
