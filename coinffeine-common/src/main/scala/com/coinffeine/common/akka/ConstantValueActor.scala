@@ -4,7 +4,7 @@ import akka.actor.Actor
 
 import com.coinffeine.common.akka.ConstantValueActor.{UnsetValue, SetValue}
 
-class ConstantValueActor() extends Actor {
+class ConstantValueActor extends Actor {
   var response: Option[Any] = None
   override val receive: Receive = {
     case SetValue(v) => response = Some(v)

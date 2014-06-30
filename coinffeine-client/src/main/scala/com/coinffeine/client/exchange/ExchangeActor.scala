@@ -28,7 +28,13 @@ class ExchangeActor[C <: FiatCurrency](
 
   private class InitializedExchange(init: StartExchange[C]) {
     import init._
-    var blockchain: ActorRef = _
+    private var blockchain: ActorRef = _
+    private var _txBroadcaster: ActorRef = _
+    private def txBroadcaster = Option(_txBroadcaster).getOrElse {
+      val message = "Transaction broadcast actor does not exist"
+      log.error(message)
+      throw new Error(message)
+    }
 
     def start(): Unit = {
       require(userWallet.getKeys.contains(role.me(exchange).bitcoinKey))
@@ -40,7 +46,7 @@ class ExchangeActor[C <: FiatCurrency](
     private val inHandshake: Receive = {
       case HandshakeSuccess(commitmentTxIds, refundTx) =>
         context.child(HandshakeActorName).map(context.stop)
-        val txBroadcaster = context.actorOf(
+        _txBroadcaster = context.actorOf(
           transactionBroadcastActorProps, TransactionBroadcastActorName)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeers, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
@@ -126,14 +132,8 @@ class ExchangeActor[C <: FiatCurrency](
     }
 
     private def watchForCounterpartDeposit(): Unit = {
-      // TODO for the PR: why are we doing this?
+      blockchain ! WatchPublicKey(role.me(exchange).bitcoinKey)
       blockchain ! WatchPublicKey(role.her(exchange).bitcoinKey)
-    }
-
-    private def txBroadcaster = context.child(TransactionBroadcastActorName).getOrElse {
-      val message = "Transaction broadcast actor does not exist"
-      log.error(message)
-      throw new Error(message)
     }
   }
 }

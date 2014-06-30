@@ -123,7 +123,9 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       }
 
     def shouldWatchForTheTransactions(): Unit = {
-      blockchain.expectMsg(WatchPublicKey(counterpart.bitcoinKey))
+      blockchain.expectMsgAllOf(
+        WatchPublicKey(counterpart.bitcoinKey),
+        WatchPublicKey(user.bitcoinKey))
       blockchain.expectMsgAllOf(
         RetrieveTransaction(deposits.buyer),
         RetrieveTransaction(deposits.seller)
