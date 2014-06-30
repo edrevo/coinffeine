@@ -26,13 +26,8 @@ class MockProtoMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency])
       case _ => Success {}
     }
 
-  override def closingTransaction(step: Step, counterpartSignatures: Signatures) = {
-    val offerNumber = step match {
-      case IntermediateStep(intermediateStep) => intermediateStep
-      case FinalStep => exchange.parameters.breakdown.totalSteps
-    }
-    offers(offerNumber - 1)
-  }
+  override def closingTransaction(step: Step, counterpartSignatures: Signatures) =
+    offers(step.value - 1)
 
   override def signStepTransaction(step: Step) =
     Signatures(TransactionSignature.dummy, TransactionSignature.dummy)

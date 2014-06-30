@@ -8,18 +8,15 @@ import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, 
 import com.coinffeine.common.exchange.{Exchange, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-class MockMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency], step: Step = IntermediateStep(1))
+class MockMicroPaymentChannel private (exchange: Exchange[_ <: FiatCurrency], step: Step)
   extends MicroPaymentChannel {
 
-  override def currentStep: Step = step
+  def this(exchange: Exchange[_ <: FiatCurrency]) =
+    this(exchange, IntermediateStep(1, exchange.parameters.breakdown))
 
-  override def nextStep = {
-    new MockMicroPaymentChannel(exchange, step match {
-      case FinalStep => throw new IllegalArgumentException("Already at the end")
-      case IntermediateStep(i) if i >= exchange.parameters.breakdown.intermediateSteps => FinalStep
-      case IntermediateStep(i) => IntermediateStep(i + 1)
-    })
-  }
+  override val currentStep = step
+
+  override def nextStep = new MockMicroPaymentChannel(exchange, step.next)
 
   override def validateCurrentTransactionSignatures(signatures: Signatures) =
     signatures match {
@@ -29,13 +26,8 @@ class MockMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency], step: Step 
       case _ => Success {}
     }
 
-  override def closingTransaction(counterpartSignatures: Signatures) = {
-    val offerNumber = step match {
-      case IntermediateStep(intermediateStep) => intermediateStep
-      case FinalStep => exchange.parameters.breakdown.totalSteps
-    }
-    buildDummyTransaction(offerNumber - 1)
-  }
+  override def closingTransaction(counterpartSignatures: Signatures) =
+    buildDummyTransaction(step.value - 1)
 
   private def buildDummyTransaction(idx: Int) = {
     val tx = new MutableTransaction(exchange.parameters.network)

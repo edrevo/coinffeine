@@ -34,6 +34,6 @@ object MicroPaymentChannelActor {
 
   case class TimeoutException(message: String) extends RuntimeException(message)
 
-  case class InvalidStepSignatures(step: Step, sigs: Signatures, cause: Throwable)
+  case class InvalidStepSignatures(step: Int, sigs: Signatures, cause: Throwable)
     extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)
 }

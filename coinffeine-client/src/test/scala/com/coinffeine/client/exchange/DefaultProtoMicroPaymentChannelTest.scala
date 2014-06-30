@@ -18,6 +18,8 @@ import com.coinffeine.common.exchange.impl.DefaultExchangeProtocol
 class DefaultProtoMicroPaymentChannelTest
   extends BitcoinjTest with SampleExchangeInfo with DefaultExchangeProtocol.Component {
 
+  val finalStep = FinalStep(exchange.parameters.breakdown)
+
   private trait WithBasicSetup {
     val actorSystem = ActorSystem("DefaultExchangeTest")
     implicit val actorTimeout = AkkaTimeout(5.seconds)
@@ -72,8 +74,8 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "have a final offer that splits the amount as expected" in new WithChannels {
-    val sellerSignatures = sellerChannel.signStepTransaction(FinalStep)
-    val finalOffer = buyerChannel.closingTransaction(FinalStep, sellerSignatures).get
+    val sellerSignatures = sellerChannel.signStepTransaction(finalStep)
+    val finalOffer = buyerChannel.closingTransaction(finalStep, sellerSignatures).get
     sendToBlockChain(finalOffer)
 
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (
@@ -83,18 +85,18 @@ class DefaultProtoMicroPaymentChannelTest
   }
 
   it should "validate the seller's final signature" in new WithChannels {
-    val signatures = sellerChannel.signStepTransaction(FinalStep)
-    buyerChannel.validateStepTransactionSignatures(FinalStep, signatures) should be ('success)
-    sellerChannel.validateStepTransactionSignatures(FinalStep, signatures) should be ('success)
-    buyerChannel.validateStepTransactionSignatures(FinalStep, signatures.swap) should be ('failure)
+    val signatures = sellerChannel.signStepTransaction(finalStep)
+    buyerChannel.validateStepTransactionSignatures(finalStep, signatures) should be ('success)
+    sellerChannel.validateStepTransactionSignatures(finalStep, signatures) should be ('success)
+    buyerChannel.validateStepTransactionSignatures(finalStep, signatures.swap) should be ('failure)
 
-    val buyerSignatures = buyerChannel.signStepTransaction(FinalStep)
-    buyerChannel.validateStepTransactionSignatures(FinalStep, buyerSignatures) should be ('failure)
-    sellerChannel.validateStepTransactionSignatures(FinalStep, buyerSignatures) should be ('failure)
+    val buyerSignatures = buyerChannel.signStepTransaction(finalStep)
+    buyerChannel.validateStepTransactionSignatures(finalStep, buyerSignatures) should be ('failure)
+    sellerChannel.validateStepTransactionSignatures(finalStep, buyerSignatures) should be ('failure)
   }
 
   for (i <- 1 to exchange.parameters.breakdown.intermediateSteps) {
-    val step = IntermediateStep(i)
+    val step = IntermediateStep(i, exchange.parameters.breakdown)
 
     it should s"have an $step offer that splits the amount as expected" in new WithChannels {
       val stepOffer =

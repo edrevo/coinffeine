@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange
 
+import com.coinffeine.common.exchange.Exchange.StepBreakdown
+
 import scala.util.Try
 
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
@@ -7,7 +9,7 @@ import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 trait MicroPaymentChannel {
 
-  def currentStep: Step
+  val currentStep: Step
 
   def nextStep: MicroPaymentChannel
 
@@ -39,11 +41,34 @@ trait MicroPaymentChannel {
 
 object MicroPaymentChannel {
 
-  sealed trait Step
-  case class IntermediateStep(value: Int) extends Step {
-    require(value > 0, s"Step number must be positive ($value given)")
+  sealed trait Step {
+    /** Step number in the range 1 to totalSteps */
+    val value: Int
+
+    val isFinal: Boolean
+
+    /** Step after this one */
+    @throws[IllegalArgumentException]("if this step is final")
+    def next: Step
   }
-  case object FinalStep extends Step
+
+  case class IntermediateStep(override val value: Int, breakdown: StepBreakdown) extends Step {
+    require(value > 0, s"Step number must be positive ($value given)")
+    require(value < breakdown.totalSteps,
+      s"Step number must be less than ${breakdown.totalSteps} ($value given)")
+
+    override val isFinal = false
+    override def next =
+      if (value == breakdown.intermediateSteps) FinalStep(breakdown) else copy(value = value + 1)
+    override val toString = s"step $value/${breakdown.totalSteps}"
+  }
+
+  case class FinalStep(breakdown: StepBreakdown) extends Step {
+    override val value = breakdown.totalSteps
+    override val isFinal = true
+    override def next = throw new IllegalArgumentException("Already at the last step")
+    override def toString = s"step $value/$value"
+  }
 
   /** Signatures for a step transaction of both deposits. */
   type Signatures = Both[TransactionSignature]

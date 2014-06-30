@@ -45,7 +45,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")
       subscribeToMessages()
-      val initialStep = IntermediateStep(1)
+      val initialStep = IntermediateStep(1, exchange.parameters.breakdown)
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         initialStep.value,
@@ -93,13 +93,13 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
 
     private def transitionToNextStep(currentStep: IntermediateStep): Unit = {
       unstashAll()
-      val nextStep = IntermediateStep(currentStep.value + 1)
+      val nextStep = currentStep.next
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         nextStep.value,
         channel.signStepTransaction(currentStep)
       ))
-      context.become(waitForPaymentProof(nextStep))
+      context.become(waitForPaymentProof(nextStep.asInstanceOf[IntermediateStep]))
     }
 
     private def finishExchange(): Unit = {
@@ -107,7 +107,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
       forwarding.forwardToCounterpart(StepSignatures(
         exchange.id,
         exchange.parameters.breakdown.totalSteps,
-        channel.signStepTransaction(FinalStep)
+        channel.signStepTransaction(FinalStep(exchange.parameters.breakdown))
       ))
       finishWith(ExchangeSuccess)
     }

@@ -47,18 +47,14 @@ class DefaultProtoMicroPaymentChannel(
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  private def getOffer(step: Step): MutableTransaction = step match {
-    case IntermediateStep(i) =>
-      getOffer(
-        buyerAmount = exchange.amounts.stepBitcoinAmount * i,
-        sellerAmount = exchange.parameters.bitcoinAmount - exchange.amounts.stepBitcoinAmount * i
-      )
-    case FinalStep =>
-      getOffer(
-        buyerAmount = exchange.parameters.bitcoinAmount + exchange.amounts.stepBitcoinAmount * 2,
-        sellerAmount = exchange.amounts.stepBitcoinAmount
-      )
-  }
+  private def getOffer(step: Step): MutableTransaction =
+    if (step.isFinal) getOffer(
+      buyerAmount = exchange.parameters.bitcoinAmount + exchange.amounts.stepBitcoinAmount * 2,
+      sellerAmount = exchange.amounts.stepBitcoinAmount
+    ) else getOffer(
+      buyerAmount = exchange.amounts.stepBitcoinAmount * step.value,
+      sellerAmount = exchange.parameters.bitcoinAmount - exchange.amounts.stepBitcoinAmount * step.value
+    )
 
   private def getOffer(buyerAmount: BitcoinAmount, sellerAmount: BitcoinAmount): MutableTransaction =
     TransactionProcessor.createUnsignedTransaction(
