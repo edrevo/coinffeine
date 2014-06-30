@@ -102,14 +102,6 @@ object ExchangeActor {
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
 
-  type MicropaymentChannelFactory[C <: FiatCurrency] = (
-    Exchange[C],
-    Role,
-    ActorRef,
-    MutableTransaction, // sellerCommitmentTx
-    MutableTransaction // buyerCommitmentTx
-  ) => ProtoMicroPaymentChannel
-
   case class StartExchange[C <: FiatCurrency](
     exchange: Exchange[C],
     role: Role,
