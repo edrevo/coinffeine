@@ -12,12 +12,13 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
   *
   * @param id            An identifier for the exchange
   * @param parameters    Configurable parameters
-  * @param participants  Description of the buyer and the seller
-  * @param broker      Connection parameters to one of the Coinffeine brokers
+  * @param connections   PeerConnection of the buyer and the seller
+  * @param broker        Connection parameters to one of the Coinffeine brokers
   */
 case class Exchange[C <: FiatCurrency](
   id: Exchange.Id,
   parameters: Exchange.Parameters[C],
+  connections: Both[PeerConnection],
   participants: Both[Exchange.PeerInfo],
   broker: Exchange.BrokerInfo) {
 
@@ -55,9 +56,7 @@ object Exchange {
     require(fiatAmount.isPositive)
   }
 
-  case class PeerInfo(connection: PeerConnection,
-                      paymentProcessorAccount: PaymentProcessor.AccountId,
-                      bitcoinKey: KeyPair)
+  case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
 
   case class BrokerInfo(connection: PeerConnection)
 

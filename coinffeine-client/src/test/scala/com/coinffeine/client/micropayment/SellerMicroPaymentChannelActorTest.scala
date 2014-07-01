@@ -52,12 +52,12 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
     val randomMessage = OrderSet.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, counterpart.connection)) should be (false)
+    filter(fromCounterpart(randomMessage)) should be (false)
   }
 
   it should "send the first step signature as soon as the exchange starts" in {
     val signatures = StepSignatures(exchange.id, 1, MockMicroPaymentChannel.DummySignatures)
-    shouldForward(signatures) to counterpart.connection
+    shouldForward(signatures) to counterpartConnection
   }
 
   it should "not send the second step signature until payment proof has been provided" in {
@@ -68,7 +68,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(firstStep)
     val signatures = StepSignatures(exchange.id, 2, MockMicroPaymentChannel.DummySignatures)
-    shouldForward(signatures) to counterpart.connection
+    shouldForward(signatures) to counterpartConnection
   }
 
   it should "send step signatures as new payment proofs are provided" in {
@@ -79,7 +79,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
       actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
       expectPayment(step)
       val signatures = StepSignatures(exchange.id, i, MockMicroPaymentChannel.DummySignatures)
-      shouldForward(signatures) to counterpart.connection
+      shouldForward(signatures) to counterpartConnection
     }
   }
 
@@ -87,7 +87,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     val signatures = StepSignatures(
       exchange.id, exchange.parameters.breakdown.totalSteps, MockMicroPaymentChannel.DummySignatures
     )
-    shouldForward(signatures) to counterpart.connection
+    shouldForward(signatures) to counterpartConnection
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

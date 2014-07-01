@@ -56,7 +56,7 @@ class BuyerMicroPaymentChannelActorTest
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
     val randomMessage = OrderSet.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, counterpart.connection)) should be (false)
+    filter(ReceiveMessage(randomMessage, counterpartConnection)) should be (false)
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
@@ -66,7 +66,7 @@ class BuyerMicroPaymentChannelActorTest
       paymentProcessor.reply(PaymentProcessor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description")
       ))
-      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpart.connection
+      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartConnection
       gateway.expectNoMsg(100 milliseconds)
     }
   }

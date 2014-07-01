@@ -36,16 +36,16 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest = PeerHandshake(
       exchange.id, handshake.myUnsignedRefund, user.paymentProcessorAccount)
-    shouldForward (refundSignatureRequest) to counterpart.connection
+    shouldForward (refundSignatureRequest) to counterpartConnection
   }
 
   def shouldSignCounterpartRefund(): Unit = {
     val request = PeerHandshake(exchange.id, ImmutableTransaction(handshake.counterpartRefund),
       user.paymentProcessorAccount)
-    gateway.send(actor, ReceiveMessage(request, counterpart.connection))
+    gateway.send(actor, ReceiveMessage(request, counterpartConnection))
     val refundSignatureRequest =
       PeerHandshakeAccepted(exchange.id, handshake.counterpartRefundSignature)
-    shouldForward (refundSignatureRequest) to counterpart.connection
+    shouldForward (refundSignatureRequest) to counterpartConnection
   }
 
   override protected def resetBlockchainBetweenTests = false

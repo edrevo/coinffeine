@@ -16,9 +16,10 @@ object Samples {
       lockTime = 10,
       network = CoinffeineUnitTestNetwork
     ),
+    connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
     participants = Both(
-      buyer = Exchange.PeerInfo(PeerConnection("buyer"), "buyerAccount", new KeyPair()),
-      seller = Exchange.PeerInfo(PeerConnection("seller"), "sellerAccount", new KeyPair())
+      buyer = Exchange.PeerInfo("buyerAccount", new KeyPair()),
+      seller = Exchange.PeerInfo("sellerAccount", new KeyPair())
     ),
     broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )

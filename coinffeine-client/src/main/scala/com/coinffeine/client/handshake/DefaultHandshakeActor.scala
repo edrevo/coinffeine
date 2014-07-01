@@ -126,7 +126,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
       val broker = exchange.broker.connection
-      val counterpart = exchange.participants(role.counterpart).connection
+      val counterpart = exchange.connections(role.counterpart)
       messageGateway ! Subscribe {
         case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
         case ReceiveMessage(PeerHandshakeAccepted(`id`, _), `counterpart`) => true

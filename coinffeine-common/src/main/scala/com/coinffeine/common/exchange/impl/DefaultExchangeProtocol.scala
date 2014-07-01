@@ -19,7 +19,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     val myDeposit = ImmutableTransaction {
       TransactionProcessor.createMultiSignedDeposit(
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
-        exchange.participants.toSeq.map(_.bitcoinKey), exchange.parameters.network)
+        exchange.requiredSignatures, exchange.parameters.network)
     }
     new DefaultHandshake(exchange, role, myDeposit)
   }

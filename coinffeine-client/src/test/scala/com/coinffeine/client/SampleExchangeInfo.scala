@@ -19,14 +19,13 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
       lockTime = 25,
       network
     ),
+    connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
     participants = Both(
       buyer = Exchange.PeerInfo(
-        connection = PeerConnection("buyer"),
         paymentProcessorAccount = "buyer",
         bitcoinKey = new PublicKey()
       ),
       seller = Exchange.PeerInfo(
-        connection = PeerConnection("seller"),
         paymentProcessorAccount = "seller",
         bitcoinKey = new KeyPair()
       )
