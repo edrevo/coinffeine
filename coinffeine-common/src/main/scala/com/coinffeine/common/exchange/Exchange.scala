@@ -91,7 +91,5 @@ object Exchange {
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
   }
 
-  trait Deposits {
-    val transactions: Both[ImmutableTransaction]
-  }
+  case class Deposits(transactions: Both[ImmutableTransaction])
 }

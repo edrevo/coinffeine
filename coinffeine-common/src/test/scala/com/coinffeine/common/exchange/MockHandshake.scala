@@ -1,10 +1,9 @@
-package com.coinffeine.client.handshake
+package com.coinffeine.common.exchange
 
 import java.math.BigInteger
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Exchange, Handshake, Role}
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 /** Create a mock handshake with random transactions.

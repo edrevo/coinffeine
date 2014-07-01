@@ -97,7 +97,7 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
       ExchangeAborted(exchangeId, "reason"),
       ExchangeCommitment(exchangeId, transaction),
       CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
-      OrderMatch(exchangeId, btcAmount, fiatAmount, peerConnection, peerConnection),
+      OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerConnection)),
       OrderSet(
         market = Market(Currency.UsDollar),
         bids = VolumeByPrice(100.USD -> 1.3.BTC),

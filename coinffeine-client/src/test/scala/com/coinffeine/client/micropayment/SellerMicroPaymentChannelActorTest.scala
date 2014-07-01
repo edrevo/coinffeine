@@ -10,12 +10,11 @@ import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
-import com.coinffeine.client.exchange.{MockMicroPaymentChannel, PaymentDescription}
-import com.coinffeine.client.handshake.MockExchangeProtocol
+import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{MockMicroPaymentChannel, MockExchangeProtocol, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}

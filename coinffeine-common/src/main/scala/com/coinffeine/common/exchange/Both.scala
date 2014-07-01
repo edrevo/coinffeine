@@ -18,6 +18,19 @@ case class Both[T](buyer: T, seller: T) {
     seller = f(seller)
   )
 
+  def forall(pred: T => Boolean): Boolean = pred(buyer) && pred(seller)
+
+  def roleOf(value: T): Option[Role] = value match {
+    case `buyer` => Some(BuyerRole)
+    case `seller` => Some(SellerRole)
+    case _ => None
+  }
+
+  def updated(role: Role, value: T): Both[T] = role match {
+    case BuyerRole => copy(buyer = value)
+    case SellerRole => copy(seller = value)
+  }
+
   def toSet: Set[T] = Set(buyer, seller)
 
   def toSeq: Seq[T] = Seq(buyer, seller)
@@ -25,4 +38,8 @@ case class Both[T](buyer: T, seller: T) {
   def toTuple: (T, T) = (buyer, seller)
 
   def swap: Both[T] = Both(seller, buyer)
+}
+
+object Both {
+  def fill[T](value: T): Both[T] = Both(value, value)
 }

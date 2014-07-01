@@ -11,7 +11,6 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast =>_, _}
-import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
@@ -20,7 +19,7 @@ import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.bitcoin.peers.PeerActor.{TransactionPublished, BlockchainActorReference, RetrieveBlockchainActor}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.Both
+import com.coinffeine.common.exchange.{MockExchangeProtocol, Both}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")

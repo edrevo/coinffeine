@@ -32,6 +32,10 @@ trait ExchangeProtocol {
                                 role: Role,
                                 deposits: Exchange.Deposits): MicroPaymentChannel
 
+  /** Validate if a transaction looks a valid deposit of one of the parts */
+  def validateDeposit(role: Role, transaction: ImmutableTransaction,
+                      exchange: Exchange[_ <: FiatCurrency]): Try[Unit]
+
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
                        exchange: Exchange[_ <: FiatCurrency]): Try[Exchange.Deposits]

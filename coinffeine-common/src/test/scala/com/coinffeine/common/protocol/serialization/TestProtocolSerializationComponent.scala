@@ -5,7 +5,7 @@ import scala.util.Random
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
@@ -28,8 +28,10 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
     exchangeId = Exchange.Id.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
-    buyer = PeerConnection("bob", randomPort()),
-    seller = PeerConnection("sam", randomPort())
+    participants = Both(
+      buyer = PeerConnection("bob", randomPort()),
+      seller = PeerConnection("sam", randomPort())
+    )
   )
 
   private def randomSatoshi() =

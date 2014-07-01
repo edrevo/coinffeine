@@ -1,11 +1,9 @@
-package com.coinffeine.client.handshake
+package com.coinffeine.common.exchange
 
 import scala.util.{Success, Try}
 
-import com.coinffeine.client.exchange.MockMicroPaymentChannel
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Exchange.Deposits
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
@@ -24,11 +22,12 @@ class MockExchangeProtocol extends ExchangeProtocol {
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 exchange: Exchange[_ <: FiatCurrency]): Try[Deposits] =
     Success(MockExchangeProtocol.DummyDeposits)
+
+  override def validateDeposit(role: Role, transaction: ImmutableTransaction,
+                               exchange: Exchange[_ <: FiatCurrency]): Try[Unit] = Success {}
 }
 
 object MockExchangeProtocol {
   private val DummyDeposit = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
-  val DummyDeposits = new Exchange.Deposits {
-    val transactions = Both(DummyDeposit, DummyDeposit)
-  }
+  val DummyDeposits = Exchange.Deposits(Both(DummyDeposit, DummyDeposit))
 }
