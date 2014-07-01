@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
+import scala.util.Try
+
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
 import com.coinffeine.common.exchange._
@@ -27,9 +29,18 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
       exchange: Exchange[_  <: FiatCurrency], role: Role, deposits: Exchange.Deposits) =
     new DefaultMicroPaymentChannel(role, exchange, deposits)
 
+  override def validateDeposit(role: Role, transaction: ImmutableTransaction,
+                               exchange: Exchange[_ <: FiatCurrency]): Try[Unit] = {
+    val validator = new DepositValidator(exchange)
+    role match {
+      case BuyerRole => validator.requireValidBuyerFunds(transaction)
+      case SellerRole => validator.requireValidSellerFunds(transaction)
+    }
+  }
+
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 exchange: Exchange[_ <: FiatCurrency]) =
-    ValidDeposits.validate(transactions, exchange)
+    new DepositValidator(exchange).validate(transactions)
 }
 
 object DefaultExchangeProtocol {
