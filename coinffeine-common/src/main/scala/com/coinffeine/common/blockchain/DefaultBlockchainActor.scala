@@ -1,16 +1,19 @@
 package com.coinffeine.common.blockchain
 
 import java.util
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
-
 import scala.collection.JavaConversions._
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
+import com.google.common.util.concurrent.{FutureCallback, Futures}
 
-class DefaultBlockchainActor(network: NetworkParameters,
-                             blockchain: AbstractBlockChain) extends Actor with ActorLogging {
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
+
+class DefaultBlockchainActor(
+    network: NetworkParameters,
+    blockchain: AbstractBlockChain,
+    transactionBroadcaster: TransactionBroadcaster) extends Actor with ActorLogging {
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
 
@@ -111,10 +114,39 @@ class DefaultBlockchainActor(network: NetworkParameters,
         case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
+    case BlockchainActor.PublishTransaction(tx) =>
+      broadcastTransaction(sender, tx)
     case BlockchainActor.WatchBlockchainHeight(height) =>
       heightNotifications += HeightNotification(height, sender())
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
+
+  private def broadcastTransaction(requester: ActorRef, tx: ImmutableTransaction): Unit = {
+    Futures.addCallback(
+      transactionBroadcaster.broadcastTransaction(tx.get),
+      new FutureCallback[MutableTransaction] {
+        override def onSuccess(result: MutableTransaction): Unit = {
+          requester ! BlockchainActor.TransactionPublished(ImmutableTransaction(result))
+        }
+        override def onFailure(error: Throwable): Unit = {
+          requester ! BlockchainActor.TransactionPublishingError(tx, error)
+        }
+      },
+      context.dispatcher)
+  }
+}
+
+object DefaultBlockchainActor {
+
+  trait Component extends BlockchainActor.Component {
+
+    def network: NetworkParameters
+    def blockchain: AbstractBlockChain
+    def transactionBroadcaster: TransactionBroadcaster
+
+    override def blockchainActorProps(): Props = Props(new DefaultBlockchainActor(
+      network, blockchain, transactionBroadcaster))
+  }
 }
