@@ -14,7 +14,7 @@ private[impl] class DefaultMicroPaymentChannel private (
     override val currentStep: Step) extends MicroPaymentChannel {
 
   def this(exchange: AnyOngoingExchange, deposits: Exchange.Deposits) =
-    this(exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
+    this(exchange, deposits, IntermediateStep(1, exchange.amounts.breakdown))
 
   private val currentUnsignedTransaction = ImmutableTransaction {
     import exchange.amounts._

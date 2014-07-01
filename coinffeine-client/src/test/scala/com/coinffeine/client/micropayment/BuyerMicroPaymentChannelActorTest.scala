@@ -37,7 +37,7 @@ class BuyerMicroPaymentChannelActorTest
     val initialChannel = exchangeProtocol
       .createMicroPaymentChannel(ongoingExchange, MockExchangeProtocol.DummyDeposits)
     val lastChannel = Seq.iterate(
-      initialChannel, exchange.parameters.breakdown.totalSteps)(_.nextStep).last
+      initialChannel, exchange.amounts.breakdown.totalSteps)(_.nextStep).last
     lastChannel.closingTransaction(signatures)
   }
   listener.watch(actor)
@@ -60,7 +60,7 @@ class BuyerMicroPaymentChannelActorTest
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
-    for (i <- 1 to exchange.parameters.breakdown.intermediateSteps) {
+    for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       paymentProcessor.expectMsgClass(classOf[PaymentProcessor.Pay[_]])
       paymentProcessor.reply(PaymentProcessor.Paid(
@@ -73,7 +73,7 @@ class BuyerMicroPaymentChannelActorTest
 
   it should "send a notification to the listeners once the exchange has finished" in {
     actor ! fromCounterpart(
-      StepSignatures(exchange.id, exchange.parameters.breakdown.totalSteps, signatures))
+      StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
     listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
   }
 

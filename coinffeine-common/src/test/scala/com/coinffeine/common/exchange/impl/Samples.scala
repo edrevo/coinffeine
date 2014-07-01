@@ -9,13 +9,12 @@ import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 object Samples {
   val exchange = Exchange(
     id = Exchange.Id("id"),
-    parameters = Exchange.Parameters(
+    amounts = Exchange.Amounts(
       bitcoinAmount = 1.BTC,
       fiatAmount = 1000.EUR,
-      breakdown = Exchange.StepBreakdown(10),
-      lockTime = 10,
-      network = CoinffeineUnitTestNetwork
+      breakdown = Exchange.StepBreakdown(10)
     ),
+    parameters = Exchange.Parameters(lockTime = 10, CoinffeineUnitTestNetwork),
     connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
     participants = Both(
       buyer = Exchange.PeerInfo("buyerAccount", new KeyPair()),

@@ -25,7 +25,7 @@ private[impl] class DepositValidator(exchange: AnyExchange) {
     val sellerFunds = transaction.get.getOutput(0)
     require(
       Bitcoin.fromSatoshi(sellerFunds.getValue) ==
-        exchange.parameters.bitcoinAmount + exchange.amounts.stepBitcoinAmount,
+        exchange.amounts.bitcoinAmount + exchange.amounts.stepBitcoinAmount,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 

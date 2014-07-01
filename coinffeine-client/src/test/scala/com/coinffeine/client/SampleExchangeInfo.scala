@@ -12,13 +12,12 @@ trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
 
   val exchange = Exchange(
     id = Exchange.Id("id"),
-    parameters = Exchange.Parameters(
+    amounts = Exchange.Amounts(
       bitcoinAmount = 10.BTC,
       fiatAmount = 10.EUR,
-      breakdown = Exchange.StepBreakdown(intermediateSteps = 10),
-      lockTime = 25,
-      network
+      breakdown = Exchange.StepBreakdown(intermediateSteps = 10)
     ),
+    parameters = Exchange.Parameters(lockTime = 25, network),
     connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
     participants = Both(
       buyer = Exchange.PeerInfo(

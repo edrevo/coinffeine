@@ -69,7 +69,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
     private def handleTimeout(step: Step): Receive= {
       case StepSignatureTimeout =>
         val errorMsg = s"Timed out waiting for the seller to provide the signature for $step" +
-          s" (out of ${exchange.parameters.breakdown.intermediateSteps}})"
+          s" (out of ${exchange.amounts.breakdown.intermediateSteps}})"
         log.warning(errorMsg)
         finishWith(ExchangeFailure(TimeoutException(errorMsg)))
     }

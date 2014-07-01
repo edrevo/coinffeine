@@ -17,13 +17,11 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
   */
 case class Exchange[C <: FiatCurrency](
   id: Exchange.Id,
+  amounts: Exchange.Amounts[C],
   parameters: Exchange.Parameters[C],
   connections: Both[PeerConnection],
   participants: Both[Exchange.PeerInfo],
   broker: Exchange.BrokerInfo) {
-
-  val amounts: Exchange.Amounts[C] =
-    Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.breakdown)
 
   val requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
 }
@@ -42,19 +40,10 @@ object Exchange {
 
   /** Configurable parameters of an exchange.
     *
-    * @param bitcoinAmount The amount of bitcoins to exchange
-    * @param fiatAmount The amount of fiat money to exchange
-    * @param breakdown How the exchange is broken into steps
-    * @param lockTime The block number which will cause the refunds transactions to be valid
+    * @param lockTime  The block number which will cause the refunds transactions to be valid
+    * @param network   Bitcoin network
     */
-  case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                           fiatAmount: CurrencyAmount[C],
-                                           breakdown: Exchange.StepBreakdown,
-                                           lockTime: Long,
-                                           network: Network) {
-    require(bitcoinAmount.isPositive)
-    require(fiatAmount.isPositive)
-  }
+  case class Parameters[C <: FiatCurrency](lockTime: Long, network: Network)
 
   case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
 

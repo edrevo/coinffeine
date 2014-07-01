@@ -10,7 +10,7 @@ class MockMicroPaymentChannel private (exchange: AnyOngoingExchange, step: Step)
   extends MicroPaymentChannel {
 
   def this(exchange: AnyOngoingExchange) =
-    this(exchange, IntermediateStep(1, exchange.parameters.breakdown))
+    this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   override val currentStep = step
 
