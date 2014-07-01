@@ -1,5 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
+import com.coinffeine.common.FiatCurrency
+
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -9,11 +11,11 @@ import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel private (
-    exchange: AnyOngoingExchange,
+    exchange: OngoingExchange[FiatCurrency],
     deposits: Exchange.Deposits,
     override val currentStep: Step) extends MicroPaymentChannel {
 
-  def this(exchange: AnyOngoingExchange, deposits: Exchange.Deposits) =
+  def this(exchange: OngoingExchange[FiatCurrency], deposits: Exchange.Deposits) =
     this(exchange, deposits, IntermediateStep(1, exchange.amounts.breakdown))
 
   private val currentUnsignedTransaction = ImmutableTransaction {

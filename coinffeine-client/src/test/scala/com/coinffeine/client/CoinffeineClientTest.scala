@@ -2,7 +2,7 @@ package com.coinffeine.client
 
 import akka.testkit.TestProbe
 
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
+import com.coinffeine.common.{AkkaSpec, FiatCurrency, PeerConnection}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -38,7 +38,7 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    def exchange: AnyExchange
+    def exchange: Exchange[FiatCurrency]
     def userRole: Role
     def user = exchange.participants(userRole)
     def counterpart = exchange.participants(userRole.counterpart)

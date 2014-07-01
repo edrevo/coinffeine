@@ -15,10 +15,10 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
   * @param connections   PeerConnection of the buyer and the seller
   * @param broker        Connection parameters to one of the Coinffeine brokers
   */
-case class Exchange[C <: FiatCurrency](
+case class Exchange[+C <: FiatCurrency](
   id: Exchange.Id,
   amounts: Exchange.Amounts[C],
-  parameters: Exchange.Parameters[C],
+  parameters: Exchange.Parameters,
   connections: Both[PeerConnection],
   participants: Both[Exchange.PeerInfo],
   broker: Exchange.BrokerInfo) {
@@ -43,7 +43,7 @@ object Exchange {
     * @param lockTime  The block number which will cause the refunds transactions to be valid
     * @param network   Bitcoin network
     */
-  case class Parameters[C <: FiatCurrency](lockTime: Long, network: Network)
+  case class Parameters(lockTime: Long, network: Network)
 
   case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
 
@@ -55,9 +55,9 @@ object Exchange {
     val totalSteps = intermediateSteps + 1
   }
 
-  case class Amounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                        fiatAmount: CurrencyAmount[C],
-                                        breakdown: Exchange.StepBreakdown) {
+  case class Amounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                         fiatAmount: CurrencyAmount[C],
+                                         breakdown: Exchange.StepBreakdown) {
     require(bitcoinAmount.isPositive,
       s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive,

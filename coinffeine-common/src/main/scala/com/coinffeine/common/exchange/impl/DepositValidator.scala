@@ -2,12 +2,13 @@ package com.coinffeine.common.exchange.impl
 
 import scala.util.Try
 
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{AnyExchange, Both, Exchange}
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.exchange.Exchange.Deposits
 
-private[impl] class DepositValidator(exchange: AnyExchange) {
+private[impl] class DepositValidator(exchange: Exchange[FiatCurrency]) {
 
   def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {
     _ <- requireValidBuyerFunds(transactions.buyer)

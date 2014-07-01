@@ -3,13 +3,14 @@ package com.coinffeine.common.exchange
 import java.math.BigInteger
 import scala.util.{Failure, Success}
 
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-class MockMicroPaymentChannel private (exchange: AnyOngoingExchange, step: Step)
+class MockMicroPaymentChannel private (exchange: OngoingExchange[FiatCurrency], step: Step)
   extends MicroPaymentChannel {
 
-  def this(exchange: AnyOngoingExchange) =
+  def this(exchange: OngoingExchange[FiatCurrency]) =
     this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   override val currentStep = step
