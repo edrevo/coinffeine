@@ -31,6 +31,21 @@ object BlockchainActor {
   /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
   case class TransactionRejected(transactionHash: Hash)
 
+  /** A message sent to the blockchain actor to request the given transaction to be
+    * published (broadcast).
+    */
+  case class PublishTransaction(tx: ImmutableTransaction)
+
+  /** A message sent by the blockchain actor to indicate a transaction has been successfully
+    * published.
+    */
+  case class TransactionPublished(tx: ImmutableTransaction)
+
+  /** A message sent by the blockchain actor indicating that something was wrong while publishing
+    * the given transaction.
+    */
+  case class TransactionPublishingError(tx: ImmutableTransaction, error: Throwable)
+
   /** A message sent to the blockchain actor requesting to be notified when the best block in the
     * blockchain reaches a specified height.
     */
@@ -57,9 +72,6 @@ object BlockchainActor {
     * blockchain for the given hash.
     */
   case class TransactionNotFound(hash: Hash)
-
-  /** Publish a transaction to the blockchain */
-  case class PublishTransaction(transaction: ImmutableTransaction)
 
   trait Component {
     def blockchainActorProps(): Props
