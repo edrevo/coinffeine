@@ -58,6 +58,9 @@ object BlockchainActor {
     */
   case class TransactionNotFound(hash: Hash)
 
+  /** Publish a transaction to the blockchain */
+  case class PublishTransaction(transaction: ImmutableTransaction)
+
   trait Component {
     def blockchainActorProps(): Props
   }
