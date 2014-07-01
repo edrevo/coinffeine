@@ -3,6 +3,7 @@ package com.coinffeine.common.exchange
 import com.coinffeine.common._
 
 sealed trait Role {
+  def herRole: Role
   def me(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
   def her(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
@@ -13,6 +14,8 @@ sealed trait Role {
 }
 
 object BuyerRole extends Role {
+
+  override def herRole = SellerRole
 
   override def toString = "buyer"
 
@@ -35,6 +38,8 @@ object BuyerRole extends Role {
 }
 
 object SellerRole extends Role {
+
+  override def herRole = BuyerRole
 
   override def toString = "seller"
 

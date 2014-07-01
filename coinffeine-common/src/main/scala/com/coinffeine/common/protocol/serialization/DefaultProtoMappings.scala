@@ -154,16 +154,18 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       exchangeId = Exchange.Id(orderMatch.getExchangeId),
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
-      buyer = PeerConnection.parse(orderMatch.getBuyer),
-      seller = PeerConnection.parse(orderMatch.getSeller)
+      participants = Both(
+        buyer = PeerConnection.parse(orderMatch.getBuyer),
+        seller = PeerConnection.parse(orderMatch.getSeller)
+      )
     )
 
     override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
       .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
-      .setBuyer(orderMatch.buyer.toString)
-      .setSeller(orderMatch.seller.toString)
+      .setBuyer(orderMatch.participants.buyer.toString)
+      .setSeller(orderMatch.participants.seller.toString)
       .build
   }
 

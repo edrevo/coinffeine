@@ -116,8 +116,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
-    buyer = PeerConnection("buyer", 8080),
-    seller = PeerConnection("seller", 1234)
+    participants = Both(
+      buyer = PeerConnection("buyer", 8080),
+      seller = PeerConnection("seller", 1234)
+    )
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setExchangeId(sampleExchangeId.value)
