@@ -14,7 +14,7 @@ import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel, SellerRole}
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
@@ -32,14 +32,14 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val channel = new MockMicroPaymentChannel(ongoingExchange)
+  val channel = new MockMicroPaymentChannel(exchange)
   val firstStep = IntermediateStep(1, exchange.amounts.breakdown)
   val actor = system.actorOf(
     Props(new SellerMicroPaymentChannelActor(new MockExchangeProtocol())), "seller-exchange-actor")
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    ongoingExchange, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
+    exchange, SellerRole, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
     gateway.ref, Set(listener.ref)
   )
 

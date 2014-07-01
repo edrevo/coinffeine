@@ -7,24 +7,40 @@ import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-/** A value class that contains all the necessary information to start an exchange between
-  * two peers.
-  *
-  * @param id            An identifier for the exchange
-  * @param parameters    Configurable parameters
-  * @param connections   PeerConnection of the buyer and the seller
-  * @param broker        Connection parameters to one of the Coinffeine brokers
+/** All the necessary information to start an exchange between two peers. This is the point of view
+  * of the parts before handshaking and also of the brokers.
   */
-case class Exchange[+C <: FiatCurrency](
-  id: Exchange.Id,
-  amounts: Exchange.Amounts[C],
-  parameters: Exchange.Parameters,
-  connections: Both[PeerConnection],
-  participants: Both[Exchange.PeerInfo],
-  broker: Exchange.BrokerInfo) {
-
-  val requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
+trait Exchange[+C <: FiatCurrency] {
+  /** An identifier for the exchange */
+  val id: Exchange.Id
+  val amounts: Exchange.Amounts[C]
+  /** Configurable parameters */
+  val parameters: Exchange.Parameters
+  /** PeerConnection of the buyer and the seller */
+  val connections: Both[PeerConnection]
+  val broker: Exchange.BrokerInfo
 }
+
+/** Relevant information for an ongoing exchange. This point fo view is only held by the parts
+  * as contains information not make public to everyone on the network.
+  */
+trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
+  /** Information about the parts */
+  val participants: Both[Exchange.PeerInfo]
+
+  def requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
+}
+
+/** TODO: create different implementations of Exchange and OngoingExchange to limit what information
+  * is available during the exchange by splitting this class.
+  */
+case class CompleteExchange[+C <: FiatCurrency] (
+  override val id: Exchange.Id,
+  override val amounts: Exchange.Amounts[C],
+  override val parameters: Exchange.Parameters,
+  override val connections: Both[PeerConnection],
+  override val broker: Exchange.BrokerInfo,
+  override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C]
 
 object Exchange {
 

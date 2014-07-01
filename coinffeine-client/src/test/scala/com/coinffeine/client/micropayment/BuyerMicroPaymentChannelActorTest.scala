@@ -8,13 +8,13 @@ import org.joda.time.DateTime
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer, ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, GetLastOffer, LastOffer, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{MockExchangeProtocol, BuyerRole, Exchange}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, Signatures}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -35,7 +35,7 @@ class BuyerMicroPaymentChannelActorTest
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
   val expectedLastOffer = {
     val initialChannel = exchangeProtocol
-      .createMicroPaymentChannel(ongoingExchange, MockExchangeProtocol.DummyDeposits)
+      .createMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits)
     val lastChannel = Seq.iterate(
       initialChannel, exchange.amounts.breakdown.totalSteps)(_.nextStep).last
     lastChannel.closingTransaction(signatures)
@@ -44,7 +44,7 @@ class BuyerMicroPaymentChannelActorTest
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(ongoingExchange, MockExchangeProtocol.DummyDeposits,
+    actor ! StartMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits,
       protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

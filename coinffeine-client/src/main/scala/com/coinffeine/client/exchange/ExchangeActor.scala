@@ -112,8 +112,7 @@ class ExchangeActor[C <: FiatCurrency](
             // TODO: what if counterpart deposit is not valid?
             val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), exchange).get
             val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            val ongoingExchange = OngoingExchange(role, exchange)
-            ref ! StartMicroPaymentChannel[C](ongoingExchange, deposits, constants,
+            ref ! StartMicroPaymentChannel[C](exchange, role, deposits, constants,
               paymentProcessor, messageGateway, resultListeners = Set(self))
             txBroadcaster ! SetMicropaymentActor(ref)
             context.become(inMicropaymentChannel)
@@ -148,7 +147,7 @@ object ExchangeActor {
 
   /** This is a request for the actor to start the exchange */
   case class StartExchange[C <: FiatCurrency](
-    exchange: Exchange[C],
+    exchange: OngoingExchange[C], // TODO: reduce visibility to Exchange[C]
     role: Role,
     userWallet: Wallet,
     paymentProcessor: ActorRef,

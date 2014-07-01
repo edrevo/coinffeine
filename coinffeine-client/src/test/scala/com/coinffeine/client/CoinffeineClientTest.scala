@@ -8,7 +8,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, Re
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with SampleExchangeInfo {
+  extends AkkaSpec(systemName) with SampleExchange {
 
   val gateway = TestProbe()
 
@@ -38,11 +38,10 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    def exchange: Exchange[FiatCurrency]
+    def exchange: OngoingExchange[FiatCurrency]
     def userRole: Role
     def user = exchange.participants(userRole)
     def counterpart = exchange.participants(userRole.counterpart)
-    def ongoingExchange = OngoingExchange(userRole, exchange)
     def counterpartConnection = exchange.connections(userRole.counterpart)
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }

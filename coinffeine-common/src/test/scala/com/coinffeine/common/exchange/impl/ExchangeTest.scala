@@ -44,10 +44,8 @@ trait ExchangeTest extends BitcoinjTest {
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
     val deposits = protocol.validateDeposits(commitments, exchange).get
-    val buyerExchange = OngoingExchange(BuyerRole, exchange)
-    val buyerChannel = protocol.createMicroPaymentChannel(buyerExchange, deposits)
-    val sellerExchange = OngoingExchange(SellerRole, exchange)
-    val sellerChannel = protocol.createMicroPaymentChannel(sellerExchange, deposits)
+    val buyerChannel = protocol.createMicroPaymentChannel(exchange, BuyerRole, deposits)
+    val sellerChannel = protocol.createMicroPaymentChannel(exchange, SellerRole, deposits)
     val totalSteps = exchange.amounts.breakdown.totalSteps
     val buyerChannels = Seq.iterate(buyerChannel, totalSteps)(_.nextStep)
     val sellerChannels = Seq.iterate(sellerChannel, totalSteps)(_.nextStep)

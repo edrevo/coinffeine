@@ -40,16 +40,16 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     import init.constants.exchangePaymentProofTimeout
 
     private val forwarding =
-      new MessageForwarding(messageGateway, exchange.underlying, exchange.role)
+      new MessageForwarding(messageGateway, exchange, role)
 
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")
       subscribeToMessages()
-      new StepBehavior(exchangeProtocol.createMicroPaymentChannel(exchange, deposits)).start()
+      new StepBehavior(exchangeProtocol.createMicroPaymentChannel(exchange, role, deposits)).start()
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = exchange.connections(exchange.role.counterpart)
+      val counterpart = exchange.connections(role.counterpart)
       messageGateway ! Subscribe {
         case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
         case _ => false

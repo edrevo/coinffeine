@@ -28,7 +28,7 @@ class BuyerMicroPaymentChannelActorFailureTest
     listener.watch(actor)
 
     def startMicroPaymentChannel(): Unit = {
-      actor ! StartMicroPaymentChannel(ongoingExchange, MockExchangeProtocol.DummyDeposits,
+      actor ! StartMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits,
         protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
     }
   }

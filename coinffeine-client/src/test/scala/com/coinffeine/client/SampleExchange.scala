@@ -3,14 +3,14 @@ package com.coinffeine.client
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
-import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.{Both, CompleteExchange, Exchange}
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
-trait SampleExchangeInfo extends CoinffeineUnitTestNetwork.Component {
+trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val broker = PeerConnection("broker")
 
-  val exchange = Exchange(
+  val exchange = CompleteExchange(
     id = Exchange.Id("id"),
     amounts = Exchange.Amounts(
       bitcoinAmount = 10.BTC,

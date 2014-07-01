@@ -30,6 +30,6 @@ class DepositValidatorTest extends ExchangeTest {
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
-    val validator = new DepositValidator(exchange)
+    val validator = new DepositValidator(exchange.amounts, exchange.requiredSignatures.toSet)
   }
 }

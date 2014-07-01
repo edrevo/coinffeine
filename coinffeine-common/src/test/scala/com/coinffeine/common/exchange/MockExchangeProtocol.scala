@@ -10,21 +10,22 @@ import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 class MockExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake(
-      exchange: Exchange[FiatCurrency],
+      exchange: OngoingExchange[FiatCurrency],
       role: Role,
       unspentOutputs: Seq[UnspentOutput],
       changeAddress: Address) = new MockHandshake(exchange, role)
 
   override def createMicroPaymentChannel(exchange: OngoingExchange[FiatCurrency],
-                                         deposits: Exchange.Deposits) =
+                                         role: Role, deposits: Exchange.Deposits) =
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: Exchange[FiatCurrency]): Try[Deposits] =
+                                exchange: OngoingExchange[FiatCurrency]): Try[Deposits] =
     Success(MockExchangeProtocol.DummyDeposits)
 
-  override def validateDeposit(role: Role, transaction: ImmutableTransaction,
-                               exchange: Exchange[FiatCurrency]): Try[Unit] = Success {}
+  override def validateDeposit(transaction: ImmutableTransaction, role: Role,
+                               amounts: Exchange.Amounts[FiatCurrency],
+                               requiredSignatures: Set[PublicKey]): Try[Unit] = Success {}
 }
 
 object MockExchangeProtocol {

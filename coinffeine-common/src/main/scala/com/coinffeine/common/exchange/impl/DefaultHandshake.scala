@@ -6,7 +6,7 @@ import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 private[impl] class DefaultHandshake(
-   exchange: Exchange[FiatCurrency],
+   exchange: OngoingExchange[FiatCurrency],
    role: Role,
    override val myDeposit: ImmutableTransaction) extends Handshake {
 
