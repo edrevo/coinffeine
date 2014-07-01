@@ -46,10 +46,10 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     }
 
     private val signCounterpartRefund: Receive = {
-      case ReceiveMessage(RefundTxSignatureRequest(_, refundTransaction), _) =>
+      case ReceiveMessage(PeerHandshake(_, refundTransaction, _), _) =>
         try {
           val refundSignature = handshake.signHerRefund(refundTransaction)
-          forwarding.forwardToCounterpart(RefundTxSignatureResponse(exchange.id, refundSignature))
+          forwarding.forwardToCounterpart(PeerHandshakeAccepted(exchange.id, refundSignature))
           log.info("Handshake {}: Signing refund TX {}", exchange.id,
             refundTransaction.get.getHashAsString)
         } catch {
@@ -59,7 +59,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     }
 
     private val receiveRefundSignature: Receive = {
-      case ReceiveMessage(RefundTxSignatureResponse(_, herSignature), _) =>
+      case ReceiveMessage(PeerHandshakeAccepted(_, herSignature), _) =>
         try {
           val myRefund = handshake.signMyRefund(herSignature)
           forwarding.forwardToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
@@ -128,8 +128,8 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
       val broker = exchange.broker.connection
       val counterpart = role.her(exchange).connection
       messageGateway ! Subscribe {
-        case ReceiveMessage(RefundTxSignatureRequest(`id`, _), `counterpart`) => true
-        case ReceiveMessage(RefundTxSignatureResponse(`id`, _), `counterpart`) => true
+        case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
+        case ReceiveMessage(PeerHandshakeAccepted(`id`, _), `counterpart`) => true
         case ReceiveMessage(CommitmentNotification(`id`, _), `broker`) => true
         case ReceiveMessage(ExchangeAborted(`id`, _), `broker`) => true
         case _ => false
@@ -153,8 +153,8 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     }
 
     private def requestRefundSignature(): Unit = {
-      forwarding.forwardToCounterpart(
-        RefundTxSignatureRequest(exchange.id, handshake.myUnsignedRefund))
+      forwarding.forwardToCounterpart(PeerHandshake(
+        exchange.id, handshake.myUnsignedRefund, role.me(exchange).paymentProcessorAccount))
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {

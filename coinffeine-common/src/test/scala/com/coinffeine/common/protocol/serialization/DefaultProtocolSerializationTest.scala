@@ -107,8 +107,8 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
       QuoteRequest(UsDollar),
       Quote(fiatAmount -> fiatAmount, fiatAmount),
       ExchangeRejection(exchangeId, "reason"),
-      RefundTxSignatureRequest(exchangeId, transaction),
-      RefundTxSignatureResponse(exchangeId, transactionSignature),
+      PeerHandshake(exchangeId, transaction, "paymentAccount"),
+      PeerHandshakeAccepted(exchangeId, transactionSignature),
       StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
       PaymentProof(exchangeId, "paymentId")
     )

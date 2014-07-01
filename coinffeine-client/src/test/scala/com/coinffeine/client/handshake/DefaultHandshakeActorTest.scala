@@ -2,7 +2,6 @@ package com.coinffeine.client.handshake
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import com.coinffeine.common.exchange.MockHandshake
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
@@ -11,9 +10,10 @@ import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.exchange.MockHandshake
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
-import com.coinffeine.common.protocol.messages.handshake.{RefundTxSignatureRequest, RefundTxSignatureResponse}
+import com.coinffeine.common.protocol.messages.handshake.{PeerHandshake, PeerHandshakeAccepted}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class DefaultHandshakeActorTest(systemName: String)
@@ -34,16 +34,17 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest = RefundTxSignatureRequest(exchange.id, handshake.myUnsignedRefund)
+    val refundSignatureRequest = PeerHandshake(
+      exchange.id, handshake.myUnsignedRefund, userRole.me(exchange).paymentProcessorAccount)
     shouldForward (refundSignatureRequest) to counterpart.connection
   }
 
   def shouldSignCounterpartRefund(): Unit = {
-    val request =
-      RefundTxSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
+    val request = PeerHandshake(exchange.id, ImmutableTransaction(handshake.counterpartRefund),
+      userRole.her(exchange).paymentProcessorAccount)
     gateway.send(actor, ReceiveMessage(request, userRole.her(exchange).connection))
     val refundSignatureRequest =
-      RefundTxSignatureResponse(exchange.id, handshake.counterpartRefundSignature)
+      PeerHandshakeAccepted(exchange.id, handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart.connection
   }
 
