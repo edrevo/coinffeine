@@ -1,16 +1,18 @@
 package com.coinffeine.common.blockchain
 
 import java.util
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
-
 import scala.collection.JavaConversions._
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
 
-class DefaultBlockchainActor(network: NetworkParameters,
-                             blockchain: AbstractBlockChain) extends Actor with ActorLogging {
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
+
+class DefaultBlockchainActor(
+    network: NetworkParameters,
+    blockchain: AbstractBlockChain,
+    transactionBroadcaster: TransactionBroadcaster) extends Actor with ActorLogging {
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
 
@@ -117,4 +119,17 @@ class DefaultBlockchainActor(network: NetworkParameters,
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
+}
+
+object DefaultBlockchainActor {
+
+  trait Component extends BlockchainActor.Component {
+
+    def network: NetworkParameters
+    def blockchain: AbstractBlockChain
+    def transactionBroadcaster: TransactionBroadcaster
+
+    override def blockchainActorProps(): Props = Props(new DefaultBlockchainActor(
+      network, blockchain, transactionBroadcaster))
+  }
 }
