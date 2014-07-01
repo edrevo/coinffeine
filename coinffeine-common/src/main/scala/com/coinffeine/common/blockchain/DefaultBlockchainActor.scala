@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
+import com.google.common.util.concurrent.{FutureCallback, Futures}
 
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
 
@@ -113,12 +114,28 @@ class DefaultBlockchainActor(
         case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
+    case BlockchainActor.PublishTransaction(tx) =>
+      broadcastTransaction(sender, tx)
     case BlockchainActor.WatchBlockchainHeight(height) =>
       heightNotifications += HeightNotification(height, sender())
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
+
+  private def broadcastTransaction(requester: ActorRef, tx: ImmutableTransaction): Unit = {
+    Futures.addCallback(
+      transactionBroadcaster.broadcastTransaction(tx.get),
+      new FutureCallback[MutableTransaction] {
+        override def onSuccess(result: MutableTransaction): Unit = {
+          requester ! BlockchainActor.TransactionPublished(ImmutableTransaction(result))
+        }
+        override def onFailure(error: Throwable): Unit = {
+          requester ! BlockchainActor.TransactionPublishingError(tx, error)
+        }
+      },
+      context.dispatcher)
+  }
 }
 
 object DefaultBlockchainActor {

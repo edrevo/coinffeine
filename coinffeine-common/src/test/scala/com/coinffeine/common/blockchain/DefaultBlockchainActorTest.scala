@@ -5,8 +5,10 @@ import akka.actor.Props
 import com.coinffeine.common.{AkkaSpec, BitcoinjTest}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
+import org.scalatest.mock.MockitoSugar
 
-class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest") with BitcoinjTest {
+class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest")
+    with BitcoinjTest with MockitoSugar {
 
   "Default blockchain actor" must "report transaction confirmation" in new Fixture {
     instance ! BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1)
@@ -89,13 +91,29 @@ class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest") 
     expectMsg(BlockchainActor.BlockchainHeightReached(50))
   }
 
+  it must "broadcast a transaction when published" in new Fixture {
+    transactionBroadcaster.givenSuccessOnTransactionBroadcast()
+    instance ! BlockchainActor.PublishTransaction(immutableTx)
+    expectMsg(BlockchainActor.TransactionPublished(immutableTx))
+  }
+
+  it must "fail to broadcast a transaction when publishing fails" in new Fixture {
+    val error = new RuntimeException("failure")
+    transactionBroadcaster.givenErrorOnTransactionBroadcast(error)
+    instance ! BlockchainActor.PublishTransaction(immutableTx)
+    expectMsg(BlockchainActor.TransactionPublishingError(immutableTx, error))
+  }
+
   trait Fixture {
     val keyPair = new KeyPair()
     val otherKeyPair = new KeyPair()
-    val instance = system.actorOf(Props(new DefaultBlockchainActor(network, chain)))
     val wallet = createWallet(keyPair, 1.BTC)
+    val transactionBroadcaster = new MockTransactionBroadcaster()
     val otherWallet = createWallet(keyPair, 1.BTC)
     val tx = wallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
+    val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
+    val instance = system.actorOf(
+      Props(new DefaultBlockchainActor(network, chain, transactionBroadcaster)))
   }
 }
