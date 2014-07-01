@@ -2,6 +2,7 @@ package com.coinffeine.client.handshake
 
 import akka.actor.Props
 import akka.testkit.TestProbe
+import com.coinffeine.common.exchange.MockHandshake
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest

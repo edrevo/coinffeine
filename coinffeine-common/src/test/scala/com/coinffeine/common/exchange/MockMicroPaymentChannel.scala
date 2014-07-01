@@ -1,11 +1,10 @@
-package com.coinffeine.client.exchange
+package com.coinffeine.common.exchange
 
 import java.math.BigInteger
 import scala.util.{Failure, Success}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
-import com.coinffeine.common.exchange.{Exchange, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 class MockMicroPaymentChannel private (exchange: Exchange[_ <: FiatCurrency], step: Step)

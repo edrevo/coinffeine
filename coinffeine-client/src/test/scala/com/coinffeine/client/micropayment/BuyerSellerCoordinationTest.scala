@@ -5,11 +5,10 @@ import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.client.CoinffeineClientTest
-import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{BuyerRole, SellerRole}
+import com.coinffeine.common.exchange.{MockExchangeProtocol, BuyerRole, SellerRole}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 

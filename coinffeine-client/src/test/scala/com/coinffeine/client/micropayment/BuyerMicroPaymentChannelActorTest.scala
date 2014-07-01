@@ -8,13 +8,12 @@ import org.joda.time.DateTime
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.handshake.MockExchangeProtocol
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer, ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{BuyerRole, Exchange}
+import com.coinffeine.common.exchange.{MockExchangeProtocol, BuyerRole, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, Signatures}
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
