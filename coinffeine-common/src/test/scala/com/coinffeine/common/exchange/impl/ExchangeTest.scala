@@ -22,7 +22,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
-    val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.2.BTC)
+    val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.2.BTC)
     val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
     val buyerHandshake =
       protocol.createHandshake(exchange, BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
@@ -30,7 +30,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
-    val sellerWallet = createWallet(exchange.seller.bitcoinKey, 1.1.BTC)
+    val sellerWallet = createWallet(exchange.participants.seller.bitcoinKey, 1.1.BTC)
     val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
     val sellerHandshake =
       protocol.createHandshake(exchange, SellerRole, sellerFunds, sellerWallet.getChangeAddress)

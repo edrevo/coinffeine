@@ -14,7 +14,7 @@ import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.{MockMicroPaymentChannel, MockExchangeProtocol, Exchange}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
@@ -98,8 +98,8 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     val FindPayment(paymentId) = paymentProcessor.expectMsgClass(classOf[FindPayment])
     paymentProcessor.reply(PaymentFound(Payment(
       id = paymentId,
-      senderId = exchange.buyer.paymentProcessorAccount,
-      receiverId = exchange.seller.paymentProcessorAccount,
+      senderId = exchange.participants.buyer.paymentProcessorAccount,
+      receiverId = exchange.participants.seller.paymentProcessorAccount,
       description = PaymentDescription(exchange.id, step),
       amount = exchange.amounts.stepFiatAmount,
       date = DateTime.now()

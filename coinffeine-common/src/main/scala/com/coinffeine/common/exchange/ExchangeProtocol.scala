@@ -2,7 +2,6 @@ package com.coinffeine.common.exchange
 
 import scala.util.Try
 
-import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin._
 
 trait ExchangeProtocol {
@@ -16,10 +15,18 @@ trait ExchangeProtocol {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake(exchange: Exchange[_ <: FiatCurrency],
+  def createHandshake(exchange: AnyExchange,
                       role: Role,
                       unspentOutputs: Seq[UnspentOutput],
                       changeAddress: Address): Handshake
+
+  /** Validate if a transaction looks a valid deposit of one of the parts */
+  def validateDeposit(role: Role, transaction: ImmutableTransaction,
+                      exchange: AnyExchange): Try[Unit]
+
+  /** Validate buyer and seller deposit transactions. */
+  def validateDeposits(transactions: Both[ImmutableTransaction],
+                       exchange: AnyExchange): Try[Exchange.Deposits]
 
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.
@@ -28,17 +35,9 @@ trait ExchangeProtocol {
     * @param exchange   Exchange description
     * @param deposits   Already compromised deposits for buyer and seller
     */
-  def createMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
+  def createMicroPaymentChannel(exchange: AnyExchange,
                                 role: Role,
                                 deposits: Exchange.Deposits): MicroPaymentChannel
-
-  /** Validate if a transaction looks a valid deposit of one of the parts */
-  def validateDeposit(role: Role, transaction: ImmutableTransaction,
-                      exchange: Exchange[_ <: FiatCurrency]): Try[Unit]
-
-  /** Validate buyer and seller deposit transactions. */
-  def validateDeposits(transactions: Both[ImmutableTransaction],
-                       exchange: Exchange[_ <: FiatCurrency]): Try[Exchange.Deposits]
 }
 
 object ExchangeProtocol {

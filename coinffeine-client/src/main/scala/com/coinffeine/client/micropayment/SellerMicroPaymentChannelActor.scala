@@ -48,7 +48,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = role.her(exchange).connection
+      val counterpart = exchange.participants(role.counterpart).connection
       messageGateway ! Subscribe {
         case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
         case _ => false
@@ -127,9 +127,9 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
       } yield {
         require(payment.amount == exchange.amounts.stepFiatAmount,
           s"Payment $step amount does not match expected amount")
-        require(payment.receiverId == exchange.seller.paymentProcessorAccount,
+        require(payment.receiverId == exchange.participants.seller.paymentProcessorAccount,
           s"Payment $step is not being sent to the seller")
-        require(payment.senderId == exchange.buyer.paymentProcessorAccount,
+        require(payment.senderId == exchange.participants.buyer.paymentProcessorAccount,
           s"Payment $step is not coming from the buyer")
         require(payment.description == PaymentDescription(exchange.id, step),
           s"Payment $step does not have the required description")

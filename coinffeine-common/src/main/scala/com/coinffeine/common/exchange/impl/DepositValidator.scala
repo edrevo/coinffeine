@@ -2,15 +2,12 @@ package com.coinffeine.common.exchange.impl
 
 import scala.util.Try
 
-import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.{AnyExchange, Both, Exchange}
 import com.coinffeine.common.exchange.Exchange.Deposits
 
-private[impl] class DepositValidator(exchange: Exchange[_ <: FiatCurrency]) {
-
-  private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
+private[impl] class DepositValidator(exchange: AnyExchange) {
 
   def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {
     _ <- requireValidBuyerFunds(transactions.buyer)
@@ -38,7 +35,7 @@ private[impl] class DepositValidator(exchange: Exchange[_ <: FiatCurrency]) {
     val multisigInfo = MultiSigInfo(funds.getScriptPubKey)
     require(multisigInfo.requiredKeyCount == 2,
       "Funds are sent to a multisig that do not require 2 keys")
-    require(multisigInfo.possibleKeys == requiredSignatures.toSet,
+    require(multisigInfo.possibleKeys == exchange.requiredSignatures.toSet,
       "Possible keys in multisig script does not match the expected keys")
   }
 }

@@ -1,18 +1,18 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.{BitcoinAmount, Currency, FiatCurrency}
+import com.coinffeine.common.{BitcoinAmount, Currency}
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 private[impl] class DefaultHandshake(
-   exchange: Exchange[_ <: FiatCurrency],
+   exchange: AnyExchange,
    role: Role,
    override val myDeposit: ImmutableTransaction) extends Handshake {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,
-    outputKey = role.me(exchange).bitcoinKey,
+    outputKey = exchange.participants(role).bitcoinKey,
     outputAmount = role.myRefundAmount(exchange.amounts),
     lockTime = exchange.parameters.lockTime,
     network = exchange.parameters.network
@@ -26,8 +26,9 @@ private[impl] class DefaultHandshake(
   @throws[InvalidRefundSignature]
   override def signMyRefund(herSignature: TransactionSignature) = {
     if (!TransactionProcessor.isValidSignature(
-        myUnsignedRefund.get, index = 0, herSignature, role.her(exchange).bitcoinKey,
-        Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey))) {
+        myUnsignedRefund.get, index = 0, herSignature,
+        signerKey = exchange.participants(role.counterpart).bitcoinKey,
+        exchange.requiredSignatures)) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
     ImmutableTransaction {
@@ -48,8 +49,8 @@ private[impl] class DefaultHandshake(
     TransactionProcessor.signMultiSignedOutput(
       multiSignedDeposit = tx,
       index = 0,
-      signAs = role.me(exchange).bitcoinKey,
-      requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
+      signAs = exchange.participants(role).bitcoinKey,
+      exchange.requiredSignatures
     )
   }
 

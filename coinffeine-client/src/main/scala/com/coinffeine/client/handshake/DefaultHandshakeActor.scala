@@ -126,7 +126,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
       val broker = exchange.broker.connection
-      val counterpart = role.her(exchange).connection
+      val counterpart = exchange.participants(role.counterpart).connection
       messageGateway ! Subscribe {
         case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
         case ReceiveMessage(PeerHandshakeAccepted(`id`, _), `counterpart`) => true
@@ -154,7 +154,7 @@ private[handshake] class DefaultHandshakeActor[C <: FiatCurrency]
 
     private def requestRefundSignature(): Unit = {
       forwarding.forwardToCounterpart(PeerHandshake(
-        exchange.id, handshake.myUnsignedRefund, role.me(exchange).paymentProcessorAccount))
+        exchange.id, handshake.myUnsignedRefund, exchange.participants(role).paymentProcessorAccount))
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {

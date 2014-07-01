@@ -10,21 +10,21 @@ import com.coinffeine.common.paymentprocessor.PaymentProcessor
 /** A value class that contains all the necessary information relative to an exchange between
   * two peers
   *
-  * @param id          An identifier for the exchange
-  * @param parameters  Configurable parameters
-  * @param buyer       Description of the buyer
-  * @param seller      Description of the seller
+  * @param id            An identifier for the exchange
+  * @param parameters    Configurable parameters
+  * @param participants  Description of the buyer and the seller
   * @param broker      Connection parameters to one of the Coinffeine brokers
   */
 case class Exchange[C <: FiatCurrency](
   id: Exchange.Id,
   parameters: Exchange.Parameters[C],
-  buyer: Exchange.PeerInfo,
-  seller: Exchange.PeerInfo,
+  participants: Both[Exchange.PeerInfo],
   broker: Exchange.BrokerInfo) {
 
   val amounts: Exchange.Amounts[C] =
     Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.breakdown)
+
+  val requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
 }
 
 object Exchange {

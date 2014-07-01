@@ -49,7 +49,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = role.her(exchange).connection
+      val counterpart = exchange.participants(role.counterpart).connection
       messageGateway ! Subscribe {
         case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) => true
         case _ => false
@@ -112,7 +112,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       implicit val timeout = PaymentProcessor.RequestTimeout
 
       val paymentRequest = PaymentProcessor.Pay(
-        role.her(exchange).paymentProcessorAccount,
+        exchange.participants(role.counterpart).paymentProcessorAccount,
         exchange.amounts.stepFiatAmount,
         PaymentDescription(exchange.id, step)
       )

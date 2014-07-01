@@ -3,7 +3,6 @@ package com.coinffeine.common.exchange.impl
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import com.coinffeine.common._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
@@ -11,14 +10,14 @@ import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel private (
     role: Role,
-    exchange: Exchange[_ <: FiatCurrency],
+    exchange: AnyExchange,
     deposits: Exchange.Deposits,
     override val currentStep: Step) extends MicroPaymentChannel {
 
-  def this(role: Role, exchange: Exchange[_ <: FiatCurrency], deposits: Exchange.Deposits) =
+  def this(role: Role, exchange: AnyExchange, deposits: Exchange.Deposits) =
     this(role, exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
 
-  private val requiredSignatures = Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey)
+  private val requiredSignatures = exchange.participants.toSeq.map(_.bitcoinKey)
 
   private val currentUnsignedTransaction = ImmutableTransaction {
     import exchange.amounts._
@@ -34,8 +33,8 @@ private[impl] class DefaultMicroPaymentChannel private (
     TransactionProcessor.createUnsignedTransaction(
       inputs = deposits.transactions.toSeq.map(_.get.getOutput(0)),
       outputs = Seq(
-        exchange.buyer.bitcoinKey -> split.buyer,
-        exchange.seller.bitcoinKey -> split.seller
+        exchange.participants.buyer.bitcoinKey -> split.buyer,
+        exchange.participants.seller.bitcoinKey -> split.seller
       ),
       network = exchange.parameters.network
     )
@@ -43,7 +42,7 @@ private[impl] class DefaultMicroPaymentChannel private (
 
   override def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit] = {
     val tx = currentUnsignedTransaction.get
-    val herKey = role.her(exchange).bitcoinKey
+    val herKey = exchange.participants(role.counterpart).bitcoinKey
 
     def requireValidSignature(index: Int, signature: TransactionSignature) = {
       require(
@@ -62,7 +61,7 @@ private[impl] class DefaultMicroPaymentChannel private (
 
   override def signCurrentTransaction = {
     val tx = currentUnsignedTransaction.get
-    val signingKey = role.me(exchange).bitcoinKey
+    val signingKey = exchange.participants(role).bitcoinKey
     Signatures(
       buyer = TransactionProcessor.signMultiSignedOutput(
         tx, BuyerDepositInputIndex, signingKey, requiredSignatures),

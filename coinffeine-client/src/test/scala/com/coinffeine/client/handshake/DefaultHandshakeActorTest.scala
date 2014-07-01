@@ -35,14 +35,14 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest = PeerHandshake(
-      exchange.id, handshake.myUnsignedRefund, userRole.me(exchange).paymentProcessorAccount)
+      exchange.id, handshake.myUnsignedRefund, user.paymentProcessorAccount)
     shouldForward (refundSignatureRequest) to counterpart.connection
   }
 
   def shouldSignCounterpartRefund(): Unit = {
     val request = PeerHandshake(exchange.id, ImmutableTransaction(handshake.counterpartRefund),
-      userRole.her(exchange).paymentProcessorAccount)
-    gateway.send(actor, ReceiveMessage(request, userRole.her(exchange).connection))
+      user.paymentProcessorAccount)
+    gateway.send(actor, ReceiveMessage(request, counterpart.connection))
     val refundSignatureRequest =
       PeerHandshakeAccepted(exchange.id, handshake.counterpartRefundSignature)
     shouldForward (refundSignatureRequest) to counterpart.connection

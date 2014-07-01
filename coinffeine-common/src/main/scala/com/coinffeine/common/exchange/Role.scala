@@ -3,9 +3,7 @@ package com.coinffeine.common.exchange
 import com.coinffeine.common._
 
 sealed trait Role {
-  def herRole: Role
-  def me(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
-  def her(exchange: Exchange[_ <: FiatCurrency]): Exchange.PeerInfo
+  def counterpart: Role
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def herRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
@@ -15,13 +13,9 @@ sealed trait Role {
 
 object BuyerRole extends Role {
 
-  override def herRole = SellerRole
+  override def counterpart = SellerRole
 
   override def toString = "buyer"
-
-  override def me(exchange: Exchange[_ <: FiatCurrency]) = exchange.buyer
-
-  override def her(exchange: Exchange[_ <: FiatCurrency]) = exchange.seller
 
   override def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount =
     amounts.buyerDeposit
@@ -39,13 +33,9 @@ object BuyerRole extends Role {
 
 object SellerRole extends Role {
 
-  override def herRole = BuyerRole
+  override def counterpart = BuyerRole
 
   override def toString = "seller"
-
-  override def me(exchange: Exchange[_ <: FiatCurrency]) = exchange.seller
-
-  override def her(exchange: Exchange[_ <: FiatCurrency]) = exchange.buyer
 
   override def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount =
     amounts.sellerDeposit

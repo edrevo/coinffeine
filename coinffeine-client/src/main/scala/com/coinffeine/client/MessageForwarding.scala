@@ -6,8 +6,8 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.exchange.{AnyExchange, Role}
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.PublicMessage
 
@@ -15,8 +15,9 @@ class MessageForwarding(messageGateway: ActorRef,
                         counterpart: PeerConnection,
                         broker: PeerConnection) {
 
-  def this(messageGateway: ActorRef, exchange: Exchange[_ <: FiatCurrency], role: Role) =
-    this(messageGateway, role.her(exchange).connection, exchange.broker.connection)
+  def this(messageGateway: ActorRef, exchange: AnyExchange, role: Role) =
+    this(messageGateway, exchange.participants(role.counterpart).connection,
+      exchange.broker.connection)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)
