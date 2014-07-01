@@ -115,7 +115,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenMicropaymentChannelSuccess(): Unit =
       withActor(MicroPaymentChannelActorName) { micropaymentChannelActor =>
         micropaymentChannelActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
-          exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
+          ongoingExchange, MockExchangeProtocol.DummyDeposits, protocolConstants,
           dummyPaymentProcessor, gateway.ref, Set(actor)
         ))
         actor.tell(MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx)), micropaymentChannelActor)
@@ -176,7 +176,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val error = new Error("exchange failure")
     withActor(MicroPaymentChannelActorName) { micropaymentChannelActor =>
       micropaymentChannelActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
+        ongoingExchange, MockExchangeProtocol.DummyDeposits, protocolConstants,
         dummyPaymentProcessor, gateway.ref, Set(actor)
       ))
       actor.tell(MicroPaymentChannelActor.ExchangeFailure(error), micropaymentChannelActor)

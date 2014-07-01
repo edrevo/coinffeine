@@ -14,8 +14,7 @@ class MockExchangeProtocol extends ExchangeProtocol {
       unspentOutputs: Seq[UnspentOutput],
       changeAddress: Address) = new MockHandshake(exchange, role)
 
-  override def createMicroPaymentChannel(
-      exchange: AnyExchange, role: Role, deposits: Exchange.Deposits) =
+  override def createMicroPaymentChannel(exchange: AnyOngoingExchange, deposits: Exchange.Deposits) =
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],

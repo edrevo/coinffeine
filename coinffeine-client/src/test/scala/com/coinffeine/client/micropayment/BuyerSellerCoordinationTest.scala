@@ -8,7 +8,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{BuyerRole, MockExchangeProtocol, SellerRole}
+import com.coinffeine.common.exchange.{BuyerRole, MockExchangeProtocol, OngoingExchange, SellerRole}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 
@@ -30,6 +30,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
       Props(new MessageForwarder(to)), name)
   }
 
+  val buyerExchange = OngoingExchange(BuyerRole, exchange)
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     exchange.participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))
   val buyer = system.actorOf(
@@ -37,6 +38,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     "buyer-exchange-actor"
   )
 
+  val sellerExchange = OngoingExchange(SellerRole, exchange)
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     exchange.participants.seller.paymentProcessorAccount, Seq(0.EUR)))
   val seller = system.actorOf(
@@ -46,10 +48,10 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
 
   "The buyer and seller actors" should "be able to perform an exchange" in {
     buyer ! StartMicroPaymentChannel(
-      exchange, BuyerRole, MockExchangeProtocol.DummyDeposits, protocolConstants, buyerPaymentProc,
+      buyerExchange, MockExchangeProtocol.DummyDeposits, protocolConstants, buyerPaymentProc,
       MessageForwarder("fw-to-seller", seller), Set(buyerListener.ref))
     seller ! StartMicroPaymentChannel(
-      exchange, SellerRole, MockExchangeProtocol.DummyDeposits, protocolConstants, sellerPaymentProc,
+      sellerExchange, MockExchangeProtocol.DummyDeposits, protocolConstants, sellerPaymentProc,
       MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
     buyerListener.expectMsgClass(classOf[ExchangeSuccess])
     sellerListener.expectMsg(ExchangeSuccess(None))

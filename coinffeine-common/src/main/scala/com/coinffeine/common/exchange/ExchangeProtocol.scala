@@ -31,12 +31,10 @@ trait ExchangeProtocol {
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.
     *
-    * @param role       Role played in the protocol
     * @param exchange   Exchange description
     * @param deposits   Already compromised deposits for buyer and seller
     */
-  def createMicroPaymentChannel(exchange: AnyExchange,
-                                role: Role,
+  def createMicroPaymentChannel(exchange: AnyOngoingExchange,
                                 deposits: Exchange.Deposits): MicroPaymentChannel
 }
 

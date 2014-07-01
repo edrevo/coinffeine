@@ -7,8 +7,8 @@ import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-/** A value class that contains all the necessary information relative to an exchange between
-  * two peers
+/** A value class that contains all the necessary information to start an exchange between
+  * two peers.
   *
   * @param id            An identifier for the exchange
   * @param parameters    Configurable parameters

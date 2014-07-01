@@ -24,9 +24,8 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     new DefaultHandshake(exchange, role, myDeposit)
   }
 
-  override def createMicroPaymentChannel(
-      exchange: AnyExchange, role: Role, deposits: Exchange.Deposits) =
-    new DefaultMicroPaymentChannel(role, exchange, deposits)
+  override def createMicroPaymentChannel(exchange: AnyOngoingExchange, deposits: Exchange.Deposits) =
+    new DefaultMicroPaymentChannel(exchange, deposits)
 
   override def validateDeposit(role: Role, transaction: ImmutableTransaction,
                                exchange: AnyExchange): Try[Unit] = {

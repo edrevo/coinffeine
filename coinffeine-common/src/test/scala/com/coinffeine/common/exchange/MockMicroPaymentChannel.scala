@@ -6,10 +6,10 @@ import scala.util.{Failure, Success}
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-class MockMicroPaymentChannel private (exchange: AnyExchange, step: Step)
+class MockMicroPaymentChannel private (exchange: AnyOngoingExchange, step: Step)
   extends MicroPaymentChannel {
 
-  def this(exchange: AnyExchange) =
+  def this(exchange: AnyOngoingExchange) =
     this(exchange, IntermediateStep(1, exchange.parameters.breakdown))
 
   override val currentStep = step

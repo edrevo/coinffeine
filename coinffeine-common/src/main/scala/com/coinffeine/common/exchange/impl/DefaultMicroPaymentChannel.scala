@@ -9,15 +9,12 @@ import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel private (
-    role: Role,
-    exchange: AnyExchange,
+    exchange: AnyOngoingExchange,
     deposits: Exchange.Deposits,
     override val currentStep: Step) extends MicroPaymentChannel {
 
-  def this(role: Role, exchange: AnyExchange, deposits: Exchange.Deposits) =
-    this(role, exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
-
-  private val requiredSignatures = exchange.participants.toSeq.map(_.bitcoinKey)
+  def this(exchange: AnyOngoingExchange, deposits: Exchange.Deposits) =
+    this(exchange, deposits, IntermediateStep(1, exchange.parameters.breakdown))
 
   private val currentUnsignedTransaction = ImmutableTransaction {
     import exchange.amounts._
@@ -42,11 +39,11 @@ private[impl] class DefaultMicroPaymentChannel private (
 
   override def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit] = {
     val tx = currentUnsignedTransaction.get
-    val herKey = exchange.participants(role.counterpart).bitcoinKey
+    val herKey = exchange.participants(exchange.role.counterpart).bitcoinKey
 
     def requireValidSignature(index: Int, signature: TransactionSignature) = {
       require(
-        TransactionProcessor.isValidSignature(tx, index, signature, herKey, requiredSignatures),
+        TransactionProcessor.isValidSignature(tx, index, signature, herKey, exchange.requiredSignatures),
         s"Signature $signature cannot satisfy ${tx.getInput(index)}"
       )
     }
@@ -61,16 +58,16 @@ private[impl] class DefaultMicroPaymentChannel private (
 
   override def signCurrentTransaction = {
     val tx = currentUnsignedTransaction.get
-    val signingKey = exchange.participants(role).bitcoinKey
+    val signingKey = exchange.participants(exchange.role).bitcoinKey
     Signatures(
       buyer = TransactionProcessor.signMultiSignedOutput(
-        tx, BuyerDepositInputIndex, signingKey, requiredSignatures),
+        tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures),
       seller = TransactionProcessor.signMultiSignedOutput(
-        tx, SellerDepositInputIndex, signingKey, requiredSignatures)
+        tx, SellerDepositInputIndex, signingKey, exchange.requiredSignatures)
     )
   }
 
-  override def nextStep = new DefaultMicroPaymentChannel(role, exchange, deposits, currentStep.next)
+  override def nextStep = new DefaultMicroPaymentChannel(exchange, deposits, currentStep.next)
 
   override def closingTransaction(herSignatures: Signatures) = {
     validateCurrentTransactionSignatures(herSignatures).get

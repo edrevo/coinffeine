@@ -32,14 +32,14 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute)
-  val channel = new MockMicroPaymentChannel(exchange)
+  val channel = new MockMicroPaymentChannel(ongoingExchange)
   val firstStep = IntermediateStep(1, exchange.parameters.breakdown)
   val actor = system.actorOf(
     Props(new SellerMicroPaymentChannelActor(new MockExchangeProtocol())), "seller-exchange-actor")
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
+    ongoingExchange, MockExchangeProtocol.DummyDeposits, protocolConstants, paymentProcessor.ref,
     gateway.ref, Set(listener.ref)
   )
 

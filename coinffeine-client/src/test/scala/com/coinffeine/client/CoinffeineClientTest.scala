@@ -43,6 +43,7 @@ object CoinffeineClientTest {
     def user = exchange.participants(userRole)
     def counterpart = exchange.participants(userRole.counterpart)
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpart.connection)
+    def ongoingExchange = OngoingExchange(userRole, exchange)
   }
 
   trait BuyerPerspective extends Perspective {
