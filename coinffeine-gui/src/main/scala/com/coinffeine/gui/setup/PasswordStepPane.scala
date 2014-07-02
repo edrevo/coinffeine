@@ -19,12 +19,14 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
 
   private val group = new ToggleGroup()
   private val usePasswordButton = new RadioButton {
+    id = "usePassword"
     text = "Use a password"
     toggleGroup = group
     selected = true
     handleEvent(Event.ANY) { () => handlePasswordChange()  }
   }
   private val noPasswordButton = new RadioButton {
+    id = "noPassword"
     text = "Don't use any password"
     toggleGroup = group
     handleEvent(Event.ANY) { () => handlePasswordChange() }
@@ -32,14 +34,17 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   private val noPasswordProperty = noPasswordButton.selected
 
   private val passwordField = new PasswordField() {
+    id = "passwordField"
     disable <== noPasswordProperty
     handleEvent(Event.ANY) { () => handlePasswordChange() }
   }
   private val repeatPasswordField = new PasswordField() {
+    id = "repeatPasswordField"
     disable <== noPasswordProperty
     handleEvent(Event.ANY) { () => handlePasswordChange() }
   }
   private val passwordWarningLabel = new Label() {
+    id = "passwordWarningLabel"
     textFill = Color.web("#da4100")
     textAlignment = TextAlignment.CENTER
     alignment = Pos.TOP_CENTER
@@ -95,7 +100,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
     canContinue.value = noPasswordProperty.value || (!pass1.isEmpty && passwordsMatch)
     passwordWarningLabel.text = Seq(
       if (!pass1.isEmpty && passwordValidator.isWeak(pass1)) Some("password is weak") else None,
-      if (!pass2.isEmpty && !passwordsMatch) Some("passwords doesn't match") else None
+      if (!pass2.isEmpty && !passwordsMatch) Some("passwords don't match") else None
     ).flatten.mkString(" and ")
   }
 }
