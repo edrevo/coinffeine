@@ -56,7 +56,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send the first step signature as soon as the exchange starts" in {
-    val signatures = StepSignatures(exchange.id, 1, MockMicroPaymentChannel.DummySignatures)
+    val signatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
     shouldForward(signatures) to counterpartConnection
   }
 
@@ -67,7 +67,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(firstStep)
-    val signatures = StepSignatures(exchange.id, 2, MockMicroPaymentChannel.DummySignatures)
+    val signatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
     shouldForward(signatures) to counterpartConnection
   }
 
@@ -78,14 +78,14 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
       val step = IntermediateStep(i, exchange.amounts.breakdown)
       actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
       expectPayment(step)
-      val signatures = StepSignatures(exchange.id, i, MockMicroPaymentChannel.DummySignatures)
+      val signatures = StepSignatures(exchange.id, i, MockExchangeProtocol.DummySignatures)
       shouldForward(signatures) to counterpartConnection
     }
   }
 
   it should "send the final signature" in {
     val signatures = StepSignatures(
-      exchange.id, exchange.amounts.breakdown.totalSteps, MockMicroPaymentChannel.DummySignatures
+      exchange.id, exchange.amounts.breakdown.totalSteps, MockExchangeProtocol.DummySignatures
     )
     shouldForward(signatures) to counterpartConnection
   }

@@ -21,10 +21,9 @@ trait ExchangeProtocol {
                       unspentOutputs: Seq[UnspentOutput],
                       changeAddress: Address): Handshake
 
-  /** Validate if a transaction looks a valid deposit of one of the parts */
-  def validateDeposit(transaction: ImmutableTransaction, role: Role,
-                      amounts: Exchange.Amounts[FiatCurrency],
-                      requiredSignatures: Set[PublicKey]): Try[Unit]
+  /** Validate buyer and seller commitment transactions from the point of view of a broker */
+  def validateCommitments(transactions: Both[ImmutableTransaction],
+                          amounts: Exchange.Amounts[FiatCurrency]): Try[Unit]
 
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],

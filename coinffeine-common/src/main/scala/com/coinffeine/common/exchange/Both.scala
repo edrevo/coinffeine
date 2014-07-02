@@ -41,5 +41,11 @@ case class Both[T](buyer: T, seller: T) {
 }
 
 object Both {
-  def fill[T](value: T): Both[T] = Both(value, value)
+  def fill[T](value: => T): Both[T] = Both(value, value)
+
+  def fromSeq[T](values: Seq[T]): Both[T] = values match {
+    case Seq(buyer, seller) => Both(buyer, seller)
+    case _ => throw new IllegalArgumentException(
+      s"Cannot build a Both from other than 2 values: ${values.size} given")
+  }
 }
