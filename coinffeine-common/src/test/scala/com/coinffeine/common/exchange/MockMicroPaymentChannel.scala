@@ -1,10 +1,9 @@
 package com.coinffeine.common.exchange
 
-import java.math.BigInteger
 import scala.util.{Failure, Success}
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 class MockMicroPaymentChannel private (exchange: OngoingExchange[FiatCurrency], step: Step)
@@ -19,8 +18,8 @@ class MockMicroPaymentChannel private (exchange: OngoingExchange[FiatCurrency], 
 
   override def validateCurrentTransactionSignatures(signatures: Signatures) =
     signatures match {
-      case Signatures(MockMicroPaymentChannel.InvalidSignature, _) |
-           Signatures(_, MockMicroPaymentChannel.InvalidSignature) =>
+      case Signatures(MockExchangeProtocol.InvalidSignature, _) |
+           Signatures(_, MockExchangeProtocol.InvalidSignature) =>
         Failure(new Error("Invalid signature"))
       case _ => Success {}
     }
@@ -34,11 +33,5 @@ class MockMicroPaymentChannel private (exchange: OngoingExchange[FiatCurrency], 
     ImmutableTransaction(tx)
   }
 
-  override def signCurrentTransaction = MockMicroPaymentChannel.DummySignatures
-}
-
-object MockMicroPaymentChannel {
-  /** Magic signature that is always rejected */
-  val InvalidSignature = new TransactionSignature(BigInteger.valueOf(42), BigInteger.valueOf(42))
-  val DummySignatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+  override def signCurrentTransaction = MockExchangeProtocol.DummySignatures
 }

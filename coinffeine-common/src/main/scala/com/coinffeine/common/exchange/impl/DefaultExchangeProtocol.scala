@@ -29,15 +29,13 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
       exchange: OngoingExchange[FiatCurrency], role: Role, deposits: Exchange.Deposits) =
     new DefaultMicroPaymentChannel(exchange, role, deposits)
 
-  override def validateDeposit(transaction: ImmutableTransaction, role: Role,
-                               amounts: Exchange.Amounts[FiatCurrency],
-                               requiredSignatures: Set[PublicKey]): Try[Unit] = {
-    val validator = new DepositValidator(amounts, requiredSignatures)
-    role match {
-      case BuyerRole => validator.requireValidBuyerFunds(transaction)
-      case SellerRole => validator.requireValidSellerFunds(transaction)
-    }
-  }
+  override def validateCommitments(transactions: Both[ImmutableTransaction],
+                                   amounts: Exchange.Amounts[FiatCurrency]): Try[Unit] = for {
+    requiredSignatures <- DepositValidator.validateRequiredSignatures(transactions)
+    validator = new DepositValidator(amounts, requiredSignatures)
+    _ <- validator.requireValidBuyerFunds(transactions.buyer)
+    _ <- validator.requireValidSellerFunds(transactions.seller)
+  } yield ()
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 exchange: OngoingExchange[FiatCurrency]) =

@@ -1,6 +1,6 @@
 package com.coinffeine.common.exchange.impl
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.Currency.Bitcoin
@@ -38,5 +38,19 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
       "Funds are sent to a multisig that do not require 2 keys")
     require(multisigInfo.possibleKeys == requiredSignatures,
       "Possible keys in multisig script does not match the expected keys")
+  }
+}
+
+private[impl] object DepositValidator {
+
+  /** Buyer and seller deposits must share multisig keys to be coherent to each other */
+  def validateRequiredSignatures(commitments: Both[ImmutableTransaction]): Try[Set[PublicKey]] = {
+    val bothRequiredKeys = commitments.map { tx =>
+      MultiSigInfo(tx.get.getOutput(0).getScriptPubKey).possibleKeys
+    }
+    if (bothRequiredKeys.buyer == bothRequiredKeys.seller) Success(bothRequiredKeys.buyer)
+    else Failure(new IllegalArgumentException(
+      s"Buyer and seller deposit keys doesn't match: $bothRequiredKeys"
+    ))
   }
 }
