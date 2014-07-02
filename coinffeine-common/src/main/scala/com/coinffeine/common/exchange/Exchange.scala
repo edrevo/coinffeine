@@ -28,7 +28,7 @@ trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
   /** Information about the parts */
   val participants: Both[Exchange.PeerInfo]
 
-  def requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
+  def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
 }
 
 /** TODO: create different implementations of Exchange and OngoingExchange to limit what information

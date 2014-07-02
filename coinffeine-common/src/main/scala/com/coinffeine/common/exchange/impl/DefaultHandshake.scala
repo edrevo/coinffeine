@@ -28,7 +28,7 @@ private[impl] class DefaultHandshake(
     if (!TransactionProcessor.isValidSignature(
         myUnsignedRefund.get, index = 0, herSignature,
         signerKey = exchange.participants(role.counterpart).bitcoinKey,
-        exchange.requiredSignatures)) {
+        exchange.requiredSignatures.toSeq)) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
     ImmutableTransaction {
@@ -50,7 +50,7 @@ private[impl] class DefaultHandshake(
       multiSignedDeposit = tx,
       index = 0,
       signAs = exchange.participants(role).bitcoinKey,
-      exchange.requiredSignatures
+      exchange.requiredSignatures.toSeq
     )
   }
 

@@ -13,6 +13,7 @@ class TransactionProcessorTest extends BitcoinjTest {
 
   val buyerKey = exchange.participants.buyer.bitcoinKey
   val sellerKey = exchange.participants.seller.bitcoinKey
+  val requiredSignatures = exchange.requiredSignatures.toSeq
 
   "Multisign transaction creation" should "fail if the amount to commit is less or equal to zero" in {
     val buyerWallet = createWallet(buyerKey, 5.BTC)
@@ -21,7 +22,7 @@ class TransactionProcessorTest extends BitcoinjTest {
     }
     an [IllegalArgumentException] should be thrownBy {
       TransactionProcessor.createMultiSignedDeposit(
-        funds, 0.BTC, buyerWallet.getChangeAddress, exchange.requiredSignatures, network)
+        funds, 0.BTC, buyerWallet.getChangeAddress, requiredSignatures, network)
     }
   }
 
@@ -32,7 +33,7 @@ class TransactionProcessorTest extends BitcoinjTest {
       output -> buyerKey
     }
     val transaction = TransactionProcessor.createMultiSignedDeposit(
-        funds, commitmentAmount, buyerWallet.getChangeAddress, exchange.requiredSignatures, network
+        funds, commitmentAmount, buyerWallet.getChangeAddress, requiredSignatures, network
     )
     Currency.Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
   }
@@ -44,7 +45,7 @@ class TransactionProcessorTest extends BitcoinjTest {
       output -> buyerKey
     }
     val transaction = TransactionProcessor.createMultiSignedDeposit(
-      funds, commitmentAmount, buyerWallet.getChangeAddress, exchange.requiredSignatures, network
+      funds, commitmentAmount, buyerWallet.getChangeAddress, requiredSignatures, network
     )
     Currency.Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
   }
@@ -55,7 +56,7 @@ class TransactionProcessorTest extends BitcoinjTest {
       output -> buyerKey
     }
     val multiSigDeposit = TransactionProcessor.createMultiSignedDeposit(
-      funds, 2.BTC, buyerWallet.getChangeAddress, exchange.requiredSignatures, network
+      funds, 2.BTC, buyerWallet.getChangeAddress, requiredSignatures, network
     )
     sendToBlockChain(multiSigDeposit)
   }
@@ -68,7 +69,7 @@ class TransactionProcessorTest extends BitcoinjTest {
       output -> buyerKey
     }
     val multiSigDeposit = TransactionProcessor.createMultiSignedDeposit(
-      funds, 2.BTC, buyerWallet.getChangeAddress, exchange.requiredSignatures, network
+      funds, 2.BTC, buyerWallet.getChangeAddress, requiredSignatures, network
     )
     sendToBlockChain(multiSigDeposit)
 
@@ -76,8 +77,8 @@ class TransactionProcessorTest extends BitcoinjTest {
       Seq(multiSigDeposit.getOutput(0)), Seq(sellerKey -> 2.BTC), network
     )
     TransactionProcessor.setMultipleSignatures(tx, index = 0,
-      TransactionProcessor.signMultiSignedOutput(tx, index = 0, buyerKey, exchange.requiredSignatures),
-      TransactionProcessor.signMultiSignedOutput(tx, index = 0, sellerKey, exchange.requiredSignatures)
+      TransactionProcessor.signMultiSignedOutput(tx, index = 0, buyerKey, requiredSignatures),
+      TransactionProcessor.signMultiSignedOutput(tx, index = 0, sellerKey, requiredSignatures)
     )
     sendToBlockChain(tx)
     Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (2.BTC)

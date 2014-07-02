@@ -46,7 +46,8 @@ private[impl] class DefaultMicroPaymentChannel private (
 
     def requireValidSignature(index: Int, signature: TransactionSignature) = {
       require(
-        TransactionProcessor.isValidSignature(tx, index, signature, herKey, exchange.requiredSignatures),
+        TransactionProcessor.isValidSignature(tx, index, signature, herKey,
+          exchange.requiredSignatures.toSeq),
         s"Signature $signature cannot satisfy ${tx.getInput(index)}"
       )
     }
@@ -64,9 +65,9 @@ private[impl] class DefaultMicroPaymentChannel private (
     val signingKey = exchange.participants(role).bitcoinKey
     Signatures(
       buyer = TransactionProcessor.signMultiSignedOutput(
-        tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures),
+        tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq),
       seller = TransactionProcessor.signMultiSignedOutput(
-        tx, SellerDepositInputIndex, signingKey, exchange.requiredSignatures)
+        tx, SellerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq)
     )
   }
 

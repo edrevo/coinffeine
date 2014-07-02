@@ -20,7 +20,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     val myDeposit = ImmutableTransaction {
       TransactionProcessor.createMultiSignedDeposit(
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
-        exchange.requiredSignatures, exchange.parameters.network)
+        exchange.requiredSignatures.toSeq, exchange.parameters.network)
     }
     new DefaultHandshake(exchange, role, myDeposit)
   }
@@ -39,7 +39,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 exchange: OngoingExchange[FiatCurrency]) =
-    new DepositValidator(exchange.amounts, exchange.requiredSignatures.toSet).validate(transactions)
+    new DepositValidator(exchange.amounts, exchange.requiredSignatures).validate(transactions)
 }
 
 object DefaultExchangeProtocol {

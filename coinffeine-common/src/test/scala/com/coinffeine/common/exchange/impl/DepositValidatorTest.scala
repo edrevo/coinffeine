@@ -31,25 +31,25 @@ class DepositValidatorTest extends ExchangeTest {
     val signingKey = new KeyPair()
     val wallet = createWallet(signingKey)
 
-    def multisigTx(amount: BitcoinAmount, signatures: Seq[PublicKey]) = ImmutableTransaction {
+    def multisigTx(amount: BitcoinAmount, signatures: Both[PublicKey]) = ImmutableTransaction {
       sendMoneyToWallet(wallet, amount)
       val funds = TransactionProcessor.collectFunds(wallet, amount)
       val tx = TransactionProcessor.createMultiSignedDeposit(funds.toSeq.map(_ -> signingKey), amount,
-        wallet.getChangeAddress, signatures, network)
+        wallet.getChangeAddress, signatures.toSeq, network)
       wallet.commitTx(tx)
       tx
     }
 
-    val signatures = Seq(new PublicKey(), new PublicKey())
+    val signatures = Both.fill(new PublicKey())
     val deposits = Both(
       buyer = multisigTx(2.BTC, signatures),
       seller = multisigTx(11.BTC, signatures)
     )
-    DepositValidator.validateRequiredSignatures(deposits) should be (Success(signatures.toSet))
+    DepositValidator.validateRequiredSignatures(deposits) should be (Success(signatures))
 
     val incompatibleDeposits = Both(
       buyer = multisigTx(2.BTC, signatures),
-      seller = multisigTx(11.BTC, Seq(signatures(0), new PublicKey))
+      seller = multisigTx(11.BTC, signatures.copy(seller = new PublicKey))
     )
     DepositValidator.validateRequiredSignatures(incompatibleDeposits) should be ('failure)
   }
@@ -59,6 +59,6 @@ class DepositValidatorTest extends ExchangeTest {
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.getKeys.head)
     invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
-    val validator = new DepositValidator(exchange.amounts, exchange.requiredSignatures.toSet)
+    val validator = new DepositValidator(exchange.amounts, exchange.requiredSignatures)
   }
 }

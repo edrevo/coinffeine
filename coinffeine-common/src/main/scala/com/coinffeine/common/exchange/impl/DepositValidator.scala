@@ -9,7 +9,7 @@ import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.exchange.Exchange.Deposits
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
-                                     requiredSignatures: Set[PublicKey]) {
+                                     requiredSignatures: Both[PublicKey]) {
 
   def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {
     _ <- requireValidBuyerFunds(transactions.buyer)
@@ -31,12 +31,11 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
   }
 
   private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
-    require(funds.getScriptPubKey.isSentToMultiSig,
-      "Transaction with funds is invalid because is not sending the funds to a multisig")
-    val multisigInfo = MultiSigInfo(funds.getScriptPubKey)
-    require(multisigInfo.requiredKeyCount == 2,
-      "Funds are sent to a multisig that do not require 2 keys")
-    require(multisigInfo.possibleKeys == requiredSignatures,
+    val MultiSigInfo(possibleKeys, requiredKeyCount) = MultiSigInfo.fromScript(funds.getScriptPubKey)
+      .getOrElse(throw new IllegalArgumentException(
+        "Transaction with funds is invalid because is not sending the funds to a multisig"))
+    require(requiredKeyCount == 2, "Funds are sent to a multisig that do not require 2 keys")
+    require(possibleKeys == requiredSignatures.toSeq,
       "Possible keys in multisig script does not match the expected keys")
   }
 }
@@ -44,13 +43,29 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
 private[impl] object DepositValidator {
 
   /** Buyer and seller deposits must share multisig keys to be coherent to each other */
-  def validateRequiredSignatures(commitments: Both[ImmutableTransaction]): Try[Set[PublicKey]] = {
-    val bothRequiredKeys = commitments.map { tx =>
-      MultiSigInfo(tx.get.getOutput(0).getScriptPubKey).possibleKeys
+  def validateRequiredSignatures(commitments: Both[ImmutableTransaction]): Try[Both[PublicKey]] =
+    for {
+      buyerKeys <- validateTwoRequiredKeys(commitments.buyer)
+      sellerKeys <- validateTwoRequiredKeys(commitments.seller)
+    } yield {
+      require(buyerKeys == sellerKeys,
+        s"Buyer and seller deposit keys doesn't match: $buyerKeys != $sellerKeys")
+      buyerKeys
     }
-    if (bothRequiredKeys.buyer == bothRequiredKeys.seller) Success(bothRequiredKeys.buyer)
-    else Failure(new IllegalArgumentException(
-      s"Buyer and seller deposit keys doesn't match: $bothRequiredKeys"
-    ))
-  }
+
+  private def validateTwoRequiredKeys(transaction: ImmutableTransaction): Try[Both[PublicKey]] =
+    for {
+      multisigInfo <- validateMultisigTransaction(transaction)
+    } yield {
+      require(multisigInfo.possibleKeys.size == 2, "Number of possible keys other than 2")
+      require(multisigInfo.requiredKeyCount == 2, "Number of required keys other than 2")
+      Both.fromSeq(multisigInfo.possibleKeys)
+    }
+
+  private def validateMultisigTransaction(transaction: ImmutableTransaction): Try[MultiSigInfo] =
+    getOrFail(MultiSigInfo.fromScript(transaction.get.getOutput(0).getScriptPubKey),
+      new IllegalArgumentException(s"$transaction not in multisig"))
+
+  private def getOrFail[T](opt: Option[T], cause: => Throwable): Try[T] =
+    opt.map(Success.apply).getOrElse(Failure(cause))
 }
