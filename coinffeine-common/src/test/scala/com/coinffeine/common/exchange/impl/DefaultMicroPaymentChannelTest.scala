@@ -13,7 +13,7 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
     }
   }
 
-  for (step <- 1 to Samples.exchange.parameters.breakdown.intermediateSteps) {
+  for (step <- 1 to Samples.exchange.amounts.breakdown.intermediateSteps) {
     it should s"split the exchanged amount and destroy deposits as fees in the step $step" in
       new Channels {
         val currentBuyerChannel = buyerChannels(step - 1)

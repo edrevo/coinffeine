@@ -39,7 +39,8 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     import init._
     import init.constants.exchangePaymentProofTimeout
 
-    private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val forwarding =
+      new MessageForwarding(messageGateway, exchange, role)
 
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")
@@ -48,7 +49,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = role.her(exchange).connection
+      val counterpart = exchange.connections(role.counterpart)
       messageGateway ! Subscribe {
         case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
         case _ => false
@@ -127,9 +128,9 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
       } yield {
         require(payment.amount == exchange.amounts.stepFiatAmount,
           s"Payment $step amount does not match expected amount")
-        require(payment.receiverId == exchange.seller.paymentProcessorAccount,
+        require(payment.receiverId == exchange.participants.seller.paymentProcessorAccount,
           s"Payment $step is not being sent to the seller")
-        require(payment.senderId == exchange.buyer.paymentProcessorAccount,
+        require(payment.senderId == exchange.participants.buyer.paymentProcessorAccount,
           s"Payment $step is not coming from the buyer")
         require(payment.description == PaymentDescription(exchange.id, step),
           s"Payment $step does not have the required description")

@@ -26,14 +26,14 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = Exchange.Id("other-id")
     val relevantSignatureRequest =
-      RefundTxSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
+      PeerHandshake(exchange.id, ImmutableTransaction(handshake.counterpartRefund), "foo")
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest(otherId, ImmutableTransaction(handshake.counterpartRefund))
+      PeerHandshake(otherId, ImmutableTransaction(handshake.counterpartRefund), "foo")
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
     filter(fromCounterpart(
-      RefundTxSignatureResponse(exchange.id, handshake.refundSignature))) should be (true)
+      PeerHandshakeAccepted(exchange.id, handshake.refundSignature))) should be (true)
     filter(fromBroker(CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))) should be (true)
     filter(fromBroker(ExchangeAborted(exchange.id, "failed"))) should be (true)
     filter(fromCounterpart(ExchangeAborted(exchange.id, "failed"))) should be (false)
@@ -46,7 +46,7 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "reject signature of invalid counterpart refund transactions" in {
     val invalidRequest =
-      RefundTxSignatureRequest(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction))
+      PeerHandshake(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction), "invalid")
     gateway.send(actor, fromCounterpart(invalidRequest))
     gateway.expectNoMsg(100 millis)
   }
@@ -57,13 +57,13 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
 
   it should "don't be fooled by invalid refund TX or source and resubmit signature request" in {
     gateway.send(
-      actor, fromCounterpart(RefundTxSignatureResponse(exchange.id, mock[TransactionSignature])))
+      actor, fromCounterpart(PeerHandshakeAccepted(exchange.id, mock[TransactionSignature])))
     shouldForwardRefundSignatureRequest()
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     gateway.send(
-      actor, fromCounterpart(RefundTxSignatureResponse(exchange.id, handshake.refundSignature)))
+      actor, fromCounterpart(PeerHandshakeAccepted(exchange.id, handshake.refundSignature)))
     shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) to broker
   }
 

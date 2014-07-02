@@ -3,12 +3,12 @@ package com.coinffeine.client
 import akka.testkit.TestProbe
 
 import com.coinffeine.common.{AkkaSpec, FiatCurrency, PeerConnection}
-import com.coinffeine.common.exchange.{BuyerRole, Exchange, Role, SellerRole}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with SampleExchangeInfo {
+  extends AkkaSpec(systemName) with SampleExchange {
 
   val gateway = TestProbe()
 
@@ -38,11 +38,12 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    def exchange: Exchange[_ <: FiatCurrency]
+    def exchange: OngoingExchange[FiatCurrency]
     def userRole: Role
-    def user = userRole.me(exchange)
-    def counterpart = userRole.her(exchange)
-    def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpart.connection)
+    def user = exchange.participants(userRole)
+    def counterpart = exchange.participants(userRole.counterpart)
+    def counterpartConnection = exchange.connections(userRole.counterpart)
+    def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }
 
   trait BuyerPerspective extends Perspective {

@@ -2,6 +2,7 @@ package com.coinffeine.common.protocol.serialization
 
 import com.google.protobuf.Descriptors.FieldDescriptor
 
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -11,7 +12,6 @@ import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.Payload._
-import com.coinffeine.common.FiatCurrency
 
 private[serialization] class DefaultProtocolSerialization(
     version: Version,
@@ -48,10 +48,10 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setQuote(ProtoMapping.toProtobuf(m))
       case m: ExchangeRejection =>
         builder.setExchangeRejection(ProtoMapping.toProtobuf(m))
-      case m: RefundTxSignatureRequest =>
-        builder.setRefundTxSignatureRequest(ProtoMapping.toProtobuf(m))
-      case m: RefundTxSignatureResponse =>
-        builder.setRefundTxSignatureResponse(ProtoMapping.toProtobuf(m))
+      case m: PeerHandshake =>
+        builder.setPeerHandshake(ProtoMapping.toProtobuf(m))
+      case m: PeerHandshakeAccepted =>
+        builder.setPeerHandshakeAccepted(ProtoMapping.toProtobuf(m))
       case m: StepSignatures =>
         builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
@@ -95,10 +95,10 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getQuote)
       case EXCHANGEREJECTION_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getExchangeRejection)
-      case REFUNDTXSIGNATUREREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundTxSignatureRequest)
-      case REFUNDTXSIGNATURERESPONSE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundTxSignatureResponse)
+      case PEERHANDSHAKE_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getPeerHandshake)
+      case PEERHANDSHAKEACCEPTED_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getPeerHandshakeAccepted)
       case STEPSIGNATURE_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getStepSignature)
       case PAYMENTPROOF_FIELD_NUMBER =>

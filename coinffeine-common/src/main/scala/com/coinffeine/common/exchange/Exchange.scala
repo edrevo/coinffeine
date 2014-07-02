@@ -7,25 +7,40 @@ import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
-/** A value class that contains all the necessary information relative to an exchange between
-  * two peers
-  *
-  * @param id          An identifier for the exchange
-  * @param parameters  Configurable parameters
-  * @param buyer       Description of the buyer
-  * @param seller      Description of the seller
-  * @param broker      Connection parameters to one of the Coinffeine brokers
+/** All the necessary information to start an exchange between two peers. This is the point of view
+  * of the parts before handshaking and also of the brokers.
   */
-case class Exchange[C <: FiatCurrency](
-  id: Exchange.Id,
-  parameters: Exchange.Parameters[C],
-  buyer: Exchange.PeerInfo,
-  seller: Exchange.PeerInfo,
-  broker: Exchange.BrokerInfo) {
-
-  val amounts: Exchange.Amounts[C] =
-    Exchange.Amounts(parameters.bitcoinAmount, parameters.fiatAmount, parameters.breakdown)
+trait Exchange[+C <: FiatCurrency] {
+  /** An identifier for the exchange */
+  val id: Exchange.Id
+  val amounts: Exchange.Amounts[C]
+  /** Configurable parameters */
+  val parameters: Exchange.Parameters
+  /** PeerConnection of the buyer and the seller */
+  val connections: Both[PeerConnection]
+  val broker: Exchange.BrokerInfo
 }
+
+/** Relevant information for an ongoing exchange. This point fo view is only held by the parts
+  * as contains information not make public to everyone on the network.
+  */
+trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
+  /** Information about the parts */
+  val participants: Both[Exchange.PeerInfo]
+
+  def requiredSignatures: Seq[PublicKey] = participants.map(_.bitcoinKey).toSeq
+}
+
+/** TODO: create different implementations of Exchange and OngoingExchange to limit what information
+  * is available during the exchange by splitting this class.
+  */
+case class CompleteExchange[+C <: FiatCurrency] (
+  override val id: Exchange.Id,
+  override val amounts: Exchange.Amounts[C],
+  override val parameters: Exchange.Parameters,
+  override val connections: Both[PeerConnection],
+  override val broker: Exchange.BrokerInfo,
+  override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C]
 
 object Exchange {
 
@@ -41,23 +56,12 @@ object Exchange {
 
   /** Configurable parameters of an exchange.
     *
-    * @param bitcoinAmount The amount of bitcoins to exchange
-    * @param fiatAmount The amount of fiat money to exchange
-    * @param breakdown How the exchange is broken into steps
-    * @param lockTime The block number which will cause the refunds transactions to be valid
+    * @param lockTime  The block number which will cause the refunds transactions to be valid
+    * @param network   Bitcoin network
     */
-  case class Parameters[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                           fiatAmount: CurrencyAmount[C],
-                                           breakdown: Exchange.StepBreakdown,
-                                           lockTime: Long,
-                                           network: Network) {
-    require(bitcoinAmount.isPositive)
-    require(fiatAmount.isPositive)
-  }
+  case class Parameters(lockTime: Long, network: Network)
 
-  case class PeerInfo(connection: PeerConnection,
-                      paymentProcessorAccount: PaymentProcessor.AccountId,
-                      bitcoinKey: KeyPair)
+  case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
 
   case class BrokerInfo(connection: PeerConnection)
 
@@ -67,9 +71,9 @@ object Exchange {
     val totalSteps = intermediateSteps + 1
   }
 
-  case class Amounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                        fiatAmount: CurrencyAmount[C],
-                                        breakdown: Exchange.StepBreakdown) {
+  case class Amounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                         fiatAmount: CurrencyAmount[C],
+                                         breakdown: Exchange.StepBreakdown) {
     require(bitcoinAmount.isPositive,
       s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive,

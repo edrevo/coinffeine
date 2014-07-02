@@ -210,31 +210,33 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val refundTxSignatureRequestMapping =
-    new ProtoMapping[RefundTxSignatureRequest, msg.RefundTxSignatureRequest] {
+  implicit val peerHandshakeMapping =
+    new ProtoMapping[PeerHandshake, msg.PeerHandshake] {
 
-      override def fromProtobuf(request: msg.RefundTxSignatureRequest) = RefundTxSignatureRequest(
-        refundTx = txSerialization.deserializeTransaction(request.getRefundTx),
-        exchangeId = Exchange.Id(request.getExchangeId)
+      override def fromProtobuf(message: msg.PeerHandshake) = PeerHandshake(
+        refundTx = txSerialization.deserializeTransaction(message.getRefundTx),
+        exchangeId = Exchange.Id(message.getExchangeId),
+        paymentProcessorAccount = message.getPaymentProcessorAccount
       )
 
-      override def toProtobuf(request: RefundTxSignatureRequest) =
-        msg.RefundTxSignatureRequest.newBuilder
-          .setExchangeId(request.exchangeId.value)
-          .setRefundTx(txSerialization.serialize(request.refundTx))
+      override def toProtobuf(message: PeerHandshake) =
+        msg.PeerHandshake.newBuilder
+          .setExchangeId(message.exchangeId.value)
+          .setRefundTx(txSerialization.serialize(message.refundTx))
+          .setPaymentProcessorAccount(message.paymentProcessorAccount)
           .build
     }
 
-  implicit val refundTxSignatureResponseMapping =
-    new ProtoMapping[RefundTxSignatureResponse, msg.RefundTxSignatureResponse] {
+  implicit val peerHandshakeResponseMapping =
+    new ProtoMapping[PeerHandshakeAccepted, msg.PeerHandshakeAccepted] {
 
-      override def fromProtobuf(response: msg.RefundTxSignatureResponse) = RefundTxSignatureResponse(
+      override def fromProtobuf(response: msg.PeerHandshakeAccepted) = PeerHandshakeAccepted(
         exchangeId = Exchange.Id(response.getExchangeId),
         refundSignature = txSerialization.deserializeSignature(response.getTransactionSignature)
       )
 
-      override def toProtobuf(response: RefundTxSignatureResponse) =
-        msg.RefundTxSignatureResponse.newBuilder
+      override def toProtobuf(response: PeerHandshakeAccepted) =
+        msg.PeerHandshakeAccepted.newBuilder
           .setExchangeId(response.exchangeId.value)
           .setTransactionSignature(txSerialization.serialize(response.refundSignature))
           .build()

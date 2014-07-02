@@ -21,7 +21,7 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
     }
 
   it should "require the unspent outputs to have a minimum amount" in new FreshInstance {
-    val buyerWallet = createWallet(exchange.buyer.bitcoinKey, 0.1.BTC)
+    val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.1.BTC)
     val funds = UnspentOutput.collect(0.1.BTC, buyerWallet)
     an [IllegalArgumentException] should be thrownBy {
       protocol.createHandshake(exchange, BuyerRole, funds, buyerWallet.getChangeAddress)

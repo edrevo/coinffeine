@@ -3,13 +3,13 @@ package com.coinffeine.common.exchange.impl
 import scala.util.Try
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
+import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction, PublicKey}
 import com.coinffeine.common.exchange._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake(
-      exchange: Exchange[_ <: FiatCurrency],
+      exchange: OngoingExchange[FiatCurrency],
       role: Role,
       unspentOutputs: Seq[UnspentOutput],
       changeAddress: Address): Handshake = {
@@ -20,18 +20,19 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     val myDeposit = ImmutableTransaction {
       TransactionProcessor.createMultiSignedDeposit(
         unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
-        Seq(exchange.buyer.bitcoinKey, exchange.seller.bitcoinKey), exchange.parameters.network)
+        exchange.requiredSignatures, exchange.parameters.network)
     }
     new DefaultHandshake(exchange, role, myDeposit)
   }
 
   override def createMicroPaymentChannel(
-      exchange: Exchange[_  <: FiatCurrency], role: Role, deposits: Exchange.Deposits) =
-    new DefaultMicroPaymentChannel(role, exchange, deposits)
+      exchange: OngoingExchange[FiatCurrency], role: Role, deposits: Exchange.Deposits) =
+    new DefaultMicroPaymentChannel(exchange, role, deposits)
 
-  override def validateDeposit(role: Role, transaction: ImmutableTransaction,
-                               exchange: Exchange[_ <: FiatCurrency]): Try[Unit] = {
-    val validator = new DepositValidator(exchange)
+  override def validateDeposit(transaction: ImmutableTransaction, role: Role,
+                               amounts: Exchange.Amounts[FiatCurrency],
+                               requiredSignatures: Set[PublicKey]): Try[Unit] = {
+    val validator = new DepositValidator(amounts, requiredSignatures)
     role match {
       case BuyerRole => validator.requireValidBuyerFunds(transaction)
       case SellerRole => validator.requireValidSellerFunds(transaction)
@@ -39,8 +40,8 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
   }
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: Exchange[_ <: FiatCurrency]) =
-    new DepositValidator(exchange).validate(transactions)
+                                exchange: OngoingExchange[FiatCurrency]) =
+    new DepositValidator(exchange.amounts, exchange.requiredSignatures.toSet).validate(transactions)
 }
 
 object DefaultExchangeProtocol {

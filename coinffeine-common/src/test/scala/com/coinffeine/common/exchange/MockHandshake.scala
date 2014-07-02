@@ -11,7 +11,7 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
   * @param exchange       Info about the exchange being mocked
   * @param role           Role being played
   */
-class MockHandshake(exchange: Exchange[_ <: FiatCurrency], role: Role) extends Handshake {
+class MockHandshake(exchange: Exchange[FiatCurrency], role: Role) extends Handshake {
   override val myDeposit = dummyImmutableTransaction(1)
   override val myUnsignedRefund = dummyImmutableTransaction(2)
   val mySignedRefund = dummyImmutableTransaction(3)

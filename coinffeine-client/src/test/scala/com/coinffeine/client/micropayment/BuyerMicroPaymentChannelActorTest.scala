@@ -8,13 +8,13 @@ import org.joda.time.DateTime
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer, ExchangeSuccess, StartMicroPaymentChannel}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, GetLastOffer, LastOffer, StartMicroPaymentChannel}
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{MockExchangeProtocol, BuyerRole, Exchange}
-import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, Signatures}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -35,16 +35,16 @@ class BuyerMicroPaymentChannelActorTest
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
   val expectedLastOffer = {
     val initialChannel = exchangeProtocol
-      .createMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits)
+      .createMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits)
     val lastChannel = Seq.iterate(
-      initialChannel, exchange.parameters.breakdown.totalSteps)(_.nextStep).last
+      initialChannel, exchange.amounts.breakdown.totalSteps)(_.nextStep).last
     lastChannel.closingTransaction(signatures)
   }
   listener.watch(actor)
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(exchange, BuyerRole, MockExchangeProtocol.DummyDeposits,
+    actor ! StartMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits,
       protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
@@ -56,24 +56,24 @@ class BuyerMicroPaymentChannelActorTest
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
     val randomMessage = OrderSet.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, counterpart.connection)) should be (false)
+    filter(ReceiveMessage(randomMessage, counterpartConnection)) should be (false)
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
-    for (i <- 1 to exchange.parameters.breakdown.intermediateSteps) {
+    for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       paymentProcessor.expectMsgClass(classOf[PaymentProcessor.Pay[_]])
       paymentProcessor.reply(PaymentProcessor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description")
       ))
-      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpart.connection
+      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartConnection
       gateway.expectNoMsg(100 milliseconds)
     }
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
     actor ! fromCounterpart(
-      StepSignatures(exchange.id, exchange.parameters.breakdown.totalSteps, signatures))
+      StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
     listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
   }
 

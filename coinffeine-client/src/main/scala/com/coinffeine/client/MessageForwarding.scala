@@ -15,8 +15,9 @@ class MessageForwarding(messageGateway: ActorRef,
                         counterpart: PeerConnection,
                         broker: PeerConnection) {
 
-  def this(messageGateway: ActorRef, exchange: Exchange[_ <: FiatCurrency], role: Role) =
-    this(messageGateway, role.her(exchange).connection, exchange.broker.connection)
+  def this(messageGateway: ActorRef, exchange: Exchange[FiatCurrency], role: Role) =
+    this(messageGateway, exchange.connections(role.counterpart),
+      exchange.broker.connection)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)

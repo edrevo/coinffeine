@@ -3,13 +3,13 @@ package com.coinffeine.client.exchange
 import akka.actor._
 
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast =>_, _}
+import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, MutableTransaction, Wallet}
-import com.coinffeine.common.bitcoin.peers.PeerActor.{TransactionPublished, BlockchainActorReference, RetrieveBlockchainActor}
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, Wallet}
+import com.coinffeine.common.bitcoin.peers.PeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -37,7 +37,7 @@ class ExchangeActor[C <: FiatCurrency](
     }
 
     def start(): Unit = {
-      require(userWallet.getKeys.contains(role.me(exchange).bitcoinKey))
+      require(userWallet.getKeys.contains(exchange.participants(role).bitcoinKey))
       log.info(s"Starting exchange ${exchange.id}")
       bitcoinPeers ! RetrieveBlockchainActor
       context.become(retrievingBlockchain)
@@ -57,7 +57,7 @@ class ExchangeActor[C <: FiatCurrency](
     private val retrievingBlockchain: Receive = {
       case BlockchainActorReference(blockchainRef) =>
         blockchain = blockchainRef
-        watchForCounterpartDeposit()
+        watchForDepositKeys()
         startHandshake()
         context.become(inHandshake)
     }
@@ -112,9 +112,8 @@ class ExchangeActor[C <: FiatCurrency](
             // TODO: what if counterpart deposit is not valid?
             val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), exchange).get
             val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            ref ! StartMicroPaymentChannel[C](
-              exchange, role, deposits, constants, paymentProcessor, messageGateway, resultListeners = Set(self)
-            )
+            ref ! StartMicroPaymentChannel[C](exchange, role, deposits, constants,
+              paymentProcessor, messageGateway, resultListeners = Set(self))
             txBroadcaster ! SetMicropaymentActor(ref)
             context.become(inMicropaymentChannel)
           } else {
@@ -131,9 +130,10 @@ class ExchangeActor[C <: FiatCurrency](
       context.stop(self)
     }
 
-    private def watchForCounterpartDeposit(): Unit = {
-      blockchain ! WatchPublicKey(role.me(exchange).bitcoinKey)
-      blockchain ! WatchPublicKey(role.her(exchange).bitcoinKey)
+    private def watchForDepositKeys(): Unit = {
+      exchange.participants.toSeq.foreach { p =>
+        blockchain ! WatchPublicKey(p.bitcoinKey)
+      }
     }
   }
 }
@@ -147,7 +147,7 @@ object ExchangeActor {
 
   /** This is a request for the actor to start the exchange */
   case class StartExchange[C <: FiatCurrency](
-    exchange: Exchange[C],
+    exchange: OngoingExchange[C], // TODO: reduce visibility to Exchange[C]
     role: Role,
     userWallet: Wallet,
     paymentProcessor: ActorRef,

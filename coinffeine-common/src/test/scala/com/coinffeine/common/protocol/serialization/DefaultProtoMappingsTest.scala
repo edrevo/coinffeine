@@ -152,22 +152,22 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
   val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
-  val refundTxSignatureRequest = RefundTxSignatureRequest(sampleExchangeId, refundTx)
-  val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
+  val peerHandshake = PeerHandshake(sampleExchangeId, refundTx, "accountId")
+  val peerHandshakeMessage = msg.PeerHandshake.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
+    .setPaymentProcessorAccount("accountId")
     .build()
 
-  "Refund TX signature request" must behave like thereIsAMappingBetween(
-    refundTxSignatureRequest, refundTxSignatureRequestMessage)
+  "Peer handshake" must behave like thereIsAMappingBetween(peerHandshake, peerHandshakeMessage)
 
   val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
-  val refundTxSignatureResponse = RefundTxSignatureResponse(sampleExchangeId, refundTxSignature)
-  val refundTxSignatureResponseMessage = msg.RefundTxSignatureResponse.newBuilder()
+  val peerHandshakeResponse = PeerHandshakeAccepted(sampleExchangeId, refundTxSignature)
+  val peerHandshakeResponseMessage = msg.PeerHandshakeAccepted.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
     .build()
 
-  "Refund TX signature response" must behave like thereIsAMappingBetween(
-    refundTxSignatureResponse, refundTxSignatureResponseMessage)
+  "Peer handshake response" must behave like thereIsAMappingBetween(
+    peerHandshakeResponse, peerHandshakeResponseMessage)
 }

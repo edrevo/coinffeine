@@ -24,7 +24,7 @@ object HandshakeActor {
     * @param resultListeners  Actors to be notified of the handshake result
     */
   case class StartHandshake[C <: FiatCurrency](
-      exchange: Exchange[C],
+      exchange: OngoingExchange[C], // TODO: reduce visibility to just Exchange[C]
       role: Role,
       handshake: Handshake,
       constants: ProtocolConstants,

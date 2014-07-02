@@ -16,29 +16,29 @@ trait ExchangeProtocol {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake(exchange: Exchange[_ <: FiatCurrency],
+  def createHandshake(exchange: OngoingExchange[FiatCurrency], // TODO: use Exchange instead
                       role: Role,
                       unspentOutputs: Seq[UnspentOutput],
                       changeAddress: Address): Handshake
 
-  /** Create a micro payment channel for an exchange given the deposit transactions and the
-    * role to take.
-    *
-    * @param role       Role played in the protocol
-    * @param exchange   Exchange description
-    * @param deposits   Already compromised deposits for buyer and seller
-    */
-  def createMicroPaymentChannel(exchange: Exchange[_ <: FiatCurrency],
-                                role: Role,
-                                deposits: Exchange.Deposits): MicroPaymentChannel
-
   /** Validate if a transaction looks a valid deposit of one of the parts */
-  def validateDeposit(role: Role, transaction: ImmutableTransaction,
-                      exchange: Exchange[_ <: FiatCurrency]): Try[Unit]
+  def validateDeposit(transaction: ImmutableTransaction, role: Role,
+                      amounts: Exchange.Amounts[FiatCurrency],
+                      requiredSignatures: Set[PublicKey]): Try[Unit]
 
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
-                       exchange: Exchange[_ <: FiatCurrency]): Try[Exchange.Deposits]
+                       exchange: OngoingExchange[FiatCurrency]): Try[Exchange.Deposits]
+
+  /** Create a micro payment channel for an exchange given the deposit transactions and the
+    * role to take.
+    *
+    * @param exchange   Exchange description
+    * @param role       Role played on the exchange
+    * @param deposits   Already compromised deposits for buyer and seller
+    */
+  def createMicroPaymentChannel(exchange: OngoingExchange[FiatCurrency],
+                                role: Role, deposits: Exchange.Deposits): MicroPaymentChannel
 }
 
 object ExchangeProtocol {
