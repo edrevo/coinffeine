@@ -18,40 +18,38 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
   }
 
   private class InitializedOrderSubmission(
-      market: Market[_ <: FiatCurrency], gateway: ActorRef, broker: PeerConnection) {
+      market: Market[FiatCurrency], gateway: ActorRef, broker: PeerConnection) {
 
     def start(): Unit = {
       context.become(waitingForOrders)
     }
 
-    private val waitingForOrders: Receive = {
-      case OpenOrder(order) =>
-        val orderSet = orderToOrderSet(order)
-        forwardOrders(orderSet)
-        context.become(keepingOpenOrders(orderSet))
-    }
+    private val waitingForOrders: Receive = handleOpenOrders(OrderSet.empty(market))
 
-    private def keepingOpenOrders(orderSet: OrderSet[_ <: FiatCurrency]): Receive = {
+    private def keepingOpenOrders(orderSet: OrderSet[FiatCurrency]): Receive =
+      handleOpenOrders(orderSet).orElse{
+        case CancelOrder(order) =>
+          val reducedOrderSet = orderSet.cancelOrder(
+            order.orderType, order.amount, order.price)
+          forwardOrders(reducedOrderSet)
+          context.become(
+            if (reducedOrderSet.isEmpty) waitingForOrders
+            else keepingOpenOrders(reducedOrderSet)
+          )
+
+        case ReceiveTimeout =>
+          forwardOrders(orderSet)
+      }
+
+    private def handleOpenOrders(orderSet: OrderSet[FiatCurrency]): Receive = {
       case OpenOrder(order) =>
         val mergedOrderSet = orderSet.addOrder(
           order.orderType, order.amount, order.price)
         forwardOrders(mergedOrderSet)
         context.become(keepingOpenOrders(mergedOrderSet))
-
-      case CancelOrder(order) =>
-        val reducedOrderSet = orderSet.cancelOrder(
-          order.orderType, order.amount, order.price)
-        forwardOrders(reducedOrderSet)
-        context.become(
-          if (reducedOrderSet.isEmpty) waitingForOrders
-          else keepingOpenOrders(reducedOrderSet)
-        )
-
-      case ReceiveTimeout =>
-        forwardOrders(orderSet)
     }
 
-    private def forwardOrders(orderSet: OrderSet[_ <: FiatCurrency]): Unit = {
+    private def forwardOrders(orderSet: OrderSet[FiatCurrency]): Unit = {
       gateway ! ForwardMessage(orderSet, broker)
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
