@@ -6,7 +6,9 @@ import scalafx.event.ActionEvent
 import scalafx.scene.control.TextField
 import scalafx.scene.input.KeyEvent
 
-class DecimalNumberTextField(initialValue: Double) extends TextField {
+class DecimalNumberTextField(initialValue: BigDecimal) extends TextField {
+
+  require(initialValue >= 0, "Initial value cannot be negative")
 
   text = initialValue.toString
 
@@ -70,14 +72,14 @@ class DecimalNumberTextField(initialValue: Double) extends TextField {
   }
 
   private def isValidInput(input: String): Boolean = input match {
-    case DoubleRegex() => true
+    case DecimalRegex() => true
     case _ => false
   }
 
   private def normalise(input: String): String =
-    (if (input.isEmpty) "0" else input).toDouble.toString
+    BigDecimal(if (input.isEmpty) "0" else input).toString
 
-  private val DoubleRegex = "\\d*\\.?\\d*".r
+  private val DecimalRegex = "\\d*\\.?\\d*".r
   private val NumberRegex = "\\d".r
   private val DotRegex = "\\.".r
 }

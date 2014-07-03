@@ -9,7 +9,8 @@ import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
-import com.coinffeine.common.{BitcoinAmount, Currency}
+import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.{CurrencyAmount, BitcoinAmount, Currency}
 import com.coinffeine.gui.application.ApplicationView
 import com.coinffeine.gui.control.DecimalNumberTextField
 
@@ -24,15 +25,21 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
   }
 
   private val amountTextField = new DecimalNumberTextField(0.0) {
+    id = "amount"
     alignment = Pos.CENTER_RIGHT
     prefWidth = 100
   }
 
   private def bitcoinAmount: Try[BitcoinAmount] = Try {
-    Currency.Bitcoin(amountTextField.text.getValueSafe.toDouble)
+    Currency.Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
+  }
+
+  private def limitAmount: Try[CurrencyAmount[Euro.type]] = Try {
+    Currency.Euro(BigDecimal(limitTextField.text.getValueSafe))
   }
 
   private val amountIsValid = new BooleanProperty(this, "AmountIsValid", false)
+  private val limitIsValid = new BooleanProperty(this, "LimitIsValid", false)
 
   private val paymentProcessorChoiceBox = new ChoiceBox[PaymentProcessor] {
     items = ObservableBuffer(Seq(OKPay))
@@ -56,6 +63,7 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
   }
 
   private val limitTextField = new DecimalNumberTextField(0.0) {
+    id = "limit"
     alignment = Pos.CENTER_RIGHT
     prefWidth = 100
   }
@@ -63,9 +71,11 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
   private val limitOrderSelectedProperty = limitOrderRadioButton.selected
 
   amountTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
+  limitTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
 
   private def handleSubmitButtonEnabled(): Unit = {
     amountIsValid.value = bitcoinAmount.map(_.isPositive).getOrElse(false)
+    limitIsValid.value = limitAmount.map(_.isPositive).getOrElse(false)
   }
 
   override def name: String = "Operations"
@@ -111,12 +121,14 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
           )
         },
         new Button {
+          id = "submit"
           text = "Submit"
-          disable <== amountIsValid.not()
+          disable <== amountIsValid.not() or limitIsValid.not()
           handleEvent(ActionEvent.ACTION) { () =>
             val data = FormData(
               operation = operationChoiceBox.value.value,
               amount = bitcoinAmount.get,
+              limit = limitAmount.get,
               paymentProcessor = paymentProcessorChoiceBox.value.value
             )
             onSubmit(data)
@@ -155,5 +167,6 @@ object OperationsView {
   case class FormData(
     operation: Operation,
     amount: BitcoinAmount,
+    limit: CurrencyAmount[Euro.type],
     paymentProcessor: PaymentProcessor)
 }
