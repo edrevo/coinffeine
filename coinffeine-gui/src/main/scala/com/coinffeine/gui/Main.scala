@@ -4,6 +4,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
 
+import org.controlsfx.dialog.Dialogs
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
@@ -29,7 +30,14 @@ object Main extends JFXApp {
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView))
+    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView(onOrderSubmitted)))
   }
   stage.show()
+
+  private def onOrderSubmitted(formData: OperationsView.FormData): Unit = {
+    Dialogs.create()
+      .title("Order submitted")
+      .message("Your order has been submitted to the broker set")
+      .showInformation()
+  }
 }
