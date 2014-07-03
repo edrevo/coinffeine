@@ -3,7 +3,7 @@ package com.coinffeine.client.peer.orders
 import akka.actor._
 
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.{Order, FiatCurrency, PeerConnection}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage._
 

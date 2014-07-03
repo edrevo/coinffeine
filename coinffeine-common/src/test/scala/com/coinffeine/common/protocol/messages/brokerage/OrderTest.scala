@@ -1,7 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.UnitTest
+import com.coinffeine.common.{Order, Ask, Bid, UnitTest}
 
 class OrderTest extends UnitTest {
 

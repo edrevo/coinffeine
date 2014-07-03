@@ -1,8 +1,7 @@
 package com.coinffeine.client.peer
 
 import akka.actor.Props
-
-import com.coinffeine.common.protocol.messages.brokerage.Order
+import com.coinffeine.common.Order
 
 /** Topmost actor on a peer node. */
 object PeerActor {
