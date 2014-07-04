@@ -3,14 +3,13 @@ package com.coinffeine.common.bitcoin
 import akka.actor.Props
 import org.scalatest.concurrent.Eventually
 
-import com.coinffeine.common.{AkkaSpec, BitcoinjTest}
+import com.coinffeine.common.{system, AkkaSpec, BitcoinjTest}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.Implicits._
 
-class DefaultWalletActorTest extends AkkaSpec("DefaultWalletActorTest")
-    with BitcoinjTest with Eventually {
+class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
-  "Default wallet actor" must "block funds in a multisign transaction" in new Fixture {
+  "The wallet actor" must "block funds in a multisign transaction" in new Fixture {
     val request = WalletActor.BlockFundsInMultisign(Seq(keyPair, otherKeyPair), 1.BTC)
     instance ! request
     expectMsgPF() {
@@ -41,6 +40,6 @@ class DefaultWalletActorTest extends AkkaSpec("DefaultWalletActorTest")
     val otherKeyPair = new KeyPair
     val wallet = createWallet(keyPair, 10.BTC)
     val initialFunds = wallet.balance()
-    val instance = system.actorOf(Props(new DefaultWalletActor(wallet)))
+    val instance = system.actorOf(Props(new WalletActor(wallet)))
   }
 }

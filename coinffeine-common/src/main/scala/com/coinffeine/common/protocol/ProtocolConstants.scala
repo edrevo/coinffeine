@@ -1,6 +1,7 @@
 package com.coinffeine.common.protocol
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 /** Protocol constants with default values.
   *

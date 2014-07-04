@@ -7,10 +7,10 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
 import org.scalatest.mock.MockitoSugar
 
-class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest")
+class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     with BitcoinjTest with MockitoSugar {
 
-  "Default blockchain actor" must "report transaction confirmation" in new Fixture {
+  "The blockchain actor" must "report transaction confirmation" in new Fixture {
     instance ! BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1)
     sendToBlockChain(tx)
     expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 1))
@@ -114,6 +114,6 @@ class DefaultBlockchainActorTest extends AkkaSpec("DefaultBlockChainActorTest")
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
     val instance = system.actorOf(
-      Props(new DefaultBlockchainActor(network, chain, transactionBroadcaster)))
+      Props(new BlockchainActor(network, chain, transactionBroadcaster)))
   }
 }

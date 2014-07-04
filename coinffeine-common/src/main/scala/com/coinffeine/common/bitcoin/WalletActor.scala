@@ -1,7 +1,26 @@
 package com.coinffeine.common.bitcoin
 
-import akka.actor.Props
+import scala.util.control.NonFatal
+
+import akka.actor.{ActorLogging, Actor, Props}
+
 import com.coinffeine.common.BitcoinAmount
+import com.coinffeine.common.bitcoin.Implicits._
+
+class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
+
+  override val receive: Receive = {
+    case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
+      try {
+        val tx = wallet.blockMultisignFunds(signatures, amount)
+        sender ! WalletActor.FundsBlocked(req, tx)
+      } catch {
+        case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
+      }
+    case WalletActor.ReleaseFunds(tx) =>
+      wallet.releaseFunds(tx)
+  }
+}
 
 object WalletActor {
 
@@ -38,6 +57,6 @@ object WalletActor {
   case class ReleaseFunds(tx: MutableTransaction)
 
   trait Component {
-    def walletActorProps(wallet: Wallet): Props
+    def walletActorProps(wallet: Wallet) = Props(new WalletActor(wallet))
   }
 }

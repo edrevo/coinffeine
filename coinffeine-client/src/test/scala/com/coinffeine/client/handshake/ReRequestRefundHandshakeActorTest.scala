@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.Subscribe
 
-class ReRequestRefundDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
+class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

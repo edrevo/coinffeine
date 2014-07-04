@@ -9,7 +9,7 @@ import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake.PeerHandshakeAccepted
 
-class RejectedTxDefaultHandshakeActorTest extends DefaultHandshakeActorTest("rejected-tx") {
+class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

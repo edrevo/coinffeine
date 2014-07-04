@@ -6,8 +6,7 @@ import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.handshake.ExchangeAborted
 
-class BrokerAbortionDefaultHandshakeActorTest
-  extends DefaultHandshakeActorTest("broker-aborts") {
+class BrokerAbortionHandshakeActorTest extends HandshakeActorTest("broker-aborts") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

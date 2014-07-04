@@ -12,7 +12,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Su
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.handshake._
 
-class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
+class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

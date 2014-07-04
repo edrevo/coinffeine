@@ -16,7 +16,7 @@ import com.coinffeine.common.protocol.gateway.MessageGateway.ReceiveMessage
 import com.coinffeine.common.protocol.messages.handshake.{PeerHandshake, PeerHandshakeAccepted}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
-abstract class DefaultHandshakeActorTest(systemName: String)
+abstract class HandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with SellerPerspective with BitcoinjTest with MockitoSugar {
 
   def protocolConstants: ProtocolConstants
@@ -24,7 +24,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   lazy val handshake = new MockHandshake(exchange, userRole)
   val listener = TestProbe()
   val blockchain = TestProbe()
-  val actor = system.actorOf(Props[DefaultHandshakeActor[Euro.type]], "handshake-actor")
+  val actor = system.actorOf(Props[HandshakeActor[Euro.type]], "handshake-actor")
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {

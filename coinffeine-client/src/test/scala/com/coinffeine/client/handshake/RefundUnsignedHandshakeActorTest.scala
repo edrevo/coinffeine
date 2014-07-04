@@ -6,8 +6,7 @@ import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.handshake.ExchangeRejection
 
-class RefundUnsignedDefaultHandshakeActorTest
-  extends DefaultHandshakeActorTest("signature-timeout") {
+class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
 
   import HandshakeActor._
 

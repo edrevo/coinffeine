@@ -1,6 +1,6 @@
 package com.coinffeine.client.app
 
-import com.coinffeine.client.peer.{DefaultPeerActor, QuoteRequestActor}
+import com.coinffeine.client.peer.{PeerActor, QuoteRequestActor}
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.network.MainNetComponent
@@ -12,7 +12,7 @@ object ProductionCoinffeineApp {
 
   trait Component
     extends DefaultCoinffeineApp.Component
-    with DefaultPeerActor.Component
+    with PeerActor.Component
     with ProtocolConstants.DefaultComponent
     with QuoteRequestActor.Component
     with OrdersActor.Component

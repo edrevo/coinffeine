@@ -14,14 +14,14 @@ import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
-class DefaultPeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
+class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   val address = new PeerInfo("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
   val gatewayProbe = TestProbe()
   val requestsProbe = TestProbe()
   val ordersProbe = TestProbe()
-  val peer = system.actorOf(Props(new DefaultPeerActor(address, brokerAddress,
+  val peer = system.actorOf(Props(new PeerActor(address, brokerAddress,
     MockActor.props(gatewayProbe), MockActor.props(requestsProbe),
     MockActor.props(ordersProbe))))
   var gatewayRef: ActorRef = _
