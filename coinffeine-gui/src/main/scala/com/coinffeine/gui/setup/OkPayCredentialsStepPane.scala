@@ -27,6 +27,7 @@ private[setup] class OkPayCredentialsStepPane(credentialsValidator: CredentialsV
   private val testing = new BooleanProperty(this, "testing", false)
 
   private val testButton = new Button("Test") {
+    id = "testButton"
     disable <== testing.or(credentials === None)
     handleEvent(ActionEvent.ACTION) { () => startTest() }
   }
@@ -37,7 +38,10 @@ private[setup] class OkPayCredentialsStepPane(credentialsValidator: CredentialsV
       alignment = Pos.CENTER_LEFT
       content = Seq(
         testButton,
-        new Label { text <== testMessage },
+        new Label {
+          id = "validationResult"
+          text <== testMessage
+        },
         new ProgressIndicator {
           progress <== when(testing) choose ProgressIndicator.INDETERMINATE_PROGRESS otherwise 0
           visible <== testing
@@ -60,9 +64,15 @@ private[setup] class OkPayCredentialsStepPane(credentialsValidator: CredentialsV
         hgrow = Priority.ALWAYS
       })
       add(new Label("Email"), 0, 0)
-      add(new TextField() { text <==> emailProperty }, 1, 0)
+      add(new TextField() {
+        id = "email"
+        text <==> emailProperty
+      }, 1, 0)
       add(new Label("Password"), 0, 1)
-      add(new PasswordField() { text <==> passwordProperty }, 1, 1)
+      add(new PasswordField() {
+        id = "password"
+        text <==> passwordProperty
+      }, 1, 1)
       add(credentialsTestPane, 1, 2)
     }
 

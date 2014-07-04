@@ -37,6 +37,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
             content = Seq(
               new Label("Your wallet address"),
               new TextField {
+                id = "address"
                 text = address
                 editable = false
                 font = Font(12)
