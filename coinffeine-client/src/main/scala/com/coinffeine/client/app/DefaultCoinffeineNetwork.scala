@@ -13,7 +13,7 @@ import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.PeerActor
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.{Order, FiatCurrency}
 import com.coinffeine.common.protocol.messages.brokerage._
 
 class DefaultCoinffeineNetwork(peer: ActorRef) extends CoinffeineNetwork {

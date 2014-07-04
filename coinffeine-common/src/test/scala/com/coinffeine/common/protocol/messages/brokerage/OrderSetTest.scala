@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.UnitTest
+import com.coinffeine.common.{Ask, Bid, UnitTest}
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 

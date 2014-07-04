@@ -1,6 +1,4 @@
-package com.coinffeine.common.protocol.messages.brokerage
-
-import com.coinffeine.common.{FiatCurrency, CurrencyAmount, BitcoinAmount, FiatAmount}
+package com.coinffeine.common
 
 sealed trait OrderType {
   def priceOrdering[C <: FiatCurrency]: Ordering[CurrencyAmount[C]]

@@ -12,5 +12,6 @@ trait CoinffeineApp extends Closeable {
   def paymentProcessors: Set[PaymentProcessor.Component]
   def marketStats: MarketStats
   def protocolConstants: ProtocolConstants
+  def broker: Broker
 }
 

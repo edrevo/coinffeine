@@ -7,12 +7,12 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
 import com.coinffeine.client.peer.orders.OrdersActor
-import com.coinffeine.common.{AkkaSpec, MockActor, PeerConnection}
-import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
-import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
+import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage.{Bid, Order, QuoteRequest}
+import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
 class DefaultPeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
