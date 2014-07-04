@@ -28,9 +28,6 @@ trait CoinffeineNetwork {
   /** Notify exchange events. */
   def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
 
-  /** Check current prices for a given payment form */
-  def currentQuote[C <: FiatCurrency](currency: C): Future[Quote[C]]
-
   /** Submit an order to buy bitcoins.
     *
     * @param btcAmount           Amount to buy

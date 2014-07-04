@@ -21,7 +21,7 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
 
   override lazy val wallet = ???
 
-  override val marketStats = new MarketStats {}
+  override val marketStats = new DefaultMarketStats(peerRef)
 
   override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
 
