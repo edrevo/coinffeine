@@ -52,6 +52,14 @@ message OrderMatch {
     required string seller = 5;
 }
 
+message OpenOrdersRequest {
+    required string currency = 1;
+}
+
+message OpenOrders {
+    required OrderSet orderSet = 1;
+}
+
 message ExchangeAborted {
     required string exchangeId = 1;
     required string reason = 2;
@@ -109,6 +117,8 @@ message Payload {
     optional PeerHandshakeAccepted peerHandshakeAccepted = 10;
     optional StepSignature stepSignature = 11;
     optional PaymentProof paymentProof = 12;
+    optional OpenOrdersRequest openOrderRequest = 13;
+    optional OpenOrders openOrders = 14;
 }
 
 message ProtocolVersion {

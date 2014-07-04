@@ -16,7 +16,7 @@ import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
-import com.coinffeine.common.protocol.messages.exchange._
+import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
@@ -93,25 +93,30 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
       val tx = wallet.sendCoinsOffline(SendRequest.to(network, new PublicKey, 1.BTC.asSatoshi))
       ImmutableTransaction(tx)
     }
-    val sampleMessages = Seq(
-      ExchangeAborted(exchangeId, "reason"),
-      ExchangeCommitment(exchangeId, transaction),
-      CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
-      OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerConnection)),
-      OrderSet(
+    val sampleMessages = {
+      val orderSet: OrderSet[UsDollar.type] = OrderSet(
         market = Market(Currency.UsDollar),
         bids = VolumeByPrice(100.USD -> 1.3.BTC),
         asks = VolumeByPrice(200.USD -> 0.3.BTC,
           250.USD -> 0.4.BTC)
-      ),
-      QuoteRequest(UsDollar),
-      Quote(fiatAmount -> fiatAmount, fiatAmount),
-      ExchangeRejection(exchangeId, "reason"),
-      PeerHandshake(exchangeId, transaction, "paymentAccount"),
-      PeerHandshakeAccepted(exchangeId, transactionSignature),
-      StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
-      PaymentProof(exchangeId, "paymentId")
-    )
+      )
+      Seq(
+        ExchangeAborted(exchangeId, "reason"),
+        ExchangeCommitment(exchangeId, transaction),
+        CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
+        OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerConnection)),
+        orderSet,
+        QuoteRequest(UsDollar),
+        Quote(fiatAmount -> fiatAmount, fiatAmount),
+        ExchangeRejection(exchangeId, "reason"),
+        PeerHandshake(exchangeId, transaction, "paymentAccount"),
+        PeerHandshakeAccepted(exchangeId, transactionSignature),
+        StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
+        PaymentProof(exchangeId, "paymentId"),
+        OpenOrdersRequest(UsDollar),
+        OpenOrders(orderSet)
+      )
+    }
 
     requireSampleInstancesForAllPublicMessages(sampleMessages)
   }

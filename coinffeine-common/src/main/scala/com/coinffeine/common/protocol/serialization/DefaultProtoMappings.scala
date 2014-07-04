@@ -200,6 +200,31 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     }
   }
 
+  implicit val openOrdersRequestMapping = new ProtoMapping[OpenOrdersRequest, msg.OpenOrdersRequest] {
+
+    override def fromProtobuf(openOrdersRequest: msg.OpenOrdersRequest): OpenOrdersRequest = {
+      val currency = FiatCurrency(Currency.getInstance(openOrdersRequest.getCurrency))
+      OpenOrdersRequest(currency)
+    }
+
+    override def toProtobuf(openOrdersRequest: OpenOrdersRequest): msg.OpenOrdersRequest = {
+      msg.OpenOrdersRequest.newBuilder.setCurrency(
+        openOrdersRequest.currency.javaCurrency.getCurrencyCode).build
+    }
+  }
+
+  implicit val openOrdersMapping = new ProtoMapping[OpenOrders[FiatCurrency], msg.OpenOrders] {
+
+    override def fromProtobuf(openOrders: msg.OpenOrders): OpenOrders[FiatCurrency] =
+      OpenOrders(ProtoMapping.fromProtobuf(openOrders.getOrderSet))
+
+    override def toProtobuf(openOrders: OpenOrders[FiatCurrency]): msg.OpenOrders = {
+      msg.OpenOrders.newBuilder
+        .setOrderSet(ProtoMapping.toProtobuf[OrderSet[FiatCurrency], msg.OrderSet](openOrders.orders))
+        .build
+    }
+  }
+
   implicit val quoteRequestMapping = new ProtoMapping[QuoteRequest, msg.QuoteRequest] {
 
     override def fromProtobuf(request: msg.QuoteRequest): QuoteRequest =

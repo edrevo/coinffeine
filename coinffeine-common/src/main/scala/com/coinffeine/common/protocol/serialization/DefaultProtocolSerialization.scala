@@ -56,6 +56,10 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))
+      case m: OpenOrdersRequest =>
+        builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m))
+      case m: OpenOrders[FiatCurrency] =>
+        builder.setOpenOrders(ProtoMapping.toProtobuf(m))
       case _ => throw new IllegalArgumentException("Unsupported message: " + message)
     }
     builder
@@ -103,6 +107,10 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getStepSignature)
       case PAYMENTPROOF_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getPaymentProof)
+      case OPENORDERREQUEST_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getOpenOrderRequest)
+      case OPENORDERS_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getOpenOrders)
       case _ => throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
     }
   }
