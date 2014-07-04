@@ -4,10 +4,13 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.controlsfx.dialog.Dialogs
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
+import com.coinffeine.client.app.ProductionCoinffeineApp
+import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView
@@ -15,7 +18,10 @@ import com.coinffeine.gui.application.operations.OperationsView
 import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import com.coinffeine.gui.setup.CredentialsValidator.Result
 
-object Main extends JFXApp {
+object Main extends JFXApp with ProductionCoinffeineApp.Component {
+
+  override val config = ConfigFactory.load()
+
   JFXApp.AUTO_SHOW = false
 
   val validator = new CredentialsValidator {
