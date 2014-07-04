@@ -1,5 +1,7 @@
 package com.coinffeine.gui
 
+import com.coinffeine.common.Order
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
@@ -40,7 +42,7 @@ object Main extends JFXApp with ProductionCoinffeineApp.Component {
   }
   stage.show()
 
-  private def onOrderSubmitted(formData: OperationsView.FormData): Unit = {
+  private def onOrderSubmitted(order: Order): Unit = {
     Dialogs.create()
       .title("Order submitted")
       .message("Your order has been submitted to the broker set")
