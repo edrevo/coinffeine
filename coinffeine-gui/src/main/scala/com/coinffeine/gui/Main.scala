@@ -1,24 +1,23 @@
 package com.coinffeine.gui
 
-import com.coinffeine.common.Order
-
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.util.Random
 
-import com.typesafe.config.{Config, ConfigFactory}
-import org.controlsfx.dialog.Dialogs
+import com.typesafe.config.ConfigFactory
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
 import com.coinffeine.client.app.ProductionCoinffeineApp
-import com.coinffeine.common.config.ConfigComponent
+import com.coinffeine.common.Order
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView
 import com.coinffeine.gui.application.operations.OperationsView
 import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import com.coinffeine.gui.setup.CredentialsValidator.Result
+import com.coinffeine.gui.util.ProgressDialog
 
 object Main extends JFXApp with ProductionCoinffeineApp.Component {
 
@@ -43,9 +42,11 @@ object Main extends JFXApp with ProductionCoinffeineApp.Component {
   stage.show()
 
   private def onOrderSubmitted(order: Order): Unit = {
-    Dialogs.create()
-      .title("Order submitted")
-      .message("Your order has been submitted to the broker set")
-      .showInformation()
+    val progress =
+      ProgressDialog("Submitting order", "Submitting order to the broker...") {
+        val submission = app.broker.submitOrder(order)
+        Await.ready(submission, 10.seconds) // TODO: obtain this timeout from config
+      }
+    progress.show()
   }
 }
