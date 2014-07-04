@@ -10,18 +10,18 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.{CurrencyAmount, BitcoinAmount, Currency}
+import com.coinffeine.common._
 import com.coinffeine.gui.application.ApplicationView
 import com.coinffeine.gui.control.DecimalNumberTextField
 
-class OperationsView(onSubmit: OperationsView.FormData => Unit) extends ApplicationView {
+class OperationsView(onSubmit: Order => Unit) extends ApplicationView {
 
   import com.coinffeine.gui.application.operations.OperationsView._
 
-  private val operationChoiceBox = new ChoiceBox[Operation] {
-    items = ObservableBuffer(Seq(BuyOperation, SellOperation))
-    value = BuyOperation
-    prefWidth = 80
+  private val operationChoiceBox = new ChoiceBox[OrderType] {
+    items = ObservableBuffer(Seq(Bid, Ask))
+    value = Bid
+    prefWidth = 90
   }
 
   private val amountTextField = new DecimalNumberTextField(0.0) {
@@ -125,13 +125,11 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
           text = "Submit"
           disable <== amountIsValid.not() or limitIsValid.not()
           handleEvent(ActionEvent.ACTION) { () =>
-            val data = FormData(
-              operation = operationChoiceBox.value.value,
+            val order = Order(
+              orderType = operationChoiceBox.value.value,
               amount = bitcoinAmount.get,
-              limit = limitAmount.get,
-              paymentProcessor = paymentProcessorChoiceBox.value.value
-            )
-            onSubmit(data)
+              price = limitAmount.get)
+            onSubmit(order)
           }
         }
       )
@@ -145,17 +143,6 @@ class OperationsView(onSubmit: OperationsView.FormData => Unit) extends Applicat
 }
 
 object OperationsView {
-  sealed trait Operation {
-    override def toString = name
-    def name: String
-  }
-  case object BuyOperation extends Operation {
-    override val name: String = "BUY"
-  }
-  case object SellOperation extends Operation {
-    override val name: String = "SELL"
-  }
-
   sealed trait PaymentProcessor {
     override def toString = name
     def name: String
@@ -163,10 +150,4 @@ object OperationsView {
   case object OKPay extends PaymentProcessor {
     override val name = "OKPay"
   }
-
-  case class FormData(
-    operation: Operation,
-    amount: BitcoinAmount,
-    limit: CurrencyAmount[Euro.type],
-    paymentProcessor: PaymentProcessor)
 }

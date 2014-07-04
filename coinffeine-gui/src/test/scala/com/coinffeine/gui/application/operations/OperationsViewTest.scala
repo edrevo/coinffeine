@@ -4,12 +4,13 @@ import javafx.scene.Node
 import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
+import com.coinffeine.common.{Bid, Order}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.gui.GuiTest
-import com.coinffeine.gui.application.operations.OperationsView.{OKPay, BuyOperation}
+import com.coinffeine.gui.application.operations.OperationsView.OKPay
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
-  var maybeFormData: Option[OperationsView.FormData] = None
+  var maybeFormData: Option[Order] = None
   override def createRootNode(): Pane = {
     maybeFormData = None
     new OperationsView(d => maybeFormData = Some(d)).centerPane
@@ -46,8 +47,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     maybeFormData should be ('defined)
     val formData = maybeFormData.get
     formData.amount should be (0.1 BTC)
-    formData.limit should be (100 EUR)
-    formData.operation should be (BuyOperation)
-    formData.paymentProcessor should be (OKPay)
+    formData.price should be (100 EUR)
+    formData.orderType should be (Bid)
   }
 }
